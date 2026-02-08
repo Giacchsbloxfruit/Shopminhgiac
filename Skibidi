@@ -1,0 +1,40 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local Plr = Players.LocalPlayer
+getgenv().AutoAttack = true -- Đổi thành false để tắt
+
+RunService.Heartbeat:Connect(function()
+    if not getgenv().AutoAttack then return end
+    
+    pcall(function()
+        local Char = Plr.Character
+        if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+
+        -- Script chỉ hoạt động khi cầm vũ khí (Melee/Sword/Fruit)
+        local Tool = Char:FindFirstChildWhichIsA("Tool")
+        if not Tool then return end
+
+        local Targets = {}
+        
+        -- Quét quái trong phạm vi 60 studs
+        for _, Enemy in pairs(Workspace.Enemies:GetChildren()) do
+            if Enemy:FindFirstChild("Humanoid") and Enemy.Humanoid.Health > 0 and Enemy:FindFirstChild("HumanoidRootPart") then
+                local Dist = (Enemy.HumanoidRootPart.Position - Char.HumanoidRootPart.Position).Magnitude
+                if Dist <= 60 then
+                    -- Cấu trúc: {EnemyModel, HitPart}
+                    table.insert(Targets, {Enemy, Enemy.PrimaryPart or Enemy:FindFirstChild("Head")})
+                end
+            end
+        end
+
+        -- Gửi tín hiệu tấn công server
+        if #Targets > 0 then
+            local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+            Net["RE/RegisterAttack"]:FireServer(0)
+            Net["RE/RegisterHit"]:FireServer(Targets[1][2], Targets)
+        end
+    end)
+end)

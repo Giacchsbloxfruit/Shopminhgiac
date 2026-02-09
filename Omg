@@ -1,123 +1,154 @@
 -- [[ CONFIGURATION ]]
-getgenv().AutoFarm = true
-getgenv().WeaponType = "Melee" -- Chọn: "Melee" hoặc "Sword"
+getgenv().Config = {
+    AutoFarm = true,
+    AutoStats = true,
+    AutoFruit = true,
+    AutoStore = true,
+    AutoRandom = true,
+    WeaponType = "Melee",
+    TweenSpeed = 100, -- Tăng tốc độ bay tối ưu
+    CurrentStatus = "Đang khởi động..."
+}
 
--- [[ DATA TABLE ]]
--- Bạn có thể thêm các đảo khác vào đây từ file mẫu của bạn
+-- [[ SERVICES ]]
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local TS = game:GetService("TweenService")
+local CommF = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
+local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
+
+-- [[ DATA ]]
 local QuestList = {
     {MinLv = 1, MaxLv = 14, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit"},
-    {MinLv = 15, MaxLv = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla"},
+    {MinLv = 15, MaxLv = 29, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey"},
     {MinLv = 30, MaxLv = 39, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate"}
 }
 
--- 3. HÀM TÌM NHIỆM VỤ PHÙ HỢP
--- Hàm này duyệt qua bảng QuestData để tìm nhiệm vụ hợp với Level hiện tại
-local function GetCurrentQuest()
-    local MyLevel = LocalPlayer.Data.Level.Value
-    for _, Data in ipairs(QuestData) do
-        if MyLevel >= Data.MinLv and MyLevel <= Data.MaxLv then
-            return Data
+-- [[ OPTIMIZED FUNCTIONS ]]
+
+local CurrentTween = nil
+local function TweenTo(TargetCFrame)
+    local char = LP.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    -- Nếu có Tween cũ đang chạy thì hủy để tránh xung đột vị trí
+    if CurrentTween then CurrentTween:Cancel() end
+
+    local dist = (TargetCFrame.Position - root.Position).Magnitude
+    if dist < 5 then root.CFrame = TargetCFrame return end
+
+    if not root:FindFirstChild("BV") then
+        local bv = Instance.new("BodyVelocity", root)
+        bv.Name = "BV"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    end
+
+    local info = TweenInfo.new(dist/getgenv().Config.TweenSpeed, Enum.EasingStyle.Linear)
+    CurrentTween = TS:Create(root, info, {CFrame = TargetCFrame})
+    CurrentTween:Play()
+end
+
+local function StoreFruit()
+    for _, v in pairs(LP.Backpack:GetChildren()) do
+        if string.find(v.Name, "Fruit") then
+            CommF:InvokeServer("StoreFruit", v:GetAttribute("FruitName") or v.Name, v)
         end
     end
-    return nil -- Không tìm thấy nhiệm vụ (ví dụ Max level)
 end
 
--- 4. HÀM DỊCH CHUYỂN (TWEEN)
--- Hàm này giúp nhân vật bay đến đích
-local function TweenTo(TargetCFrame)
-    local Character = LocalPlayer.Character
-    if not Character or not Character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local Root = Character.HumanoidRootPart
-    local Distance = (TargetCFrame.Position - Root.Position).Magnitude
-    local Speed = 200 -- Tốc độ bay
-    
-    local TweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
-    local Tween = game:GetService("TweenService"):Create(Root, TweenInfo, {CFrame = TargetCFrame})
-    Tween:Play()
-    
-    if not Root:FindFirstChild("BodyVelocity") then
-        local BV = Instance.new("BodyVelocity")
-        BV.Parent = Root
-        BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        BV.Velocity = Vector3.zero
+-- Hàm tìm Fruit trong Workspace (Ưu tiên cao nhất)
+local function FindFruitInWorkspace()
+    for _, v in pairs(workspace:GetChildren()) do
+        if v:IsA("Tool") and string.find(v.Name, "Fruit") then
+            return v
+        end
     end
+    return nil
 end
 
--- 5. LOGIC CHÍNH (VÒNG LẶP)
+-- [[ MAIN EXECUTION LOOP ]]
 task.spawn(function()
-    while task.wait() do -- Lặp vô tận (để auto liên tục)
-        if getgenv().AutoFarm then
-            pcall(function()
-                -- Bước A: Lấy thông tin nhiệm vụ cần làm
-                local CurrentQuest = GetCurrentQuest()
-                if not CurrentQuest then 
-                    print("Không tìm thấy nhiệm vụ cho cấp độ này hoặc đã Max Level")
-                    return 
+    while task.wait(0.1) do
+        pcall(function()
+            -- 1. KIỂM TRA FRUIT (ƯU TIÊN SỐ 1)
+            local FruitOnFloor = FindFruitInWorkspace()
+            
+            if Config.AutoFruit and FruitOnFloor then
+                getgenv().Config.CurrentStatus = "🍎 PHÁT HIỆN FRUIT! ĐANG ĐẾN LẤY..."
+                if FruitOnFloor:FindFirstChild("Handle") then
+                    TweenTo(FruitOnFloor.Handle.CFrame)
+                    firetouchinterest(LP.Character.HumanoidRootPart, FruitOnFloor.Handle, 0)
+                    task.wait(0.2)
+                    StoreFruit()
+                end
+                -- Khi có Fruit, bỏ qua toàn bộ phần code bên dưới (không farm, không nhận quest)
+                return 
+            end
+
+            -- 2. TỰ ĐỘNG QUAY TRÁI (GACHA)
+            if Config.AutoRandom then
+                CommF:InvokeServer("Cousin", "Buy")
+                StoreFruit()
+            end
+
+            -- 3. TỰ ĐỘNG NÂNG STATS
+            if Config.AutoStats and LP.Data.StatsPoints.Value > 0 then
+                CommF:InvokeServer("AddPoint", "Melee", 1)
+                CommF:InvokeServer("Defense", 1)
+            end
+
+            -- 4. AUTO FARM QUÁI (CHỈ CHẠY KHI KHÔNG CÓ FRUIT TRÊN SÀN)
+            if Config.AutoFarm then
+                local myLv = LP.Data.Level.Value
+                local q = nil
+                for _, v in pairs(QuestList) do
+                    if myLv >= v.MinLv and myLv <= v.MaxLv then q = v break end
                 end
 
-                -- Bước B: Kiểm tra xem đã nhận nhiệm vụ chưa
-                -- Giao diện nhiệm vụ trong Blox Fruits nằm ở PlayerGui.Main.Quest
-                local PlayerGui = LocalPlayer.PlayerGui
-                local QuestTitle = PlayerGui.Main.Quest.Container.QuestTitle.Title
-                
-                -- Điều kiện: Nếu bảng nhiệm vụ ẩn HOẶC tên nhiệm vụ đang làm không đúng với quái cần đánh
-                local HasQuest = PlayerGui.Main.Quest.Visible and string.find(QuestTitle.Text, CurrentQuest.MonName)
-                
-                if not HasQuest then
-                    -- TRƯỜNG HỢP: CHƯA CÓ NHIỆM VỤ
-                    -- 1. Bay đến NPC nhận nhiệm vụ
-                    local DistanceToNPC = (LocalPlayer.Character.HumanoidRootPart.Position - CurrentQuest.NpcPos.Position).Magnitude
-                    
-                    if DistanceToNPC > 10 then
-                        -- Nếu xa NPC quá thì bay lại gần
-                        TweenTo(CurrentQuest.NpcPos)
+                if q then
+                    local QuestGui = LP.PlayerGui.Main.Quest
+                    local IsDoingCorrectQuest = QuestGui.Visible and string.find(QuestGui.Container.QuestTitle.Title.Text, q.Mon)
+
+                    if not IsDoingCorrectQuest then
+                        getgenv().Config.CurrentStatus = "📍 Đang đi nhận nhiệm vụ..."
+                        TweenTo(q.NPC)
+                        if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 10 then
+                            CommF:InvokeServer("StartQuest", q.Name, q.Lv)
+                        end
                     else
-                        -- Nếu đã đứng gần NPC (khoảng cách <= 10) thì nhận nhiệm vụ
-                        -- Remote "StartQuest" nhận 2 tham số: "Tên Nhiệm Vụ", Level nhiệm vụ (1 hoặc 2)
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", CurrentQuest.QuestName, CurrentQuest.QuestLevel)
-                        task.wait(1) -- Đợi 1 giây để server xử lý tránh spam
-                    end
-                else
-                    -- TRƯỜNG HỢP: ĐÃ CÓ NHIỆM VỤ -> ĐI ĐÁNH QUÁI
-                    -- Ở đây bạn kết hợp với đoạn code Auto Attack mình đã viết cho bạn ở câu trả lời trước
-                    
-                    -- Logic tìm quái để bay tới (đơn giản hóa)
-                    for _, Enemy in pairs(workspace.Enemies:GetChildren()) do
-                        if Enemy.Name == CurrentQuest.MonName and Enemy:FindFirstChild("Humanoid") and Enemy.Humanoid.Health > 0 then
-                            TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0)) -- Bay tới trên đầu quái
-                            break -- Tìm thấy 1 con thì bay tới, thoát vòng lặp tìm kiếm
+                        -- Tìm mục tiêu đánh
+                        local Enemy = nil
+                        for _, e in pairs(workspace.Enemies:GetChildren()) do
+                            if e.Name == q.Mon and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                                Enemy = e break
+                            end
+                        end
+
+                        if Enemy then
+                            getgenv().Config.CurrentStatus = "⚔️ Đang farm: " .. q.Mon
+                            -- Tự cầm vũ khí
+                            if not LP.Character:FindFirstChildWhichIsA("Tool") then
+                                for _, t in pairs(LP.Backpack:GetChildren()) do
+                                    if t.ToolTip == Config.WeaponType or t.Name == Config.WeaponType then
+                                        LP.Character.Humanoid:EquipTool(t)
+                                    end
+                                end
+                            end
+                            -- Bay đến quái và tấn công
+                            TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+                            Net["RE/RegisterAttack"]:FireServer(0)
+                            Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                        else
+                            getgenv().Config.CurrentStatus = "⏳ Đợi quái spawn..."
+                            TweenTo(q.NPC * CFrame.new(0, 50, 0))
                         end
                     end
                 end
-            end)
-        end
+            end
+        end)
     end
 end)
 
--- 2. Hàm tự động cầm vũ khí
-local function EquipWeapon()
-    local char = LP.Character
-    if not char then return end
-    if char:FindFirstChildWhichIsA("Tool") then return end -- Đã cầm thì thôi
-    
-    for _, v in pairs(LP.Backpack:GetChildren()) do
-        if v:IsA("Tool") and (v.ToolTip == getgenv().WeaponType or v.Name == getgenv().WeaponType) then
-            char.Humanoid:EquipTool(v)
-            break
-        end
-    end
-end
-
-                        -- Fast Attack (Logic từ 3 file bạn gửi)
-                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                        RS.Modules.Net["RE/RegisterHit"]:FireServer(Target.PrimaryPart, {{Target, Target.PrimaryPart}})
-                    else
-                        -- Nếu không thấy quái ở workspace, bay đến điểm spawn quái
-                        TweenTo(q.NPC * CFrame.new(0, 100, 0)) -- Bay cao lên để đợi quái spawn
-                    end
-                end
-            end)
-        end
-    end
-end)
+-- [[ UI DASHBOARD ]]
+-- (Giữ nguyên phần UI từ code trước, cập nhật StatusLabel theo Config.CurrentStatus)

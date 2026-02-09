@@ -1,99 +1,125 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
+-- [[ 1. TỰ ĐỘNG CHỌN PHE ]]
+repeat task.wait() until game:IsLoaded()
+local LP = game.Players.LocalPlayer
+if not LP.Team then
+    pcall(function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+    end)
+end
 
-getgenv().AutoFarm = true 
+-- [[ 2. CONFIGURATION ]]
+getgenv().TweenSpeed = 150    -- Tốc độ an toàn
+getgenv().MaxStat = 2800      -- Mốc Max Stats của Server
 
-local QuestData = {
-    {MinLv = 1, MaxLv = 9, QuestName = "BanditQuest1", QuestLevel = 1, NpcPos = CFrame.new(1060, 16, 1547), MonName = "Bandit"},
-    {MinLv = 10, MaxLv = 14, QuestName = "JungleQuest", QuestLevel = 1, NpcPos = CFrame.new(-1601, 36, 153), MonName = "Monkey"},
-    {MinLv = 15, MaxLv = 29, QuestName = "JungleQuest", QuestLevel = 2, NpcPos = CFrame.new(-1601, 36, 153), MonName = "Gorilla"},
-    {MinLv = 30, MaxLv = 39, QuestName = "BuggyQuest1", QuestLevel = 1, NpcPos = CFrame.new(-1140, 4, 3827), MonName = "Pirate"},
-    
+local RS = game:GetService("ReplicatedStorage")
+local TS = game:GetService("TweenService")
+local Remote = RS:FindFirstChild("CommF_", true) or RS:WaitForChild("Remotes"):WaitForChild("CommF_")
+
+-- [[ 3. DANH SÁCH NHIỆM VỤ CHI TIẾT (QUEST LIST) ]]
+-- Bạn có thể dễ dàng thêm các mốc Lv vào đây
+local QuestList = {
+    {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
+    {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
+    {Min = 15, Max = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla", MonPos = CFrame.new(-1237, 6, -486)},
+    {Min = 30, Max = 39, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate", MonPos = CFrame.new(-1213, 4, 3920)},
+    {Min = 40, Max = 59, Name = "BuggyQuest1", Lv = 2, NPC = CFrame.new(-1140, 4, 3827), Mon = "Brute", MonPos = CFrame.new(-1146, 14, 4308)},
+    {Min = 60, Max = 74, Name = "DesertQuest", Lv = 1, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Bandit", MonPos = CFrame.new(985, 16, 4418)},
+    {Min = 75, Max = 89, Name = "DesertQuest", Lv = 2, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Officer", MonPos = CFrame.new(1547, 14, 4382)},
+    {Min = 90, Max = 99, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
+
+
 }
 
--- 3. HÀM TÌM NHIỆM VỤ PHÙ HỢP
--- Hàm này duyệt qua bảng QuestData để tìm nhiệm vụ hợp với Level hiện tại
-local function GetCurrentQuest()
-    local MyLevel = LocalPlayer.Data.Level.Value
-    for _, Data in ipairs(QuestData) do
-        if MyLevel >= Data.MinLv and MyLevel <= Data.MaxLv then
-            return Data
-        end
-    end
-    return nil -- Không tìm thấy nhiệm vụ (ví dụ Max level)
-end
-
--- 4. HÀM DỊCH CHUYỂN (TWEEN)
--- Hàm này giúp nhân vật bay đến đích
-local function TweenTo(TargetCFrame)
-    local Character = LocalPlayer.Character
-    if not Character or not Character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local Root = Character.HumanoidRootPart
-    local Distance = (TargetCFrame.Position - Root.Position).Magnitude
-    local Speed = 200 -- Tốc độ bay
-    
-    local TweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
-    local Tween = game:GetService("TweenService"):Create(Root, TweenInfo, {CFrame = TargetCFrame})
-    Tween:Play()
-    
-    if not Root:FindFirstChild("BodyVelocity") then
-        local BV = Instance.new("BodyVelocity")
-        BV.Parent = Root
-        BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        BV.Velocity = Vector3.zero
-    end
-end
-
--- 5. LOGIC CHÍNH (VÒNG LẶP)
+-- [[ 4. AUTO STATS (AN TOÀN - ƯU TIÊN MELEE > DEFENSE) ]]
 task.spawn(function()
-    while task.wait() do -- Lặp vô tận (để auto liên tục)
-        if getgenv().AutoFarm then
-            pcall(function()
-                -- Bước A: Lấy thông tin nhiệm vụ cần làm
-                local CurrentQuest = GetCurrentQuest()
-                if not CurrentQuest then 
-                    print("Không tìm thấy nhiệm vụ cho cấp độ này hoặc đã Max Level")
-                    return 
+    local StatsToUpgrade = {
+        Melee = {"Melee", "Strength", "Combat"},
+        Defense = {"Defense", "Health"}
+    }
+    while task.wait(0.7) do
+        pcall(function()
+            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
+            local Points = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
+            if Points and Points.Value > 0 then
+                local curMelee = 0
+                for _, n in pairs(StatsToUpgrade.Melee) do if Data:FindFirstChild(n) then curMelee = Data[n].Value break end end
+                local curDef = 0
+                for _, n in pairs(StatsToUpgrade.Defense) do if Data:FindFirstChild(n) then curDef = Data[n].Value break end end
+
+                if curMelee < getgenv().MaxStat then
+                    for _, sName in pairs(StatsToUpgrade.Melee) do
+                        Remote:InvokeServer("AddPoint", sName, 1)
+                        Remote:InvokeServer({"AddPoint", sName, 1})
+                    end
+                elseif curDef < getgenv().MaxStat then
+                    for _, sName in pairs(StatsToUpgrade.Defense) do
+                        Remote:InvokeServer("AddPoint", sName, 1)
+                        Remote:InvokeServer({"AddPoint", sName, 1})
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- [[ 5. HÀM BAY TWEEN ]]
+local function TweenTo(Pos)
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local dist = (Pos.Position - root.Position).Magnitude
+    if dist < 5 then root.CFrame = Pos return end
+    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+end
+
+-- [[ 6. NOCLIP ]]
+game:GetService("RunService").Stepped:Connect(function()
+    pcall(function()
+        if LP.Character then
+            for _, v in pairs(LP.Character:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide = false end
+            end
+        end
+    end)
+end)
+
+-- [[ 7. VÒNG LẶP FARM CHÍNH ]]
+task.spawn(function()
+    while task.wait() do
+        pcall(function()
+            local myLv = LP.Data.Level.Value
+            local q = nil
+            -- Tìm Quest phù hợp với Level hiện tại
+            for _, v in pairs(QuestList) do
+                if myLv >= v.Min and myLv <= v.Max then q = v break end
+            end
+            if not q then return end
+
+            local QuestGui = LP.PlayerGui.Main.Quest
+            if not QuestGui.Visible then
+                TweenTo(q.NPC)
+                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
+                    Remote:InvokeServer("StartQuest", q.Name, q.Lv)
+                end
+            else
+                local Enemy = nil
+                for _, e in pairs(workspace.Enemies:GetChildren()) do
+                    if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                        Enemy = e break
+                    end
                 end
 
-                -- Bước B: Kiểm tra xem đã nhận nhiệm vụ chưa
-                -- Giao diện nhiệm vụ trong Blox Fruits nằm ở PlayerGui.Main.Quest
-                local PlayerGui = LocalPlayer.PlayerGui
-                local QuestTitle = PlayerGui.Main.Quest.Container.QuestTitle.Title
-                
-                -- Điều kiện: Nếu bảng nhiệm vụ ẩn HOẶC tên nhiệm vụ đang làm không đúng với quái cần đánh
-                local HasQuest = PlayerGui.Main.Quest.Visible and string.find(QuestTitle.Text, CurrentQuest.MonName)
-                
-                if not HasQuest then
-                    -- TRƯỜNG HỢP: CHƯA CÓ NHIỆM VỤ
-                    -- 1. Bay đến NPC nhận nhiệm vụ
-                    local DistanceToNPC = (LocalPlayer.Character.HumanoidRootPart.Position - CurrentQuest.NpcPos.Position).Magnitude
-                    
-                    if DistanceToNPC > 10 then
-                        -- Nếu xa NPC quá thì bay lại gần
-                        TweenTo(CurrentQuest.NpcPos)
-                    else
-                        -- Nếu đã đứng gần NPC (khoảng cách <= 10) thì nhận nhiệm vụ
-                        -- Remote "StartQuest" nhận 2 tham số: "Tên Nhiệm Vụ", Level nhiệm vụ (1 hoặc 2)
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", CurrentQuest.QuestName, CurrentQuest.QuestLevel)
-                        task.wait(1) -- Đợi 1 giây để server xử lý tránh spam
-                    end
+                if Enemy then
+                    local tool = LP.Character:FindFirstChildWhichIsA("Tool") or LP.Backpack:FindFirstChildWhichIsA("Tool")
+                    if tool and tool.Parent ~= LP.Character then LP.Character.Humanoid:EquipTool(tool) end
+                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    -- TRƯỜNG HỢP: ĐÃ CÓ NHIỆM VỤ -> ĐI ĐÁNH QUÁI
-                    -- Ở đây bạn kết hợp với đoạn code Auto Attack mình đã viết cho bạn ở câu trả lời trước
-                    
-                    -- Logic tìm quái để bay tới (đơn giản hóa)
-                    for _, Enemy in pairs(workspace.Enemies:GetChildren()) do
-                        if Enemy.Name == CurrentQuest.MonName and Enemy:FindFirstChild("Humanoid") and Enemy.Humanoid.Health > 0 then
-                            TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0)) -- Bay tới trên đầu quái
-                            break -- Tìm thấy 1 con thì bay tới, thoát vòng lặp tìm kiếm
-                        end
-                    end
+                    TweenTo(q.MonPos) -- Đứng chờ tại bãi quái
                 end
-            end)
-        end
+            end
+        end)
     end
 end)

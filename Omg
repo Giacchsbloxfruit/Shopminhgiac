@@ -1,0 +1,99 @@
+-- [[ CONFIGURATION ]]
+getgenv().AutoFarm = true
+getgenv().WeaponType = "Melee" -- Chọn: "Melee" hoặc "Sword"
+
+-- [[ DATA TABLE ]]
+-- Bạn có thể thêm các đảo khác vào đây từ file mẫu của bạn
+local QuestList = {
+    {MinLv = 1, MaxLv = 14, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit"},
+    {MinLv = 15, MaxLv = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla"},
+    {MinLv = 30, MaxLv = 39, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate"}
+}
+
+-- [[ SERVICES ]]
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+
+-- [[ FUNCTIONS ]]
+
+-- 1. Hàm tìm nhiệm vụ phù hợp Level
+local function GetMyQuest()
+    local myLv = LP.Data.Level.Value
+    for _, v in pairs(QuestList) do
+        if myLv >= v.MinLv and myLv <= v.MaxLv then return v end
+    end
+    return nil
+end
+
+-- 2. Hàm tự động cầm vũ khí
+local function EquipWeapon()
+    local char = LP.Character
+    if not char then return end
+    if char:FindFirstChildWhichIsA("Tool") then return end -- Đã cầm thì thôi
+    
+    for _, v in pairs(LP.Backpack:GetChildren()) do
+        if v:IsA("Tool") and (v.ToolTip == getgenv().WeaponType or v.Name == getgenv().WeaponType) then
+            char.Humanoid:EquipTool(v)
+            break
+        end
+    end
+end
+
+-- 3. Hàm bay (Tween)
+local function TweenTo(Pos)
+    local char = LP.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = Pos -- Đây là teleport nhanh, bạn có thể thay bằng TweenService nếu muốn mượt
+    end
+end
+
+-- [[ MAIN LOOP ]]
+task.spawn(function()
+    while task.wait() do
+        if getgenv().AutoFarm then
+            pcall(function()
+                local q = GetMyQuest()
+                if not q then return end
+
+                local QuestGui = LP.PlayerGui.Main.Quest
+                local HasQuest = QuestGui.Visible and string.find(QuestGui.Container.QuestTitle.Title.Text, q.Mon)
+
+                if not HasQuest then
+                    -- BƯỚC 1: ĐI NHẬN NHIỆM VỤ
+                    local dist = (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude
+                    if dist > 10 then
+                        TweenTo(q.NPC)
+                    else
+                        -- Gọi lệnh nhận nhiệm vụ từ Server
+                        RS.Remotes.CommF_:InvokeServer("StartQuest", q.Name, q.Lv)
+                    end
+                else
+                    -- BƯỚC 2: ĐI ĐÁNH QUÁI
+                    local Target = nil
+                    for _, v in pairs(workspace.Enemies:GetChildren()) do
+                        if v.Name == q.Mon and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                            Target = v
+                            break
+                        end
+                    end
+
+                    if Target then
+                        -- Cầm vũ khí trước khi đánh
+                        EquipWeapon()
+                        
+                        -- Bay đến quái (cách quái một đoạn để tránh bị kẹt)
+                        TweenTo(Target.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+
+                        -- Fast Attack (Logic từ 3 file bạn gửi)
+                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                        RS.Modules.Net["RE/RegisterHit"]:FireServer(Target.PrimaryPart, {{Target, Target.PrimaryPart}})
+                    else
+                        -- Nếu không thấy quái ở workspace, bay đến điểm spawn quái
+                        TweenTo(q.NPC * CFrame.new(0, 100, 0)) -- Bay cao lên để đợi quái spawn
+                    end
+                end
+            end)
+        end
+    end
+end)

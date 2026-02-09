@@ -1,14 +1,14 @@
 -- [[ 1. CONFIGURATION ]]
-getgenv().TweenSpeed = 100    -- Tốc độ an toàn
-getgenv().MaxStat = 2800      -- Mốc Max Stats
-getgenv().WeaponType = "Melee" -- Loại vũ khí ưu tiên
+getgenv().TweenSpeed = 220    
+getgenv().MaxStat = 2550      
+getgenv().WeaponType = "Melee" 
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 local Remote = RS:FindFirstChild("CommF_", true) or RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 
--- [[ 2. DANH SÁCH NHIỆM VỤ CHI TIẾT ]]
+-- [[ 2. DANH SÁCH NHIỆM VỤ ]]
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
@@ -20,26 +20,35 @@ local QuestList = {
     {Min = 90, Max = 99, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
 }
 
--- [[ 3. HÀM TRANG BỊ VŨ KHÍ & BẬT HAKI ]]
-local function EquipAndHaki()
+-- [[ 3. HÀM KIỂM TRA & GIỮ VŨ KHÍ (CƠ CHẾ THÔNG MINH) ]]
+local function EnsureWeaponEquipped()
     pcall(function()
         local char = LP.Character
-        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not char then return end
         
-        -- 1. Trang bị Melee
-        local tool = LP.Backpack:FindFirstChild(getgenv().WeaponType) or LP.Backpack:FindFirstChildOfClass("Tool")
-        if tool and hum then
-            hum:EquipTool(tool)
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        -- Kiểm tra xem trên tay đã có vũ khí chưa
+        local currentTool = char:FindFirstChildOfClass("Tool")
+        
+        -- Nếu chưa có vũ khí trên tay (do chết hoặc vừa vào game)
+        if not currentTool then
+            local backpack = LP.Backpack
+            -- Tìm Melee trong balo
+            local toolToEquip = backpack:FindFirstChild(getgenv().WeaponType) or backpack:FindFirstChildOfClass("Tool")
+            
+            if toolToEquip and hum then
+                hum:EquipTool(toolToEquip) -- Lôi ra ngay lập tức
+            end
         end
         
-        -- 2. Bật Haki (Buso) nếu chưa bật
+        -- Bật Haki nếu chưa bật (Chỉ kiểm tra, không spam lệnh)
         if not char:FindFirstChild("HasBuso") then
             Remote:InvokeServer("Buso")
         end
     end)
 end
 
--- [[ 4. AUTO STATS (ƯU TIÊN MELEE > DEFENSE) ]]
+-- [[ 4. AUTO STATS (MELEE > DEFENSE) ]]
 task.spawn(function()
     local StatsToUpgrade = {Melee = {"Melee", "Strength", "Combat"}, Defense = {"Defense", "Health"}}
     while task.wait(0.6) do
@@ -51,12 +60,10 @@ task.spawn(function()
                 if curMelee < getgenv().MaxStat then
                     for _, sName in pairs(StatsToUpgrade.Melee) do 
                         Remote:InvokeServer("AddPoint", sName, 1)
-                        Remote:InvokeServer({"AddPoint", sName, 1}) 
                     end
                 else
                     for _, sName in pairs(StatsToUpgrade.Defense) do 
                         Remote:InvokeServer("AddPoint", sName, 1)
-                        Remote:InvokeServer({"AddPoint", sName, 1}) 
                     end
                 end
             end
@@ -94,26 +101,28 @@ task.spawn(function()
             else
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    -- Tìm theo tên hoặc khoảng cách bãi (Phòng khi sai tên)
                     if (string.find(e.Name, q.Mon) or (e:GetModelCFrame().Position - q.MonPos.Position).Magnitude < 100) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
                         Enemy = e break
                     end
                 end
 
                 if Enemy then
-                    EquipAndHaki() -- Lấy Melee và Bật Haki liên tục khi đánh quái
+                    -- KIỂM TRA VŨ KHÍ: Chỉ lôi ra nếu đang thiếu
+                    EnsureWeaponEquipped()
+                    
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    TweenTo(q.MonPos) -- Đứng chờ tại đất
+                    TweenTo(q.MonPos)
                 end
             end
         end)
     end
 end)
 
--- NOCLIP (Xuyên tường)
+-- NOCLIP
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
@@ -123,5 +132,3 @@ game:GetService("RunService").Stepped:Connect(function()
         end
     end)
 end)
-
-print("--- ALL-IN-ONE SCRIPT LOADED: HAKI + MELEE FIX + AUTO STATS ---")

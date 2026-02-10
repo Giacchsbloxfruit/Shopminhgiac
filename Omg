@@ -1,14 +1,17 @@
--- [[ 1. CONFIGURATION ]]
+-- [[ 1. THIẾT LẬP HỆ THỐNG ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      
 getgenv().FruitSpeed = 350      
 getgenv().MaxStat = 2800        
+getgenv().ServerHopTime = 1800 -- Đổi Server sau 30 phút
+getgenv().LastStoredFruit = "" -- Chống spam thông báo
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
 
--- Hàm tìm Remote CommF_ (ngay cả khi nó bị giấu)
+-- Hàm tìm Remote CommF_ động
 local function GetCommF()
     local found = RS:FindFirstChild("CommF_", true)
     if not found then
@@ -19,17 +22,36 @@ local function GetCommF()
     return found
 end
 
-local Remote = GetCommF()
+-- [[ 2. HỆ THỐNG BẢO VỆ (ANTI-CHEAT) ]]
+-- Chống bị Kick do treo máy quá 20p
+for i,v in pairs(getconnections(LP.Idled)) do
+    v:Disable()
+end
 
--- [[ 2. HÀM GỬI THÔNG BÁO DISCORD ]]
-local function SendDiscordNotification(fruitName)
+-- Tự động đổi Server sau 30 phút
+task.spawn(function()
+    task.wait(getgenv().ServerHopTime)
+    local PlaceID = game.PlaceId
+    local AllServers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceID.."/servers/Public?sortOrder=Asc&limit=100"))
+    for _, server in pairs(AllServers.data) do
+        if server.playing < server.maxPlayers and server.id ~= game.JobId then
+            TeleportService:TeleportToPlaceInstance(PlaceID, server.id, LP)
+            break
+        end
+    end
+end)
+
+-- [[ 3. HÀM THÔNG BÁO DISCORD (CHỐNG SPAM) ]]
+local function SendDiscordNotification(fruitName, status)
+    if getgenv().LastStoredFruit == fruitName then return end 
+    
     local url = getgenv().WebhookURL
     local data = {
-        ["content"] = "🚀 **THÔNG BÁO HỆ THỐNG KHO ĐỒ**",
+        ["content"] = "",
         ["embeds"] = {{
-            ["title"] = "📦 ĐÃ TỰ ĐỘNG CẤT TRÁI VÀO KHO!",
-            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n✅ Trạng thái: **Đã ép lệnh cất kho thành công!**",
-            ["color"] = 3447003,
+            ["title"] = "🚀 **ĐÃ LỤM ĐC FRUIT**",
+            ["description"] = "👤 **Tài khoản**: " .. LP.Name .. "\n🍎 **Trái**: " .. fruitName .. "\n✅ **Trạng thái**: " .. status,
+            ["color"] = status == "Balo đầy" and 16711680 or 65280, 
             ["footer"] = { ["text"] = "Gemini Blox Fruit Script • " .. os.date("%X") }
         }}
     }
@@ -41,54 +63,49 @@ local function SendDiscordNotification(fruitName)
             Headers = {["Content-Type"] = "application/json"},
             Body = game:GetService("HttpService"):JSONEncode(data)
         })
+        getgenv().LastStoredFruit = fruitName
+        task.delay(15, function() getgenv().LastStoredFruit = "" end) -- Reset sau 15s để có thể nhận trái cùng loại tiếp theo
     end
 end
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ TÍCH HỢP) ]]
+-- [[ 4. HÀM ÉP LỆNH CẤT KHO ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
         local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
         
-        -- Quét túi đồ để tìm trái
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool) -- Bắt buộc cầm lên tay
+                hum:EquipTool(tool)
                 task.wait(0.2)
             end
         end
 
-        -- Xử lý trái đang cầm trên tay
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
-            
-            -- Nhồi lệnh defer để bypass
             task.defer(function()
                 if remote then
-                    -- Thử các loại tên biến thể của trái
-                    remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
+                    local success = remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+                    if success then
+                        SendDiscordNotification(toolOnHand.Name, "Đã cất vào balo")
+                    else
+                        SendDiscordNotification(toolOnHand.Name, "Balo đầy")
+                    end
                 end
             end)
-            
-            -- Gửi thông báo (chỉ gửi nếu hành động diễn ra)
-            SendDiscordNotification(toolOnHand.Name)
-            task.wait(1) -- Tránh spam webhook
         end
     end)
 end
 
--- Chạy vòng lặp cất kho riêng biệt
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.8) do -- Kiểm tra mỗi 0.8s để tránh overload server
         StoreAction()
     end
 end)
 
--- [[ 4. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
+-- [[ 5. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
@@ -114,7 +131,7 @@ local QuestList = {
     {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
 }
 
--- [[ 5. CÁC HÀM HỖ TRỢ FARM ]]
+-- [[ 6. HÀM HỖ TRỢ FARM ]]
 local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -142,7 +159,7 @@ local function EquipMelee()
     end)
 end
 
--- [[ 6. FRUIT SNIPER (ĐI NHẶT TRÁI TRÊN ĐẤT) ]]
+-- [[ 7. FRUIT SNIPER (ĐI NHẶT TRÁI TRÊN ĐẤT) ]]
 local function CheckFruitOnGround()
     for _, v in pairs(workspace:GetChildren()) do
         if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
@@ -163,7 +180,7 @@ local function CheckFruitOnGround()
     return false
 end
 
--- [[ 7. VÒNG LẶP FARM CHÍNH ]]
+-- [[ 8. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
@@ -200,7 +217,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 8. AUTO STATS ]]
+-- [[ 9. AUTO STATS ]]
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
@@ -222,7 +239,7 @@ task.spawn(function()
     end
 end)
 
--- NOCLIP
+-- NOCLIP (Xuyên tường để farm mượt hơn)
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then

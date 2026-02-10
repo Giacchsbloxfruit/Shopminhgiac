@@ -1,21 +1,144 @@
-- [[ 1. THIẾT LẬP HỆ THỐNG ]]
+-- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      
-getgenv().FruitSpeed = 350      
+getgenv().FruitSpeed = 330      
 getgenv().MaxStat = 2800        
-getgenv().ServerHopTime = 1800 
-getgenv().LastStoredFruit = "" 
+getgenv().ServerHopTime = 1800 -- 30 phút (tính bằng giây)
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
 local PlaceId = game.PlaceId
 
--- [[ 2. TỰ ĐỘNG NHẬN DIỆN DANH SÁCH NHIỆM VỤ ]]
-local QuestList = {}
+-- Hàm tìm Remote CommF_
+local function GetCommF()
+    local found = RS:FindFirstChild("CommF_", true)
+    if not found then
+        for _, v in pairs(RS:GetDescendants()) do
+            if v.Name == "CommF_" then return v end
+        end
+    end
+    return found
+end
 
+local Remote = GetCommF()
+
+-- [[ 1.2 SERVER HOP LOGIC ]]
+local function ServerHop()
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+    local Api = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    
+    local function ListServers(cursor)
+        local Raw = game:HttpGet(Api .. ((cursor and "&cursor=" .. cursor) or ""))
+        return HttpService:JSONDecode(Raw)
+    end
+
+    local Servers = ListServers()
+    local Server = Servers.data[math.random(1, #Servers.data)]
+    
+    if Server and Server.id ~= game.JobId then
+        TeleportService:TeleportToPlaceInstance(PlaceId, Server.id, LP)
+    else
+        -- Nếu không tìm được server lẻ, sẽ thử lại bằng cách lặp cursor
+        local Next = Servers.nextPageCursor
+        if Next then
+            Servers = ListServers(Next)
+            Server = Servers.data[math.random(1, #Servers.data)]
+            TeleportService:TeleportToPlaceInstance(PlaceId, Server.id, LP)
+        end
+    end
+end
+
+task.spawn(function()
+    task.wait(getgenv().ServerHopTime)
+    print("Gemini: Đến giờ chuyển server để tối ưu farm!")
+    ServerHop()
+end)
+
+-- [[ 1.5 AUTO CHỌN PHE HẢI TẶC ]]
+task.spawn(function()
+    if not LP.Team then
+        repeat task.wait()
+            pcall(function()
+                local teamRemote = RS:FindFirstChild("SetTeam", true) or RS:WaitForChild("Remotes"):FindFirstChild("SetTeam")
+                teamRemote:InvokeServer("Pirates")
+            end)
+        until LP.Team ~= nil
+    end
+end)
+
+-- [[ 2. AUTO NHẬP CODE X2 EXP ]]
+local Codes = {"KITT_RESET", "Sub2CaptainMaui", "DEVSCOOKING", "Sub2Fer999", "Enyu_is_Pro", "Magicbus", "JCWK", "Starcodeheo", "Sub2NoobMaster123", "THEGREATACE", "SUB2OFFICIALNOOB", "FUDD10", "BIGNEWS", "SUB2UNCLEKIZARU", "Sub2Normaler", "StrawHatMaine", "SUB2GAMERROBOT_EXP1"}
+
+task.spawn(function()
+    repeat task.wait() until LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level")
+    for _, v in pairs(Codes) do
+        pcall(function() Remote:InvokeServer("RedeemCode", v) end)
+        task.wait(0.5)
+    end
+end)
+
+-- [[ 2.5 AUTO MUA MELEE (V1) ]]
+local function AutoBuyMelee()
+    local myMoney = LP.Data.Belis.Value
+    if not (LP.Backpack:FindFirstChild("Dark Step") or LP.Character:FindFirstChild("Dark Step")) and myMoney >= 150000 then
+        Remote:InvokeServer("BuyDarkStep")
+    elseif not (LP.Backpack:FindFirstChild("Electric") or LP.Character:FindFirstChild("Electric")) and myMoney >= 500000 then
+        Remote:InvokeServer("BuyElectric")
+    elseif not (LP.Backpack:FindFirstChild("Water Kung Fu") or LP.Character:FindFirstChild("Water Kung Fu")) and myMoney >= 750000 then
+        Remote:InvokeServer("BuyWaterKungFu")
+    end
+end
+
+-- [[ 3. HÀM GỬI THÔNG BÁO DISCORD & CẤT KHO ]]
+local function SendDiscordNotification(fruitName)
+    local data = {
+        ["content"] = "🚀 **THÔNG BÁO HỆ THỐNG KHO ĐỒ**",
+        ["embeds"] = {{
+            ["title"] = "📦 ĐÃ TỰ ĐỘNG CẤT TRÁI VÀO KHO!",
+            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n✅ Trạng thái: **Đã ép lệnh cất kho thành công!**",
+            ["color"] = 3447003,
+            ["footer"] = { ["text"] = "Gemini Blox Fruit Script • " .. os.date("%X") }
+        }}
+    }
+    local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if request then
+        request({Url = getgenv().WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = game:GetService("HttpService"):JSONEncode(data)})
+    end
+end
+
+local function StoreAction()
+    pcall(function()
+        local char = LP.Character
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        for _, tool in pairs(LP.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
+                hum:EquipTool(tool)
+                task.wait(0.2)
+            end
+        end
+        local toolOnHand = char:FindFirstChildOfClass("Tool")
+        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            task.defer(function()
+                Remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+            end)
+            SendDiscordNotification(toolOnHand.Name)
+            task.wait(1)
+        end
+    end)
+end
+
+task.spawn(function()
+    while task.wait(0.5) do
+        StoreAction()
+        AutoBuyMelee()
+    end
+end)
+
+-- [[ 4. DANH SÁCH NHIỆM VỤ (SEA 1 & SEA 2) ]]
+local QuestList = {}
 if PlaceId == 2753915549 then -- SEA 1
     QuestList = {
         {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
@@ -39,7 +162,7 @@ if PlaceId == 2753915549 then -- SEA 1
         {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, NPC = CFrame.new(-7861, 5545, -381), Mon = "God's Guard", MonPos = CFrame.new(-7841, 5545, -450)},
         {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, NPC = CFrame.new(-7861, 5545, -381), Mon = "Shanda", MonPos = CFrame.new(-7680, 5550, -450)},
         {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Pirate", MonPos = CFrame.new(5570, 4, 3880)},
-        {Min = 650, Max = 699, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
+        {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
     }
 elseif PlaceId == 4442245369 then -- SEA 2
     QuestList = {
@@ -68,11 +191,7 @@ elseif PlaceId == 4442245369 then -- SEA 2
     }
 end
 
--- [[ 3. HÀM HỖ TRỢ ]]
-local function GetCommF()
-    return RS:FindFirstChild("CommF_", true) or RS:WaitForChild("Remotes"):WaitForChild("CommF_")
-end
-
+-- [[ 5. CÁC HÀM HỖ TRỢ FARM ]]
 local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -83,117 +202,100 @@ local function TweenTo(Pos, Speed)
     TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
 end
 
-local function EquipWeapon()
-    for _, v in pairs(LP.Backpack:GetChildren()) do
-        if v:IsA("Tool") and (v.ToolTip == "Melee" or v.ToolTip == "Sword") then
-            LP.Character.Humanoid:EquipTool(v) break
+local function EquipMelee()
+    pcall(function()
+        local char = LP.Character
+        if not char:FindFirstChild("HasBuso") then Remote:InvokeServer("Buso") end
+        if not char:FindFirstChildOfClass("Tool") then
+            for _, v in pairs(LP.Backpack:GetChildren()) do
+                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
+                    char.Humanoid:EquipTool(v) break
+                end
+            end
         end
-    end
+    end)
 end
 
--- [[ 4. LOGIC VƯỢT SEA 2 (CHỈ CHẠY Ở SEA 1) ]]
+-- [[ 6. AUTO SEA 2 TASK ]]
 local function CheckSea2Quest()
-    if PlaceId ~= 2753915549 or LP.Data.Level.Value < 700 then return end
-    local progress = GetCommF():InvokeServer("DressrosaQuestProgress", "Detective")
-    if progress == "Detected" then 
-        TweenTo(CFrame.new(-466, 47, 852), getgenv().TweenSpeed)
-        if (LP.Character.HumanoidRootPart.Position - Vector3.new(-466, 47, 852)).Magnitude < 10 then
-            GetCommF():InvokeServer("TravelDressrosa")
-        end
-    else
-        if workspace.Map.Ice.Door.CanCollide == true then
-            TweenTo(CFrame.new(1347, 37, -1325), getgenv().TweenSpeed)
-            if (LP.Character.HumanoidRootPart.Position - Vector3.new(1347, 37, -1325)).Magnitude < 10 then
-                GetCommF():InvokeServer("DressrosaQuestProgress", "Detective")
+    if PlaceId == 2753915549 and LP.Data.Level.Value >= 700 then
+        local progress = Remote:InvokeServer("DressrosaQuestProgress", "Detective")
+        if progress == "Detected" then
+            TweenTo(CFrame.new(-466, 47, 852), getgenv().TweenSpeed)
+            if (LP.Character.HumanoidRootPart.Position - Vector3.new(-466, 47, 852)).Magnitude < 10 then
+                Remote:InvokeServer("TravelDressrosa")
             end
         else
-            local Boss = workspace.Enemies:FindFirstChild("Ice Admiral")
-            if Boss and Boss.Humanoid.Health > 0 then
-                EquipWeapon(); LP.Character.HumanoidRootPart.CFrame = Boss.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+            local Boss = workspace.Enemies:FindFirstChild("Ice Admiral") or workspace.Enemies:FindFirstChild("Ice Admiral [Lv. 700]")
+            if Boss and Boss:FindFirstChild("Humanoid") and Boss.Humanoid.Health > 0 then
+                EquipMelee()
+                TweenTo(Boss.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
                 RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                 RS.Modules.Net["RE/RegisterHit"]:FireServer(Boss.PrimaryPart, {{Boss, Boss.PrimaryPart}})
-            else TweenTo(CFrame.new(1347, 37, -1325), getgenv().TweenSpeed) end
+            else
+                TweenTo(CFrame.new(1347, 37, -1325), getgenv().TweenSpeed)
+            end
         end
+        return true
     end
+    return false
 end
 
--- [[ 5. VÒNG LẶP FARM CHÍNH ]]
+-- [[ 7. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
-            -- Ưu tiên vượt Sea 2
-            if PlaceId == 2753915549 and LP.Data.Level.Value >= 700 then
-                CheckSea2Quest()
-            else
-                -- Tự động nhặt trái
-                for _, v in pairs(workspace:GetChildren()) do
-                    if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
-                        local h = v:FindFirstChild("Handle") or v.PrimaryPart
-                        if h then TweenTo(h.CFrame, getgenv().FruitSpeed) return end
+            if CheckSea2Quest() then return end
+            
+            -- Ưu tiên nhặt trái
+            for _, v in pairs(workspace:GetChildren()) do
+                if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
+                    local handle = v:FindFirstChild("Handle") or v.PrimaryPart
+                    if handle then
+                        TweenTo(handle.CFrame, getgenv().FruitSpeed)
+                        return
                     end
                 end
-
-                -- Tìm Quest
-                local myLv = LP.Data.Level.Value
-                local q = nil
-                for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
-                
-                if q then
-                    -- Xử lý cửa vào (Cursed Ship / Snow Mountain)
-                    if q.Entrance and (q.MonPos.Position - LP.Character.HumanoidRootPart.Position).Magnitude > 2000 then
-                        GetCommF():InvokeServer("requestEntrance", q.Entrance)
-                        task.wait(0.5)
+            end
+            
+            local myLv = LP.Data.Level.Value
+            local q = nil
+            for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
+            if not q then return end
+            
+            if not LP.PlayerGui.Main.Quest.Visible then
+                TweenTo(q.NPC, getgenv().TweenSpeed)
+                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
+                    Remote:InvokeServer("StartQuest", q.Name, q.Lv)
+                end
+            else
+                local Enemy = nil
+                for _, e in pairs(workspace.Enemies:GetChildren()) do
+                    if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                        Enemy = e break
                     end
-
-                    if not LP.PlayerGui.Main.Quest.Visible then
-                        TweenTo(q.NPC, getgenv().TweenSpeed)
-                        if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
-                            GetCommF():InvokeServer("StartQuest", q.Name, q.Lv)
-                        end
-                    else
-                        local Enemy = nil
-                        for _, e in pairs(workspace.Enemies:GetChildren()) do
-                            if string.find(e.Name, q.Mon) and e.Humanoid.Health > 0 then Enemy = e break end
-                        end
-                        if Enemy then
-                            EquipWeapon()
-                            LP.Character.HumanoidRootPart.CFrame = Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0)
-                            RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                            RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
-                        else TweenTo(q.MonPos, getgenv().TweenSpeed) end
-                    end
+                end
+                if Enemy then
+                    EquipMelee()
+                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
+                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                else
+                    TweenTo(q.MonPos, getgenv().TweenSpeed)
                 end
             end
         end)
     end
 end)
 
--- [[ 6. SERVER HOP & ANTI-IDLE ]]
-for i,v in pairs(getconnections(LP.Idled)) do v:Disable() end
-task.spawn(function()
-    task.wait(getgenv().ServerHopTime)
-    local pid = game.PlaceId
-    local function Hop()
-        local s, r = pcall(function() return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..pid.."/servers/Public?sortOrder=Asc&limit=100")) end)
-        if s and r then
-            for _, v in pairs(r.data) do
-                if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                    TeleportService:TeleportToPlaceInstance(pid, v.id, LP) return
-                end
-            end
-        end
-    end
-    while task.wait(5) do Hop() end
-end)
-
--- [[ 7. AUTO STATS & NOCLIP ]]
+-- [[ 8. AUTO STATS & NOCLIP ]]
 task.spawn(function()
     while task.wait(0.7) do
         pcall(function()
             local P = LP.Data:FindFirstChild("StatsPoints") or LP.Data:FindFirstChild("Points")
             if P and P.Value > 0 then
-                GetCommF():InvokeServer("AddPoint", "Strength", 1)
-                GetCommF():InvokeServer("AddPoint", "Defense", 1)
+                Remote:InvokeServer("AddPoint", "Strength", 1)
+                Remote:InvokeServer("AddPoint", "Defense", 1)
             end
         end)
     end

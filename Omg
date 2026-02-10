@@ -1,289 +1,213 @@
 -- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      
-getgenv().FruitSpeed = 330      
+getgenv().FruitSpeed = 350      
 getgenv().MaxStat = 2800        
+getgenv().ServerHopTime = 1800 -- 30 phút
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 local PlaceId = game.PlaceId
 
--- Hàm tìm Remote CommF_
+-- Hàm tìm Remote (Cực kỳ quan trọng để code hđ)
 local function GetCommF()
-    local found = RS:FindFirstChild("CommF_", true)
-    if not found then
-        for _, v in pairs(RS:GetDescendants()) do
-            if v.Name == "CommF_" then return v end
-        end
+    local f = RS:FindFirstChild("CommF_", true)
+    if f then return f end
+    for _, v in pairs(RS:GetDescendants()) do
+        if v.Name == "CommF_" then return v end
     end
-    return found
+    return nil
 end
 
 local Remote = GetCommF()
 
--- [[ 1.5 AUTO CHỌN PHE HẢI TẶC ]]
+-- [[ 2. AUTO CHỌN PHE & NHẬP CODE ]]
 task.spawn(function()
+    -- Chọn phe
     pcall(function()
-        if LP.Team == nil or LP.Team.Name == "" then
-            repeat task.wait()
-                local teamRemote = RS:FindFirstChild("SetTeam", true) or RS:WaitForChild("Remotes"):FindFirstChild("SetTeam")
-                if teamRemote then
-                    teamRemote:InvokeServer("Pirates")
-                end
-            until LP.Team ~= nil
+        if not LP.Team then
+            local teamRemote = RS:FindFirstChild("SetTeam", true) or RS:WaitForChild("Remotes"):FindFirstChild("SetTeam")
+            teamRemote:InvokeServer("Pirates")
         end
     end)
-end)
-
--- [[ 2. AUTO REDEEM CODES X2 EXP ]]
-local Codes = {
-    "KITT_RESET", "Sub2CaptainMaui", "DEVSCOOKING", "Sub2Fer999", "Enyu_is_Pro",
-    "Magicbus", "JCWK", "Starcodeheo", "Sub2NoobMaster123", "THEGREATACE",
-    "SUB2OFFICIALNOOB", "FUDD10", "BIGNEWS", "SUB2UNCLEKIZARU", "Sub2Normaler",
-    "StrawHatMaine", "SUB2GAMERROBOT_EXP1", "SUB2GAMERROBOT_RESET1"
-}
-
-task.spawn(function()
+    
+    -- Đợi dữ liệu load rồi nhập code
     repeat task.wait() until LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level")
-    task.wait(5)
+    local Codes = {"KITT_RESET", "Sub2CaptainMaui", "DEVSCOOKING", "Sub2Fer999", "Enyu_is_Pro", "Magicbus", "JCWK", "Starcodeheo", "Sub2NoobMaster123", "THEGREATACE", "SUB2OFFICIALNOOB", "FUDD10", "BIGNEWS", "SUB2UNCLEKIZARU", "Sub2Normaler", "StrawHatMaine", "SUB2GAMERROBOT_EXP1"}
     for _, v in pairs(Codes) do
-        pcall(function()
-            Remote:InvokeServer("RedeemCode", v)
-        end)
+        pcall(function() Remote:InvokeServer("RedeemCode", v) end)
         task.wait(0.2)
     end
 end)
 
--- [[ 3. AUTO BUY MELEE (V1) ]]
-local function AutoBuyMelee()
-    local myMoney = LP.Data.Belis.Value
-    if not (LP.Backpack:FindFirstChild("Dark Step") or LP.Character:FindFirstChild("Dark Step")) and myMoney >= 150000 then
-        Remote:InvokeServer("BuyDarkStep")
-    elseif not (LP.Backpack:FindFirstChild("Electric") or LP.Character:FindFirstChild("Electric")) and myMoney >= 500000 then
-        Remote:InvokeServer("BuyElectric")
-    elseif not (LP.Backpack:FindFirstChild("Water Kung Fu") or LP.Character:FindFirstChild("Water Kung Fu")) and myMoney >= 750000 then
-        Remote:InvokeServer("BuyWaterKungFu")
+-- [[ 3. AUTO SERVER HOP (30 PHÚT) ]]
+task.spawn(function()
+    task.wait(getgenv().ServerHopTime)
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+    local Api = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    local function Hop()
+        local Servers = HttpService:JSONDecode(game:HttpGet(Api))
+        for _, s in pairs(Servers.data) do
+            if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
+                break
+            end
+        end
     end
-end
+    Hop()
+end)
 
--- [[ 4. HÀM GỬI THÔNG BÁO DISCORD & CẤT KHO ]]
+-- [[ 4. HÀM CẤT KHO & WEBHOOK (GIỮ NGUYÊN GỐC) ]]
 local function SendDiscordNotification(fruitName)
     local data = {
         ["content"] = "🚀 **THÔNG BÁO HỆ THỐNG KHO ĐỒ**",
         ["embeds"] = {{
             ["title"] = "📦 ĐÃ TỰ ĐỘNG CẤT TRÁI VÀO KHO!",
-            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n✅ Trạng thái: **Đã ép lệnh cất kho thành công!**",
+            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**",
             ["color"] = 3447003,
             ["footer"] = { ["text"] = "Gemini Blox Fruit Script • " .. os.date("%X") }
         }}
     }
-    local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if request then
-        request({Url = getgenv().WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = game:GetService("HttpService"):JSONEncode(data)})
-    end
+    local req = (syn and syn.request) or (http and http.request) or http_request or request
+    if req then req({Url = getgenv().WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = game:GetService("HttpService"):JSONEncode(data)}) end
 end
 
 local function StoreAction()
     pcall(function()
         local char = LP.Character
-        local hum = char:FindFirstChildOfClass("Humanoid")
         for _, tool in pairs(LP.Backpack:GetChildren()) do
-            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool)
-                task.wait(0.2)
+            if tool:IsA("Tool") and tool.ToolTip == "Fruit" then
+                char.Humanoid:EquipTool(tool)
+                task.wait(0.3)
             end
         end
         local toolOnHand = char:FindFirstChildOfClass("Tool")
-        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+        if toolOnHand and toolOnHand.ToolTip == "Fruit" then
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
-            task.defer(function()
-                Remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
-            end)
+            Remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
             SendDiscordNotification(toolOnHand.Name)
-            task.wait(1)
         end
     end)
 end
 
-task.spawn(function()
-    while task.wait(0.5) do
-        StoreAction()
-        AutoBuyMelee()
+-- [[ 5. AUTO MUA MELEE ]]
+local function AutoBuyMelee()
+    local money = LP.Data.Belis.Value
+    if not LP.Backpack:FindFirstChild("Dark Step") and not LP.Character:FindFirstChild("Dark Step") and money >= 150000 then
+        Remote:InvokeServer("BuyDarkStep")
+    elseif not LP.Backpack:FindFirstChild("Electric") and not LP.Character:FindFirstChild("Electric") and money >= 500000 then
+        Remote:InvokeServer("BuyElectric")
+    elseif not LP.Backpack:FindFirstChild("Water Kung Fu") and not LP.Character:FindFirstChild("Water Kung Fu") and money >= 750000 then
+        Remote:InvokeServer("BuyWaterKungFu")
     end
-end)
-
--- [[ 5. DANH SÁCH NHIỆM VỤ (SEA 1 & SEA 2) ]]
-local QuestList = {}
-if PlaceId == 2753915549 then -- SEA 1
-    QuestList = {
-        {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
-        {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
-        {Min = 15, Max = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla", MonPos = CFrame.new(-1237, 6, -486)},
-        {Min = 30, Max = 39, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate", MonPos = CFrame.new(-1213, 4, 3920)},
-        {Min = 40, Max = 59, Name = "BuggyQuest1", Lv = 2, NPC = CFrame.new(-1140, 4, 3827), Mon = "Brute", MonPos = CFrame.new(-1146, 14, 4308)},
-        {Min = 60, Max = 74, Name = "DesertQuest", Lv = 1, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Bandit", MonPos = CFrame.new(985, 16, 4418)},
-        {Min = 75, Max = 89, Name = "DesertQuest", Lv = 2, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Officer", MonPos = CFrame.new(1547, 14, 4382)},
-        {Min = 90, Max = 104, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
-        {Min = 105, Max = 119, Name = "SnowQuest", Lv = 2, NPC = CFrame.new(1387, 87, -1298), Mon = "Snowman", MonPos = CFrame.new(1308, 150, -1475)},
-        {Min = 120, Max = 149, Name = "MarineQuest2", Lv = 1, NPC = CFrame.new(-4361, 73, 2991), Mon = "Chief Petty Officer", MonPos = CFrame.new(-4842, 22, 2854)},
-        {Min = 150, Max = 174, Name = "SkyQuest", Lv = 1, NPC = CFrame.new(-1242, 354, -5913), Mon = "Sky Bandit", MonPos = CFrame.new(-1319, 391, -5961)},
-        {Min = 175, Max = 199, Name = "SkyQuest", Lv = 2, NPC = CFrame.new(-1242, 354, -5913), Mon = "Dark Skilled", MonPos = CFrame.new(-1124, 401, -6339)},
-        {Min = 200, Max = 224, Name = "PrisonQuest", Lv = 1, NPC = CFrame.new(530, 1, 477), Mon = "Prisoner", MonPos = CFrame.new(517, 1, 608)},
-        {Min = 225, Max = 249, Name = "PrisonQuest", Lv = 2, NPC = CFrame.new(530, 1, 477), Mon = "Dangerous Prisoner", MonPos = CFrame.new(512, 1, 480)},
-        {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Soldier", MonPos = CFrame.new(-5395, 27, 8510)},
-        {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Spy", MonPos = CFrame.new(-5816, 83, 8438)},
-        {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Warrior", MonPos = CFrame.new(60938, 55, 1515)},
-        {Min = 400, Max = 449, Name = "FishmanQuest", Lv = 2, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Commando", MonPos = CFrame.new(61965, 30, 1475)},
-        {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, NPC = CFrame.new(-7861, 5545, -381), Mon = "God's Guard", MonPos = CFrame.new(-7841, 5545, -450)},
-        {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, NPC = CFrame.new(-7861, 5545, -381), Mon = "Shanda", MonPos = CFrame.new(-7680, 5550, -450)},
-        {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Pirate", MonPos = CFrame.new(5570, 4, 3880)},
-        {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
-    }
-elseif PlaceId == 4442245369 then -- SEA 2
-    QuestList = {
-        {Min = 700, Max = 724, Name = "Area1Quest", Lv = 1, NPC = CFrame.new(-424, 73, 1836), Mon = "Raider", MonPos = CFrame.new(-424, 132, 810)},
-        {Min = 725, Max = 774, Name = "Area1Quest", Lv = 2, NPC = CFrame.new(-424, 73, 1836), Mon = "Mercenary", MonPos = CFrame.new(-1052, 132, 1261)},
-        {Min = 775, Max = 799, Name = "Area2Quest", Lv = 1, NPC = CFrame.new(634, 73, 915), Mon = "Swan Pirate", MonPos = CFrame.new(903, 121, 1177)},
-        {Min = 800, Max = 874, Name = "Area2Quest", Lv = 2, NPC = CFrame.new(634, 73, 915), Mon = "Factory Staff", MonPos = CFrame.new(336, 121, -370)},
-        {Min = 875, Max = 899, Name = "MarineQuest3", Lv = 1, NPC = CFrame.new(-2440, 73, -3217), Mon = "Marine Lieutenant", MonPos = CFrame.new(-2489, 84, -3151)},
-        {Min = 900, Max = 949, Name = "MarineQuest3", Lv = 2, NPC = CFrame.new(-2440, 73, -3217), Mon = "Marine Captain", MonPos = CFrame.new(-2335, 79, -3245)},
-        {Min = 950, Max = 974, Name = "ZombieQuest", Lv = 1, NPC = CFrame.new(-5494, 48, -794), Mon = "Zombie", MonPos = CFrame.new(-5536, 101, -835)},
-        {Min = 975, Max = 999, Name = "ZombieQuest", Lv = 2, NPC = CFrame.new(-5494, 48, -794), Mon = "Vampire", MonPos = CFrame.new(-5806, 16, -1164)},
-        {Min = 1000, Max = 1049, Name = "SnowMountainQuest", Lv = 1, NPC = CFrame.new(607, 401, -5370), Mon = "Snow Trooper", MonPos = CFrame.new(535, 432, -5484)},
-        {Min = 1050, Max = 1099, Name = "SnowMountainQuest", Lv = 2, NPC = CFrame.new(607, 401, -5370), Mon = "Winter Warrior", MonPos = CFrame.new(1234, 456, -5174)},
-        {Min = 1100, Max = 1124, Name = "IceSideQuest", Lv = 1, NPC = CFrame.new(-6061, 15, -4902), Mon = "Lab Subordinate", MonPos = CFrame.new(-5720, 63, -4784)},
-        {Min = 1125, Max = 1174, Name = "IceSideQuest", Lv = 2, NPC = CFrame.new(-6061, 15, -4902), Mon = "Horned Warrior", MonPos = CFrame.new(-6292, 91, -5502)},
-        {Min = 1175, Max = 1199, Name = "FireSideQuest", Lv = 1, NPC = CFrame.new(-5429, 15, -5297), Mon = "Magma Ninja", MonPos = CFrame.new(-5461, 130, -5836)},
-        {Min = 1200, Max = 1249, Name = "FireSideQuest", Lv = 2, NPC = CFrame.new(-5429, 15, -5297), Mon = "Lava Pirate", MonPos = CFrame.new(-5251, 55, -4774)},
-        {Min = 1250, Max = 1274, Name = "ShipQuest1", Lv = 1, NPC = CFrame.new(1040, 125, 32911), Mon = "Ship Deckhand", MonPos = CFrame.new(921, 125, 33088), Entrance = Vector3.new(923, 126, 32852)},
-        {Min = 1275, Max = 1299, Name = "ShipQuest1", Lv = 2, NPC = CFrame.new(1040, 125, 32911), Mon = "Ship Engineer", MonPos = CFrame.new(886, 40, 32800), Entrance = Vector3.new(923, 126, 32852)},
-        {Min = 1300, Max = 1324, Name = "ShipQuest2", Lv = 1, NPC = CFrame.new(971, 125, 33245), Mon = "Ship Steward", MonPos = CFrame.new(943, 129, 33444), Entrance = Vector3.new(923, 126, 32852)},
-        {Min = 1325, Max = 1349, Name = "ShipQuest2", Lv = 2, NPC = CFrame.new(971, 125, 33245), Mon = "Ship Officer", MonPos = CFrame.new(955, 181, 33331), Entrance = Vector3.new(923, 126, 32852)},
-        {Min = 1350, Max = 1374, Name = "FrostQuest", Lv = 1, NPC = CFrame.new(5668, 28, -6484), Mon = "Arctic Warrior", MonPos = CFrame.new(5935, 77, -6472), Entrance = Vector3.new(-6508, 89, -132)},
-        {Min = 1375, Max = 1424, Name = "FrostQuest", Lv = 2, NPC = CFrame.new(5668, 28, -6484), Mon = "Snow Lurker", MonPos = CFrame.new(5628, 57, -6618)},
-        {Min = 1425, Max = 1449, Name = "ForgottenQuest", Lv = 1, NPC = CFrame.new(-3054, 236, -10147), Mon = "Sea Soldier", MonPos = CFrame.new(-3185, 58, -9663)},
-        {Min = 1450, Max = 1500, Name = "ForgottenQuest", Lv = 2, NPC = CFrame.new(-3054, 236, -10147), Mon = "Water Fighter", MonPos = CFrame.new(-3262, 298, -10552)},
-    }
 end
 
--- [[ 6. CÁC HÀM HỖ TRỢ FARM ]]
+-- [[ 6. TWEEN & EQUIP ]]
 local function TweenTo(Pos, Speed)
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    local root = char:WaitForChild("HumanoidRootPart")
+    local char = LP.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = char.HumanoidRootPart
     local dist = (Pos.Position - root.Position).Magnitude
     if dist < 5 then root.CFrame = Pos return end
-    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
-    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    
+    if not root:FindFirstChild("AntiFall") then
+        local bv = Instance.new("BodyVelocity", root)
+        bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    end
+    
     TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
 end
 
 local function EquipMelee()
-    pcall(function()
-        local char = LP.Character
-        if not char:FindFirstChild("HasBuso") then 
-            Remote:InvokeServer("Buso")
+    for _, v in pairs(LP.Backpack:GetChildren()) do
+        if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat") then
+            LP.Character.Humanoid:EquipTool(v)
+            break
         end
-        if not char:FindFirstChildOfClass("Tool") then
-            for _, v in pairs(LP.Backpack:GetChildren()) do
-                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
-                    char.Humanoid:EquipTool(v) break
-                end
-            end
-        end
-    end)
-end
-
--- [[ 7. AUTO SEA 2 ]]
-local function AutoSea2()
-    if PlaceId == 2753915549 and LP.Data.Level.Value >= 700 then
-        local progress = Remote:InvokeServer("DressrosaQuestProgress", "Detective")
-        if progress == "Detected" then
-            TweenTo(CFrame.new(-466, 47, 852), getgenv().TweenSpeed)
-            if (LP.Character.HumanoidRootPart.Position - Vector3.new(-466, 47, 852)).Magnitude < 10 then
-                Remote:InvokeServer("TravelDressrosa")
-            end
-        else
-            local Boss = workspace.Enemies:FindFirstChild("Ice Admiral") or workspace.Enemies:FindFirstChild("Ice Admiral [Lv. 700]")
-            if Boss and Boss:FindFirstChild("Humanoid") and Boss.Humanoid.Health > 0 then
-                EquipMelee()
-                TweenTo(Boss.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
-                RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                RS.Modules.Net["RE/RegisterHit"]:FireServer(Boss.PrimaryPart, {{Boss, Boss.PrimaryPart}})
-            else
-                TweenTo(CFrame.new(1347, 37, -1325), getgenv().TweenSpeed)
-            end
-        end
-        return true
     end
-    return false
 end
 
--- [[ 8. VÒNG LẶP FARM CHÍNH ]]
+-- [[ 7. DANH SÁCH FARM (SEA 1 & 2) ]]
+local QuestList = {}
+if PlaceId == 2753915549 then -- Sea 1
+    QuestList = {
+        {Min = 1, Max = 14, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
+        {Min = 15, Max = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla", MonPos = CFrame.new(-1237, 6, -486)},
+        {Min = 30, Max = 59, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate", MonPos = CFrame.new(-1213, 4, 3920)},
+        -- ... (Thêm các lv khác nếu cần)
+    }
+elseif PlaceId == 4442245369 then -- Sea 2
+    QuestList = {
+        {Min = 700, Max = 724, Name = "Area1Quest", Lv = 1, NPC = CFrame.new(-424, 73, 1836), Mon = "Raider", MonPos = CFrame.new(-424, 132, 810)},
+        {Min = 725, Max = 774, Name = "Area1Quest", Lv = 2, NPC = CFrame.new(-424, 73, 1836), Mon = "Mercenary", MonPos = CFrame.new(-1052, 132, 1261)},
+    }
+end
+
+-- [[ 8. VÒNG LẶP CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
-            if AutoSea2() then return end
+            StoreAction()
+            AutoBuyMelee()
             
-            for _, v in pairs(workspace:GetChildren()) do
-                if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
-                    local handle = v:FindFirstChild("Handle") or v.PrimaryPart
-                    if handle then
-                        TweenTo(handle.CFrame, getgenv().FruitSpeed)
-                        return
-                    end
+            -- Nhiệm vụ Sea 2
+            if PlaceId == 2753915549 and LP.Data.Level.Value >= 700 then
+                local prog = Remote:InvokeServer("DressrosaQuestProgress", "Detective")
+                if prog == "Detected" then
+                    TweenTo(CFrame.new(-466, 47, 852), getgenv().TweenSpeed)
+                    if (LP.Character.HumanoidRootPart.Position - Vector3.new(-466, 47, 852)).Magnitude < 5 then Remote:InvokeServer("TravelDressrosa") end
+                else
+                    TweenTo(CFrame.new(1347, 37, -1325), getgenv().TweenSpeed) -- Đảo Băng đánh Boss
                 end
+                return
             end
-            
+
+            -- Farm Level
             local myLv = LP.Data.Level.Value
             local q = nil
             for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
-            if not q then return end
             
-            if not LP.PlayerGui.Main.Quest.Visible then
-                TweenTo(q.NPC, getgenv().TweenSpeed)
-                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
-                    Remote:InvokeServer("StartQuest", q.Name, q.Lv)
-                end
-            else
-                local Enemy = nil
-                for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                        Enemy = e break
+            if q then
+                if not LP.PlayerGui.Main.Quest.Visible then
+                    TweenTo(q.NPC, getgenv().TweenSpeed)
+                    if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 10 then
+                        Remote:InvokeServer("StartQuest", q.Name, q.Lv)
                     end
-                end
-                if Enemy then
-                    EquipMelee()
-                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
-                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    TweenTo(q.MonPos, getgenv().TweenSpeed)
+                    local Enemy = workspace.Enemies:FindFirstChild(q.Mon)
+                    if Enemy and Enemy:FindFirstChild("Humanoid") and Enemy.Humanoid.Health > 0 then
+                        EquipMelee()
+                        TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0), getgenv().TweenSpeed)
+                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                        RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                    else
+                        TweenTo(q.MonPos, getgenv().TweenSpeed)
+                    end
                 end
             end
         end)
     end
 end)
 
--- [[ 9. AUTO STATS & NOCLIP ]]
+-- AUTO STATS
 task.spawn(function()
-    while task.wait(0.7) do
+    while task.wait(1) do
         pcall(function()
-            local P = LP.Data:FindFirstChild("StatsPoints") or LP.Data:FindFirstChild("Points")
-            if P and P.Value > 0 then
-                Remote:InvokeServer("AddPoint", "Melee", 1)
+            if LP.Data.StatsPoints.Value > 0 then
+                Remote:InvokeServer("AddPoint", "Strength", 1)
                 Remote:InvokeServer("AddPoint", "Defense", 1)
             end
         end)
     end
 end)
 
+-- NOCLIP
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
-        if LP.Character then
-            for _, v in pairs(LP.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
-            end
+        for _, v in pairs(LP.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
         end
     end)
 end)

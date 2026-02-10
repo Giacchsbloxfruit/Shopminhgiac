@@ -255,7 +255,7 @@ task.spawn(function()
         pcall(function()
             local P = LP.Data:FindFirstChild("StatsPoints") or LP.Data:FindFirstChild("Points")
             if P and P.Value > 0 then
-                GetCommF():InvokeServer("AddPoint", "Strength", 1)
+                GetCommF():InvokeServer("AddPoint", "Melee", 1)
                 GetCommF():InvokeServer("AddPoint", "Defense", 1)
             end
         end)

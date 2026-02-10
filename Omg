@@ -1,10 +1,10 @@
 -- [[ 1. THIẾT LẬP HỆ THỐNG ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
-getgenv().TweenSpeed = 150      
-getgenv().FruitSpeed = 335      
+getgenv().TweenSpeed = 200      
+getgenv().FruitSpeed = 350      
 getgenv().MaxStat = 2800        
 getgenv().ServerHopTime = 1800 
-getgenv().MasteryLimit = 400 
+getgenv().MasteryLimit = 400 -- Ngưỡng Mastery để đổi võ
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -17,27 +17,7 @@ local function GetCommF()
     return RS:FindFirstChild("CommF_", true) or RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 end
 
--- [[ 2. TỰ ĐỘNG NHẬP CODE X2 EXP (MỚI) ]]
-local Codes = {
-    "KITT_RESET", "Sub2CaptainMaui", "DEVSCOOKING", "Sub2Fer999", "Enyu_is_Pro",
-    "Magicbus", "JCWK", "Starcodeheo", "Sub2NoobMaster123", "THEGREATACE",
-    "SUB2OFFICIALNOOB", "FUDD10", "BIGNEWS", "SUB2UNCLEKIZARU", "Sub2Normaler",
-    "StrawHatMaine", "SUB2GAMERROBOT_EXP1", "SUB2GAMERROBOT_RESET1", "SUB2ADVENTURERID"
-}
-
-task.spawn(function()
-    -- Đợi game load xong Data tránh lỗi hụt code
-    repeat task.wait() until LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level")
-    task.wait(3) -- Đợi thêm một chút cho ổn định
-    for _, v in pairs(Codes) do
-        pcall(function()
-            GetCommF():InvokeServer("RedeemCode", v)
-        end)
-        task.wait(0.5)
-    end
-end)
-
--- [[ 3. THÔNG BÁO DISCORD & CẤT TRÁI ]]
+-- [[ 2. THÔNG BÁO DISCORD & CẤT TRÁI (BẢN FIX CHỐNG SPAM) ]]
 local LastNotify = 0
 local function SendDiscordNotification(fruitName, status)
     if tick() - LastNotify < 15 then return end 
@@ -76,13 +56,13 @@ local function StoreAction()
             if success then
                 SendDiscordNotification(fruit.Name, "Đã cất vào kho thành công!")
             else
-                task.wait(5) 
+                task.wait(5) -- Đợi 5s nếu là trái lấy từ kho ra để tránh lặp lệnh liên tục
             end
         end
     end)
 end
 
--- [[ 4. TỰ ĐỘNG MUA MELEE ]]
+-- [[ 3. TỰ ĐỘNG MUA MELEE (XOAY VÒNG V1) ]]
 local MeleeList = {
     ["Dark Step"] = {Args = {"BuyDarkStep"}, Pos = CFrame.new(-1106, 14, 4308)},
     ["Electric"] = {Args = {"BuyElectric"}, Pos = CFrame.new(-1347, 37, -1325)},
@@ -115,7 +95,7 @@ local function AutoRotateMelee()
     end)
 end
 
--- [[ 5. DANH SÁCH NHIỆM VỤ ]]
+-- [[ 4. DANH SÁCH NHIỆM VỤ (SEA 1 & SEA 2) ]]
 local QuestList = {}
 if PlaceId == 2753915549 then -- SEA 1
     QuestList = {
@@ -169,7 +149,7 @@ elseif PlaceId == 4442245369 then -- SEA 2
     }
 end
 
--- [[ 6. HÀM DI CHUYỂN & CHIẾN ĐẤU ]]
+-- [[ 5. HÀM DI CHUYỂN & CHIẾN ĐẤU ]]
 function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -187,7 +167,7 @@ function EquipWeapon()
     end
 end
 
--- [[ 7. VÒNG LẶP CHÍNH ]]
+-- [[ 6. VÒNG LẶP CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()

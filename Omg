@@ -3,13 +3,14 @@ getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT
 getgenv().TweenSpeed = 200      
 getgenv().FruitSpeed = 350      
 getgenv().MaxStat = 2800        
-getgenv().ServerHopTime = 10 -- Đổi Server sau 30 phút
-getgenv().LastStoredFruit = "" -- Chống spam thông báo
+getgenv().ServerHopTime = 1800 -- Đúng 30 phút (1800 giây) sẽ đổi Server
+getgenv().LastStoredFruit = "" 
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 
 -- Hàm tìm Remote CommF_ động
 local function GetCommF()
@@ -22,30 +23,44 @@ local function GetCommF()
     return found
 end
 
--- [[ 2. HỆ THỐNG BẢO VỆ (ANTI-CHEAT) ]]
--- Chống bị Kick do treo máy quá 20p
+-- [[ 2. HỆ THỐNG SERVER HOP & ANTI-IDLE ]]
+-- Chống bị Kick khi treo máy quá 20p
 for i,v in pairs(getconnections(LP.Idled)) do
     v:Disable()
 end
 
--- Tự động đổi Server sau 30 phút
+-- Tự động đổi Server sau 30 phút (Đã tích hợp)
 task.spawn(function()
+    print("--- HỆ THỐNG: SẼ TỰ ĐỘNG ĐỔI SERVER SAU 30 PHÚT ---")
     task.wait(getgenv().ServerHopTime)
+    
     local PlaceID = game.PlaceId
-    local AllServers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceID.."/servers/Public?sortOrder=Asc&limit=100"))
-    for _, server in pairs(AllServers.data) do
-        if server.playing < server.maxPlayers and server.id ~= game.JobId then
-            TeleportService:TeleportToPlaceInstance(PlaceID, server.id, LP)
-            break
+    local JobId = game.JobId
+    local url = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    local function Hop()
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+        if success and result and result.data then
+            for _, server in pairs(result.data) do
+                if server.playing < server.maxPlayers and server.id ~= JobId then
+                    TeleportService:TeleportToPlaceInstance(PlaceID, server.id, LP)
+                    return
+                end
+            end
         end
     end
+    
+    -- Gửi thông báo trước khi đổi server (tùy chọn)
+    print("Đang tiến hành nhảy server để bảo mật tài khoản...")
+    while task.wait(5) do Hop() end -- Thử lại sau mỗi 5s nếu nhảy thất bại
 end)
 
 -- [[ 3. HÀM THÔNG BÁO DISCORD (CHỐNG SPAM) ]]
 local function SendDiscordNotification(fruitName, status)
     if getgenv().LastStoredFruit == fruitName then return end 
     
-    local url = getgenv().WebhookURL
     local data = {
         ["content"] = "",
         ["embeds"] = {{
@@ -58,13 +73,13 @@ local function SendDiscordNotification(fruitName, status)
     local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if request then
         request({
-            Url = url,
+            Url = getgenv().WebhookURL,
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
-            Body = game:GetService("HttpService"):JSONEncode(data)
+            Body = HttpService:JSONEncode(data)
         })
         getgenv().LastStoredFruit = fruitName
-        task.delay(15, function() getgenv().LastStoredFruit = "" end) -- Reset sau 15s để có thể nhận trái cùng loại tiếp theo
+        task.delay(15, function() getgenv().LastStoredFruit = "" end)
     end
 end
 
@@ -100,7 +115,7 @@ local function StoreAction()
 end
 
 task.spawn(function()
-    while task.wait(0.8) do -- Kiểm tra mỗi 0.8s để tránh overload server
+    while task.wait(0.8) do
         StoreAction()
     end
 end)
@@ -131,7 +146,7 @@ local QuestList = {
     {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
 }
 
--- [[ 6. HÀM HỖ TRỢ FARM ]]
+-- [[ 6. CÁC HÀM HỖ TRỢ FARM ]]
 local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -239,7 +254,7 @@ task.spawn(function()
     end
 end)
 
--- NOCLIP (Xuyên tường để farm mượt hơn)
+-- NOCLIP (Xuyên tường)
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then

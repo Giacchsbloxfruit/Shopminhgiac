@@ -208,8 +208,8 @@ elseif PlaceId == 4442245369 then -- SEA 2
         {Min = 1375, Max = 1424, Name = "FrostQuest", Lv = 2, NPC = CFrame.new(5668, 28, -6484), Mon = "Snow Lurker", MonPos = CFrame.new(5628, 57, -6618)},
         {Min = 1425, Max = 1449, Name = "ForgottenQuest", Lv = 1, NPC = CFrame.new(-3054, 236, -10147), Mon = "Sea Soldier", MonPos = CFrame.new(-3185, 58, -9663)},
         {Min = 1450, Max = 1500, Name = "ForgottenQuest", Lv = 2, NPC = CFrame.new(-3054, 236, -10147), Mon = "Water Fighter", MonPos = CFrame.new(-3262, 298, -10552)},}
-}
-end
+    }
+
 task.spawn(function()
     while task.wait() do
         pcall(function()

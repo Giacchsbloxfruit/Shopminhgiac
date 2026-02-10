@@ -1,7 +1,7 @@
 -- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      
-getgenv().FruitSpeed = 350      
+getgenv().FruitSpeed = 330      
 getgenv().MaxStat = 2800        
 
 local LP = game.Players.LocalPlayer
@@ -149,7 +149,21 @@ elseif PlaceId == 4442245369 then -- SEA 2
         {Min = 875, Max = 899, Name = "MarineQuest3", Lv = 1, NPC = CFrame.new(-2440, 73, -3217), Mon = "Marine Lieutenant", MonPos = CFrame.new(-2489, 84, -3151)},
         {Min = 900, Max = 949, Name = "MarineQuest3", Lv = 2, NPC = CFrame.new(-2440, 73, -3217), Mon = "Marine Captain", MonPos = CFrame.new(-2335, 79, -3245)},
         {Min = 950, Max = 974, Name = "ZombieQuest", Lv = 1, NPC = CFrame.new(-5494, 48, -794), Mon = "Zombie", MonPos = CFrame.new(-5536, 101, -835)},
-        {Min = 975, Max = 1000, Name = "ZombieQuest", Lv = 2, NPC = CFrame.new(-5494, 48, -794), Mon = "Vampire", MonPos = CFrame.new(-5806, 16, -1164)},
+        {Min = 975, Max = 999, Name = "ZombieQuest", Lv = 2, NPC = CFrame.new(-5494, 48, -794), Mon = "Vampire", MonPos = CFrame.new(-5806, 16, -1164)},
+        {Min = 1000, Max = 1049, Name = "SnowMountainQuest", Lv = 1, NPC = CFrame.new(607, 401, -5370), Mon = "Snow Trooper", MonPos = CFrame.new(535, 432, -5484)},
+        {Min = 1050, Max = 1099, Name = "SnowMountainQuest", Lv = 2, NPC = CFrame.new(607, 401, -5370), Mon = "Winter Warrior", MonPos = CFrame.new(1234, 456, -5174)},
+        {Min = 1100, Max = 1124, Name = "IceSideQuest", Lv = 1, NPC = CFrame.new(-6061, 15, -4902), Mon = "Lab Subordinate", MonPos = CFrame.new(-5720, 63, -4784)},
+        {Min = 1125, Max = 1174, Name = "IceSideQuest", Lv = 2, NPC = CFrame.new(-6061, 15, -4902), Mon = "Horned Warrior", MonPos = CFrame.new(-6292, 91, -5502)},
+        {Min = 1175, Max = 1199, Name = "FireSideQuest", Lv = 1, NPC = CFrame.new(-5429, 15, -5297), Mon = "Magma Ninja", MonPos = CFrame.new(-5461, 130, -5836)},
+        {Min = 1200, Max = 1249, Name = "FireSideQuest", Lv = 2, NPC = CFrame.new(-5429, 15, -5297), Mon = "Lava Pirate", MonPos = CFrame.new(-5251, 55, -4774)},
+        {Min = 1250, Max = 1274, Name = "ShipQuest1", Lv = 1, NPC = CFrame.new(1040, 125, 32911), Mon = "Ship Deckhand", MonPos = CFrame.new(921, 125, 33088), Entrance = Vector3.new(923, 126, 32852)},
+        {Min = 1275, Max = 1299, Name = "ShipQuest1", Lv = 2, NPC = CFrame.new(1040, 125, 32911), Mon = "Ship Engineer", MonPos = CFrame.new(886, 40, 32800), Entrance = Vector3.new(923, 126, 32852)},
+        {Min = 1300, Max = 1324, Name = "ShipQuest2", Lv = 1, NPC = CFrame.new(971, 125, 33245), Mon = "Ship Steward", MonPos = CFrame.new(943, 129, 33444), Entrance = Vector3.new(923, 126, 32852)},
+        {Min = 1325, Max = 1349, Name = "ShipQuest2", Lv = 2, NPC = CFrame.new(971, 125, 33245), Mon = "Ship Officer", MonPos = CFrame.new(955, 181, 33331), Entrance = Vector3.new(923, 126, 32852)},
+        {Min = 1350, Max = 1374, Name = "FrostQuest", Lv = 1, NPC = CFrame.new(5668, 28, -6484), Mon = "Arctic Warrior", MonPos = CFrame.new(5935, 77, -6472), Entrance = Vector3.new(-6508, 89, -132)},
+        {Min = 1375, Max = 1424, Name = "FrostQuest", Lv = 2, NPC = CFrame.new(5668, 28, -6484), Mon = "Snow Lurker", MonPos = CFrame.new(5628, 57, -6618)},
+        {Min = 1425, Max = 1449, Name = "ForgottenQuest", Lv = 1, NPC = CFrame.new(-3054, 236, -10147), Mon = "Sea Soldier", MonPos = CFrame.new(-3185, 58, -9663)},
+        {Min = 1450, Max = 1500, Name = "ForgottenQuest", Lv = 2, NPC = CFrame.new(-3054, 236, -10147), Mon = "Water Fighter", MonPos = CFrame.new(-3262, 298, -10552)},
     }
 end
 
@@ -257,7 +271,7 @@ task.spawn(function()
         pcall(function()
             local P = LP.Data:FindFirstChild("StatsPoints") or LP.Data:FindFirstChild("Points")
             if P and P.Value > 0 then
-                Remote:InvokeServer("AddPoint", "Strength", 1)
+                Remote:InvokeServer("AddPoint", "Melee", 1)
                 Remote:InvokeServer("AddPoint", "Defense", 1)
             end
         end)

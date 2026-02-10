@@ -1,88 +1,83 @@
 -- [[ CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ"
-getgenv().TweenSpeed = 200
+getgenv().TweenSpeed = 220
 getgenv().FruitSpeed = 350
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local Remote = RS:FindFirstChild("CommF_", true) or RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 
--- [[ 1. CHỌN PHE HẢI TẶC ]]
-pcall(function()
-    if not LP.Team then
-        repeat task.wait()
-            local peer = LP.PlayerGui:FindFirstChild("Main") and LP.PlayerGui.Main:FindFirstChild("ChooseTeam")
-            if peer then
-                for _, v in pairs(getconnections(peer.Container.Pirates.Frame.ViewportFrame.TextButton.MouseButton1Click)) do
-                    v:Fire()
-                end
-            end
-        until LP.Team
-    end
-end)
-
--- [[ 2. NHẬP CODE XP ]]
+-- [[ 1. CHỌN PHE & NHẬP CODE (CHỈ CHẠY 1 LẦN) ]]
 task.spawn(function()
-    local codes = {"TRIPLEABUSE", "SEVENTEEN", "REWARDSCODE", "NEWTROLL", "KITT_RESET", "Sub2Fer999", "Enyu_is_Pro", "Magicbus", "JCWK", "Starcodeheo", "Sub2CaptainMaui", "SUB2GAMERROBOT_EXP1", "Sub2NoobMaster123", "Sub2UncleKizaru", "Sub2Daigrock", "Sub2OfficialNoobie", "Axiore", "TantaiGaming", "STRAWHATMAINE"}
-    for _, v in pairs(codes) do
-        Remote:InvokeServer("RedeemFreebie", v)
-        task.wait(0.1)
-    end
+    pcall(function()
+        if not LP.Team then
+            repeat task.wait()
+                local peer = LP.PlayerGui:FindFirstChild("Main") and LP.PlayerGui.Main:FindFirstChild("ChooseTeam")
+                if peer then
+                    for _, v in pairs(getconnections(peer.Container.Pirates.Frame.ViewportFrame.TextButton.MouseButton1Click)) do v:Fire() end
+                end
+            until LP.Team
+        end
+    end)
+    local codes = {"TRIPLEABUSE", "SEVENTEEN", "REWARDSCODE", "NEWTROLL", "KITT_RESET", "Sub2Fer999", "Enyu_is_Pro", "Magicbus"}
+    for _, v in pairs(codes) do Remote:InvokeServer("RedeemFreebie", v) task.wait(0.1) end
 end)
 
--- [[ 3. HÀM THÔNG BÁO DISCORD ]]
-local function SendDiscord(fruitName)
-    local data = {
-        ["content"] = "🚀 **GEMINI AUTO UPDATE**",
-        ["embeds"] = {{
-            ["title"] = "📦 ĐÃ CẤT TRÁI VÀO KHO!",
-            ["description"] = "👤 Tài khoản: **"..LP.Name.."**\n🎁 Trái: **"..fruitName.."**\n✅ Trạng thái: Đã bảo quản an toàn.",
-            ["color"] = 65280,
-            ["footer"] = {["text"] = os.date("%X")}
-        }}
-    }
-    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if req then req({Url = getgenv().WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = game:GetService("HttpService"):JSONEncode(data)}) end
-end
-
--- [[ 4. HÀM CẤT TRÁI (BẢN FIX TÊN CHUẨN) ]]
+-- [[ 2. HÀM CẤT TRÁI (THÊM LOGIC BỎ QUA NẾU FULL) ]]
 local function StoreFruit()
-    local FruitNames = {
-        ["Rocket Fruit"] = "Rocket-Rocket", ["Spin Fruit"] = "Spin-Spin", ["Blade Fruit"] = "Chop-Chop", ["Spring Fruit"] = "Spring-Spring", ["Bomb Fruit"] = "Bomb-Bomb", ["Spike Fruit"] = "Spike-Spike", ["Smoke Fruit"] = "Smoke-Smoke", ["Flame Fruit"] = "Flame-Flame", ["Ice Fruit"] = "Ice-Ice", ["Sand Fruit"] = "Sand-Sand", ["Dark Fruit"] = "Dark-Dark", ["Ghost Fruit"] = "Ghost-Ghost", ["Diamond Fruit"] = "Diamond-Diamond", ["Light Fruit"] = "Light-Light", ["Rubber Fruit"] = "Rubber-Rubber", ["Barrier Fruit"] = "Barrier-Barrier", ["Magma Fruit"] = "Magma-Magma", ["Quake Fruit"] = "Quake-Quake", ["Buddha Fruit"] = "Buddha-Buddha", ["Love Fruit"] = "Love-Love", ["Spider Fruit"] = "Spider-Spider", ["Sound Fruit"] = "Sound-Sound", ["Phoenix Fruit"] = "Phoenix-Phoenix", ["Portal Fruit"] = "Portal-Portal", ["Rumble Fruit"] = "Rumble-Rumble", ["Pain Fruit"] = "Pain-Pain", ["Blizzard Fruit"] = "Blizzard-Blizzard", ["Gravity Fruit"] = "Gravity-Gravity", ["Mammoth Fruit"] = "Mammoth-Mammoth", ["Dough Fruit"] = "Dough-Dough", ["Shadow Fruit"] = "Shadow-Shadow", ["Venom Fruit"] = "Venom-Venom", ["Control Fruit"] = "Control-Control", ["Spirit Fruit"] = "Spirit-Spirit", ["Dragon Fruit"] = "Dragon-Dragon", ["Leopard Fruit"] = "Leopard-Leopard", ["Kitsune Fruit"] = "Kitsune-Kitsune", ["T-Rex Fruit"] = "T-Rex-T-Rex"
-    }
+    local FruitNames = {["Rocket Fruit"] = "Rocket-Rocket", ["Spin Fruit"] = "Spin-Spin", ["Blade Fruit"] = "Chop-Chop", ["Spring Fruit"] = "Spring-Spring", ["Bomb Fruit"] = "Bomb-Bomb", ["Spike Fruit"] = "Spike-Spike", ["Smoke Fruit"] = "Smoke-Smoke", ["Flame Fruit"] = "Flame-Flame", ["Ice Fruit"] = "Ice-Ice", ["Sand Fruit"] = "Sand-Sand", ["Dark Fruit"] = "Dark-Dark", ["Ghost Fruit"] = "Ghost-Ghost", ["Diamond Fruit"] = "Diamond-Diamond", ["Light Fruit"] = "Light-Light", ["Rubber Fruit"] = "Rubber-Rubber", ["Barrier Fruit"] = "Barrier-Barrier", ["Magma Fruit"] = "Magma-Magma", ["Quake Fruit"] = "Quake-Quake", ["Buddha Fruit"] = "Buddha-Buddha", ["Love Fruit"] = "Love-Love", ["Spider Fruit"] = "Spider-Spider", ["Sound Fruit"] = "Sound-Sound", ["Phoenix Fruit"] = "Phoenix-Phoenix", ["Portal Fruit"] = "Portal-Portal", ["Rumble Fruit"] = "Rumble-Rumble", ["Pain Fruit"] = "Pain-Pain", ["Blizzard Fruit"] = "Blizzard-Blizzard", ["Gravity Fruit"] = "Gravity-Gravity", ["Mammoth Fruit"] = "Mammoth-Mammoth", ["Dough Fruit"] = "Dough-Dough", ["Shadow Fruit"] = "Shadow-Shadow", ["Venom Fruit"] = "Venom-Venom", ["Control Fruit"] = "Control-Control", ["Spirit Fruit"] = "Spirit-Spirit", ["Dragon Fruit"] = "Dragon-Dragon", ["Leopard Fruit"] = "Leopard-Leopard", ["Kitsune Fruit"] = "Kitsune-Kitsune", ["T-Rex Fruit"] = "T-Rex-T-Rex"}
+    
     for _, item in pairs(LP.Backpack:GetChildren()) do
         if string.find(item.Name, "Fruit") then
             local sysName = FruitNames[item.Name] or item.Name:gsub(" Fruit", "")
-            LP.Character.Humanoid:EquipTool(item) -- Phải cầm lên mới cất được
+            LP.Character.Humanoid:EquipTool(item)
+            task.wait(0.3)
+            -- Thử cất, nếu không được sau 1s thì thôi (để đi farm tiếp)
+            Remote:InvokeServer("StoreFruit", sysName, item)
             task.wait(0.2)
-            local success = Remote:InvokeServer("StoreFruit", sysName, item)
-            if success then SendDiscord(item.Name) end
         end
     end
 end
 
--- [[ 5. HỆ THỐNG FARM & NHẶT TRÁI ]]
-local QuestList = {
-    {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
-    {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
-    -- (Các đảo khác tự động nhận diện theo LV)
-}
+-- [[ 3. AUTO FARM LEVEL (HỖ TRỢ FULL SEA 1) ]]
+local function GetQuest()
+    local lv = LP.Data.Level.Value
+    if lv < 10 then return "BanditQuest1", 1, CFrame.new(1060, 16, 1547), "Bandit", CFrame.new(1145, 17, 1634)
+    elseif lv < 15 then return "JungleQuest", 1, CFrame.new(-1601, 36, 153), "Monkey", CFrame.new(-1623, 22, -188)
+    elseif lv < 30 then return "JungleQuest", 2, CFrame.new(-1601, 36, 153), "Gorilla", CFrame.new(-1237, 6, -486)
+    elseif lv < 40 then return "BuggyQuest1", 1, CFrame.new(-1140, 4, 3827), "Pirate", CFrame.new(-1213, 4, 3920)
+    elseif lv < 60 then return "BuggyQuest1", 2, CFrame.new(-1140, 4, 3827), "Brute", CFrame.new(-1146, 14, 4308)
+    elseif lv < 75 then return "DesertQuest", 1, CFrame.new(897, 6, 4390), "Desert Bandit", CFrame.new(985, 16, 4418)
+    elseif lv < 90 then return "DesertQuest", 2, CFrame.new(897, 6, 4390), "Desert Officer", CFrame.new(1547, 14, 4382)
+    elseif lv < 105 then return "SnowQuest", 1, CFrame.new(1387, 87, -1298), "Snow Bandit", CFrame.new(1356, 106, -1328)
+    elseif lv < 120 then return "SnowQuest", 2, CFrame.new(1387, 87, -1298), "Snowman", CFrame.new(1308, 150, -1475)
+    elseif lv < 150 then return "MarineQuest2", 1, CFrame.new(-4361, 73, 2991), "Chief Petty Officer", CFrame.new(-4842, 22, 2854)
+    elseif lv < 175 then return "SkyQuest", 1, CFrame.new(-1242, 354, -5913), "Sky Bandit", CFrame.new(-1319, 391, -5961)
+    elseif lv < 190 then return "SkyQuest", 2, CFrame.new(-1242, 354, -5913), "Dark Skilled", CFrame.new(-1124, 401, -6339)
+    elseif lv < 250 then return "PrisonQuest", 1, CFrame.new(530, 1, 477), "Prisoner", CFrame.new(517, 1, 608)
+    elseif lv < 300 then return "MagmaQuest", 1, CFrame.new(-5314, 12, 8516), "Military Soldier", CFrame.new(-5395, 27, 8510)
+    elseif lv < 375 then return "MagmaQuest", 2, CFrame.new(-5314, 12, 8516), "Military Spy", CFrame.new(-5816, 83, 8438)
+    elseif lv < 450 then return "FishmanQuest", 1, CFrame.new(61122, 18, 1565), "Fishman Warrior", CFrame.new(60938, 55, 1515)
+    -- Thêm các mốc khác tại đây...
+    else return "FountainQuest", 1, CFrame.new(5258, 38, 4048), "Galley Pirate", CFrame.new(5570, 4, 3880)
+    end
+end
 
 local function TweenTo(Pos, Speed)
     local root = LP.Character:WaitForChild("HumanoidRootPart")
     local dist = (Pos.Position - root.Position).Magnitude
     if dist < 5 then root.CFrame = Pos return end
     local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
-    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
     game:GetService("TweenService"):Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
 end
 
 task.spawn(function()
     while task.wait() do
         pcall(function()
-            StoreFruit() -- Luôn ưu tiên cất trái
+            StoreFruit() -- Cố gắng cất trái
             
-            -- Nhặt trái trên đất
+            -- Nhặt trái ác quỷ trên đất
             for _, v in pairs(workspace:GetChildren()) do
                 if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
                     local h = v:FindFirstChild("Handle") or v.PrimaryPart
@@ -90,40 +85,34 @@ task.spawn(function()
                     if (LP.Character.HumanoidRootPart.Position - h.Position).Magnitude < 10 then
                         firetouchinterest(LP.Character.HumanoidRootPart, h, 0); firetouchinterest(LP.Character.HumanoidRootPart, h, 1)
                     end
-                    return
+                    return -- Nhặt xong thoát loop để kiểm tra cất kho
                 end
             end
 
-            -- Farm Level
-            local myLv = LP.Data.Level.Value
-            local q = nil
-            for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
-            if not q then return end
-
+            -- Đi Farm Level
+            local qName, qLv, qNPC, mName, mPos = GetQuest()
             if not LP.PlayerGui.Main.Quest.Visible then
-                TweenTo(q.NPC, getgenv().TweenSpeed)
-                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
-                    Remote:InvokeServer("StartQuest", q.Name, q.Lv)
+                TweenTo(qNPC, getgenv().TweenSpeed)
+                if (LP.Character.HumanoidRootPart.Position - qNPC.Position).Magnitude < 15 then
+                    Remote:InvokeServer("StartQuest", qName, qLv)
                 end
             else
-                local Enemy = workspace.Enemies:FindFirstChild(q.Mon)
+                local Enemy = workspace.Enemies:FindFirstChild(mName)
                 if Enemy and Enemy:FindFirstChild("Humanoid") and Enemy.Humanoid.Health > 0 then
+                    -- Trang bị vũ khí (Melee)
+                    for _, v in pairs(LP.Backpack:GetChildren()) do if v.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(v) end end
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
                     game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    TweenTo(q.MonPos, getgenv().TweenSpeed)
+                    TweenTo(mPos, getgenv().TweenSpeed)
                 end
             end
         end)
     end
 end)
 
--- Noclip & Anti-Die
+-- Noclip
 game:GetService("RunService").Stepped:Connect(function()
-    pcall(function()
-        for _, v in pairs(LP.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
-        end
-    end)
+    pcall(function() for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end end)
 end)

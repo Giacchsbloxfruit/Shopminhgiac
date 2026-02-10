@@ -1,7 +1,7 @@
 -- [[ 1. THIẾT LẬP HỆ THỐNG ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      
-getgenv().FruitSpeed = 350      
+getgenv().FruitSpeed = 335     
 getgenv().MaxStat = 2800        
 getgenv().ServerHopTime = 1800 
 getgenv().MasteryLimit = 400 

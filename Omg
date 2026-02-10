@@ -4,7 +4,7 @@ getgenv().TweenSpeed = 200
 getgenv().FruitSpeed = 350      
 getgenv().MaxStat = 2800        
 getgenv().ServerHopTime = 1800 
-getgenv().MasteryLimit = 400 -- Ngưỡng Mastery để đổi võ
+getgenv().LastStoredFruit = "" 
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -17,22 +17,57 @@ local function GetCommF()
     return RS:FindFirstChild("CommF_", true) or RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 end
 
--- [[ 2. THÔNG BÁO DISCORD & CẤT TRÁI (BẢN FIX CHỐNG SPAM) ]]
-local LastNotify = 0
+-- [[ 2. TỰ ĐỘNG NHẬP CODE X2 EXP ]]
+local Codes = {
+    "KITT_RESET", "Sub2CaptainMaui", "DEVSCOOKING", "Sub2Fer999", "Enyu_is_Pro",
+    "Magicbus", "JCWK", "Starcodeheo", "Sub2NoobMaster123", "THEGREATACE",
+    "SUB2OFFICIALNOOB", "FUDD10", "BIGNEWS", "SUB2UNCLEKIZARU", "Sub2Normaler",
+    "StrawHatMaine", "SUB2GAMERROBOT_EXP1", "SUB2GAMERROBOT_RESET1"
+}
+
+task.spawn(function()
+    repeat task.wait() until LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level")
+    for _, code in pairs(Codes) do
+        pcall(function()
+            GetCommF():InvokeServer("RedeemCode", code)
+        end)
+        task.wait(0.1)
+    end
+end)
+
+-- [[ 3. TỰ ĐỘNG MUA MELEE (V1) ]]
+local function AutoBuyMelee()
+    local myMoney = LP.Data.Belis.Value
+    local remote = GetCommF()
+    
+    -- Kiểm tra và mua võ nếu đủ tiền (Dành cho Sea 1 & 2)
+    pcall(function()
+        if not LP.Backpack:FindFirstChild("Dark Step") and not LP.Character:FindFirstChild("Dark Step") and myMoney >= 150000 then
+            remote:InvokeServer("BuyDarkStep")
+        elseif not LP.Backpack:FindFirstChild("Electric") and not LP.Character:FindFirstChild("Electric") and myMoney >= 500000 then
+            remote:InvokeServer("BuyElectric")
+        elseif not LP.Backpack:FindFirstChild("Water Kung Fu") and not LP.Character:FindFirstChild("Water Kung Fu") and myMoney >= 750000 then
+            remote:InvokeServer("BuyWaterKungFu")
+        end
+    end)
+end
+
+-- [[ 4. THÔNG BÁO DISCORD & CẤT TRÁI ]]
 local function SendDiscordNotification(fruitName, status)
-    if tick() - LastNotify < 15 then return end 
+    if getgenv().LastStoredFruit == fruitName then return end 
     local data = {
         ["embeds"] = {{
             ["title"] = "🚀 **HỆ THỐNG QUẢN LÝ TRÁI CÂY**",
             ["description"] = "👤 **Tài khoản**: " .. LP.Name .. "\n🍎 **Trái**: " .. fruitName .. "\n✅ **Trạng thái**: " .. status,
-            ["color"] = status:find("thành công") and 65280 or 16711680, 
+            ["color"] = status == "Balo đầy" and 16711680 or 65280, 
             ["footer"] = { ["text"] = "Gemini Blox Fruit • " .. os.date("%X") }
         }}
     }
     pcall(function()
         local req = (syn and syn.request) or (http and http.request) or http_request or request
         req({Url = getgenv().WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data)})
-        LastNotify = tick()
+        getgenv().LastStoredFruit = fruitName
+        task.delay(15, function() getgenv().LastStoredFruit = "" end)
     end)
 end
 
@@ -40,62 +75,22 @@ local function StoreAction()
     pcall(function()
         local char = LP.Character
         local remote = GetCommF()
-        local fruit = nil
-        for _, v in pairs(LP.Backpack:GetChildren()) do
-            if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit")) then fruit = v break end
-        end
-        if not fruit then
-            local tool = char:FindFirstChildOfClass("Tool")
-            if tool and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then fruit = tool end
-        end
-
-        if fruit then
-            local fruitName = fruit.Name:gsub(" Fruit", "")
-            if fruit.Parent == LP.Backpack then char.Humanoid:EquipTool(fruit) task.wait(0.2) end
-            local success = remote:InvokeServer("StoreFruit", fruitName, fruit)
-            if success then
-                SendDiscordNotification(fruit.Name, "Đã cất vào kho thành công!")
-            else
-                task.wait(5) -- Đợi 5s nếu là trái lấy từ kho ra để tránh lặp lệnh liên tục
+        for _, tool in pairs(LP.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
+                char.Humanoid:EquipTool(tool)
+                task.wait(0.2)
             end
+        end
+        local toolOnHand = char:FindFirstChildOfClass("Tool")
+        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            local success = remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+            SendDiscordNotification(toolOnHand.Name, success and "Đã cất vào balo" or "Balo đầy")
         end
     end)
 end
 
--- [[ 3. TỰ ĐỘNG MUA MELEE (XOAY VÒNG V1) ]]
-local MeleeList = {
-    ["Dark Step"] = {Args = {"BuyDarkStep"}, Pos = CFrame.new(-1106, 14, 4308)},
-    ["Electric"] = {Args = {"BuyElectric"}, Pos = CFrame.new(-1347, 37, -1325)},
-    ["Water Kung Fu"] = {Args = {"BuyWaterKungFu"}, Pos = CFrame.new(61122, 18, 1565)},
-    ["Dragon Breath"] = {Args = {"BlackbeardReward", "DragonBreath", "1"}, Pos = CFrame.new(-1100, 80, 1720)}
-}
-
-local function AutoRotateMelee()
-    pcall(function()
-        local tool = LP.Backpack:FindFirstChildOfClass("Tool") or LP.Character:FindFirstChildOfClass("Tool")
-        if tool and tool.ToolTip == "Melee" then
-            local mastery = 0
-            if tool:FindFirstChild("Level") then mastery = tool.Level.Value end
-            
-            if mastery >= getgenv().MasteryLimit then
-                local nextMelee = ""
-                if tool.Name == "Dark Step" then nextMelee = "Electric"
-                elseif tool.Name == "Electric" then nextMelee = "Water Kung Fu"
-                elseif tool.Name == "Water Kung Fu" then nextMelee = "Dragon Breath" end
-                
-                if nextMelee ~= "" and MeleeList[nextMelee] then
-                    local info = MeleeList[nextMelee]
-                    TweenTo(info.Pos, getgenv().TweenSpeed)
-                    if (LP.Character.HumanoidRootPart.Position - info.Pos.Position).Magnitude < 15 then
-                        GetCommF():InvokeServer(unpack(info.Args))
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- [[ 4. DANH SÁCH NHIỆM VỤ (SEA 1 & SEA 2) ]]
+-- [[ 5. DANH SÁCH NHIỆM VỤ (GIỮ NGUYÊN DANH SÁCH CỦA BẠN) ]]
 local QuestList = {}
 if PlaceId == 2753915549 then -- SEA 1
     QuestList = {
@@ -149,8 +144,8 @@ elseif PlaceId == 4442245369 then -- SEA 2
     }
 end
 
--- [[ 5. HÀM DI CHUYỂN & CHIẾN ĐẤU ]]
-function TweenTo(Pos, Speed)
+-- [[ 6. HÀM DI CHUYỂN & CHIẾN ĐẤU ]]
+local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
     local dist = (Pos.Position - root.Position).Magnitude
@@ -160,19 +155,20 @@ function TweenTo(Pos, Speed)
     TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
 end
 
-function EquipWeapon()
-    local tool = LP.Backpack:FindFirstChildOfClass("Tool")
-    if tool and (tool.ToolTip == "Melee" or tool.ToolTip == "Sword") then
-        LP.Character.Humanoid:EquipTool(tool)
+local function EquipWeapon()
+    for _, v in pairs(LP.Backpack:GetChildren()) do
+        if v:IsA("Tool") and (v.ToolTip == "Melee" or v.ToolTip == "Sword") then
+            LP.Character.Humanoid:EquipTool(v) break
+        end
     end
 end
 
--- [[ 6. VÒNG LẶP CHÍNH ]]
+-- [[ 7. VÒNG LẶP CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
             StoreAction()
-            AutoRotateMelee()
+            AutoBuyMelee() -- Tự động mua võ
             
             if PlaceId == 2753915549 and LP.Data.Level.Value >= 700 then
                 local progress = GetCommF():InvokeServer("DressrosaQuestProgress", "Detective")
@@ -190,7 +186,7 @@ task.spawn(function()
                     else
                         local Boss = workspace.Enemies:FindFirstChild("Ice Admiral")
                         if Boss and Boss.Humanoid.Health > 0 then
-                            EquipWeapon(); LP.Character.HumanoidRootPart.CFrame = Boss.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0)
+                            EquipWeapon(); LP.Character.HumanoidRootPart.CFrame = Boss.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
                             RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                             RS.Modules.Net["RE/RegisterHit"]:FireServer(Boss.PrimaryPart, {{Boss, Boss.PrimaryPart}})
                         else TweenTo(CFrame.new(1347, 37, -1325), getgenv().TweenSpeed) end
@@ -237,22 +233,21 @@ task.spawn(function()
     end
 end)
 
--- [[ PHẦN PHỤ TRỢ ]]
+-- [[ 8. PHẦN CÒN LẠI ]]
 for i,v in pairs(getconnections(LP.Idled)) do v:Disable() end
 task.spawn(function()
     task.wait(getgenv().ServerHopTime)
-    while task.wait(5) do
-        pcall(function()
-            local s, r = pcall(function() return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")) end)
-            if s and r then
-                for _, v in pairs(r.data) do
-                    if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                        TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, LP) return
-                    end
+    local function Hop()
+        local s, r = pcall(function() return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")) end)
+        if s and r then
+            for _, v in pairs(r.data) do
+                if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, LP) return
                 end
             end
-        end)
+        end
     end
+    while task.wait(5) do Hop() end
 end)
 
 task.spawn(function()

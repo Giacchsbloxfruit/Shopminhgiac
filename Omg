@@ -3,7 +3,7 @@ getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT
 getgenv().TweenSpeed = 200      
 getgenv().FruitSpeed = 350      
 getgenv().MaxStat = 2800        
-getgenv().ServerHopTime = 1800 -- Đổi Server sau 30 phút
+getgenv().ServerHopTime = 10 -- Đổi Server sau 30 phút
 getgenv().LastStoredFruit = "" -- Chống spam thông báo
 
 local LP = game.Players.LocalPlayer

@@ -1,94 +1,87 @@
--- [[ KAITUN FULL SEA 1-2 + HIJACKER ATTACK + AUTO BUSO ]] --
+-- [[ KAITUN SEA 1-2: RE-OPTIMIZED VERSION ]] --
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 150      
-getgenv().FruitSpeed = 330      
 getgenv().MaxStat = 2800        
-getgenv().ServerHopTime = 1800 
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 local PlaceId = game.PlaceId
 
--- [[ 1. HÀM HIJACKER ATTACK ]] --
-local function GetActiveController()
-    local success, result = pcall(function()
-        local CombatController = require(RS:WaitForChild("Controllers"):WaitForChild("CombatController"))
-        return CombatController and CombatController.activeController
+-- [[ 1. HÀM LẤY CONTROLLER (HIJACKER) ]] --
+local function GetAC()
+    local s, r = pcall(function()
+        return require(RS:WaitForChild("Controllers"):WaitForChild("CombatController")).activeController
     end)
-    return success and result or nil
+    return s and r or nil
 end
 
 -- [[ 2. HÀM DI CHUYỂN & TRANG BỊ ]] --
-local function GetCommF()
-    return RS:FindFirstChild("CommF_", true)
-end
-
-local function TweenTo(Pos, Speed)
+local function TweenTo(Pos)
     pcall(function()
-        local char = LP.Character or LP.CharacterAdded:Wait()
-        local root = char:WaitForChild("HumanoidRootPart")
+        local root = LP.Character:WaitForChild("HumanoidRootPart")
         local dist = (Pos.Position - root.Position).Magnitude
         if dist < 5 then root.CFrame = Pos return end
-        local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
-        bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
-        TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
-    end)
-end
-
--- [[ 3. AUTO BUSO HAKI (MỚI) ]] --
-local function AutoBuso()
-    pcall(function()
-        if not LP.Character:FindFirstChild("HasBuso") then
-            local remote = RS:FindFirstChild("Buso", true) or RS:FindFirstChild("Buso")
-            if remote then 
-                remote:FireServer() 
-            end
+        
+        if not root:FindFirstChild("AntiFall") then
+            local bv = Instance.new("BodyVelocity", root)
+            bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
         end
+        
+        TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
     end)
 end
 
 local function EquipMelee()
-    pcall(function()
-        local char = LP.Character
-        if not char:FindFirstChildOfClass("Tool") then
-            for _, v in pairs(LP.Backpack:GetChildren()) do
-                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
-                    char.Humanoid:EquipTool(v) break
-                end
-            end
+    for _, v in pairs(LP.Backpack:GetChildren()) do
+        if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Electric" or v.Name == "Dark Step" or v.Name == "Water Kung Fu") then
+            LP.Character.Humanoid:EquipTool(v)
         end
-    end)
+    end
 end
 
--- [[ 4. AUTO STATS & TEAM ]] --
+-- [[ 3. LUỒNG FAST ATTACK ĐỘC LẬP (ĐÃ TEST ĐẢM BẢO CHẠY) ]] --
 task.spawn(function()
-    while task.wait(0.5) do
-        if not LP.Team or LP.Team.Name == "" then
-            pcall(function() RS.SetTeam:InvokeServer("Pirates") end)
-        else break end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.7) do
+    while task.wait(0.01) do
         pcall(function()
-            local P = LP.Data.StatsPoints
-            if P.Value > 0 then
-                local mVal = LP.Data.Melee.Value
-                if mVal < getgenv().MaxStat then
-                    GetCommF():InvokeServer("AddPoint", "Melee", 1)
-                else
-                    GetCommF():InvokeServer("AddPoint", "Defense", 1)
+            local tool = LP.Character:FindFirstChildOfClass("Tool")
+            if tool then
+                for _, v in pairs(workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        local root = v:FindFirstChild("HumanoidRootPart")
+                        if (root.Position - LP.Character.HumanoidRootPart.Position).Magnitude <= 50 then
+                            local AC = GetAC()
+                            if AC then
+                                AC.attackID = (AC.attackID or 0) + 1
+                                RS.Modules.Net["RE/RegisterAttack"]:FireServer(AC.attackID)
+                                RS.Modules.Net["RE/RegisterHit"]:FireServer(root, {{v, root}})
+                                if AC.hitbox then AC.hitbox:stop() end 
+                            else
+                                RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                                RS.Modules.Net["RE/RegisterHit"]:FireServer(root, {{v, root}})
+                            end
+                            tool:Activate()
+                        end
+                    end
                 end
             end
         end)
     end
 end)
 
--- [[ 5. QUEST DATA ]] --
+-- [[ 4. AUTO BUSO HAKI ]] --
+task.spawn(function()
+    while task.wait(2) do
+        if LP.Character and not LP.Character:FindFirstChild("HasBuso") then
+            local r = RS:FindFirstChild("Buso", true) or RS:FindFirstChild("Buso")
+            if r then r:FireServer() end
+        end
+    end
+end)
+
+-- [[ 5. DANH SÁCH NHIỆM VỤ (SEA 1 & 2) ]] --
 local QuestList = {}
-if PlaceId == 2753915549 then -- SEA 1
+if PlaceId == 2753915549 then -- Sea 1
     QuestList = {
         {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
         {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
@@ -139,73 +132,42 @@ elseif PlaceId == 4442245369 then -- SEA 2
     }
 end
 
--- [[ 6. VÒNG LẶP FARM CHÍNH + AUTO BUSO ]] --
+-- [[ 6. VÒNG LẶP FARM CHÍNH ]] --
 task.spawn(function()
-    while task.wait() do
+    while task.wait(0.5) do
         pcall(function()
-            if not LP.Team then return end
-            
             local myLv = LP.Data.Level.Value
             local q = nil
             for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
-            if not q then return end
-
-            if not LP.PlayerGui.Main.Quest.Visible then
-                TweenTo(q.NPC, getgenv().TweenSpeed)
-                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
-                    GetCommF():InvokeServer("StartQuest", q.Name, q.Lv)
-                end
-            else
-                local Enemy = nil
-                for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                        Enemy = e break
+            
+            if q then
+                if not LP.PlayerGui.Main.Quest.Visible then
+                    TweenTo(q.NPC)
+                    if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
+                        RS:FindFirstChild("CommF_", true):InvokeServer("StartQuest", q.Name, q.Lv)
                     end
-                end
-
-                if Enemy then
-                    EquipMelee()
-                    AutoBuso() -- Tự động bật Haki khi có quái
-                    
-                    Enemy.HumanoidRootPart.CanCollide = false
-                    Enemy.HumanoidRootPart.CFrame = LP.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
-                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
-                    
-                    local AC = GetActiveController()
-                    if AC then
-                        AC.attackID = (AC.attackID or 0) + 1
-                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(AC.attackID)
-                        RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
-                        if AC.hitbox then AC.hitbox:stop() end 
-                    else
-                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                        RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
-                    end
-                    task.spawn(function() LP.Character:FindFirstChildOfClass("Tool"):Activate() end)
-                    task.wait(0.04)
                 else
-                    TweenTo(q.MonPos, getgenv().TweenSpeed)
+                    local Enemy = workspace.Enemies:FindFirstChild(q.Mon)
+                    if Enemy and Enemy:FindFirstChild("Humanoid") and Enemy.Humanoid.Health > 0 then
+                        EquipMelee()
+                        -- Bay trên đầu quái 25m để né dame
+                        TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    else
+                        TweenTo(q.MonPos)
+                    end
                 end
             end
         end)
     end
 end)
 
--- [[ 7. NOCLIP & ANTI-AFK ]] --
+-- [[ 7. NOCLIP ]] --
 game:GetService("RunService").Stepped:Connect(function()
-    pcall(function()
-        if LP.Character then
-            for _, v in pairs(LP.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
-            end
+    if LP.Character then
+        for _, v in pairs(LP.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
         end
-    end)
+    end
 end)
 
-local VirtualUser = game:GetService("VirtualUser")
-LP.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
-end)
-
-print("--- KAITUN HIJACKER + AUTO BUSO LOADED ---")
+print("--- FIX VERSION LOADED! ---")

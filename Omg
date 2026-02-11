@@ -1,7 +1,7 @@
 -- [[ 1. CÀI ĐẶT CẤU HÌNH ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
-getgenv().TweenSpeed = 200      
-getgenv().FruitSpeed = 350      
+getgenv().TweenSpeed = 150      
+getgenv().FruitSpeed = 330      
 getgenv().MaxStat = 2800        
 getgenv().ServerHopTime = 1800 
 
@@ -74,7 +74,7 @@ local function SendDiscordNotification(fruitName)
             ["title"] = "📦 ĐÃ TỰ ĐỘNG CẤT TRÁI VÀO KHO!",
             ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n✅ Trạng thái: **Thành công!**",
             ["color"] = 3447003,
-            ["footer"] = { ["text"] = "Gemini Blox Fruit Script • " .. os.date("%X") }
+            ["footer"] = { ["text"] = "Giacdz Blox Fruit Script • " .. os.date("%X") }
         }}
     }
     local req = (syn and syn.request) or (http and http.request) or http_request or request

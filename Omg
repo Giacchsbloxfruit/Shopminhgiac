@@ -1,4 +1,4 @@
--- [[ 1. CÀI ĐẶT CẤU HÌNH ]]
+-- [[ KAITUN FULL SEA 1-2 + HIJACKER ATTACK + AUTO BUSO ]] --
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 150      
 getgenv().FruitSpeed = 330      
@@ -10,37 +10,20 @@ local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 local PlaceId = game.PlaceId
 
--- Hàm lấy Remote chuẩn
-local function GetCommF()
-    local f = RS:FindFirstChild("CommF_", true)
-    if f then return f end
-    for _, v in pairs(RS:GetDescendants()) do
-        if v.Name == "CommF_" then return v end
-    end
-    return nil
+-- [[ 1. HÀM HIJACKER ATTACK ]] --
+local function GetActiveController()
+    local success, result = pcall(function()
+        local CombatController = require(RS:WaitForChild("Controllers"):WaitForChild("CombatController"))
+        return CombatController and CombatController.activeController
+    end)
+    return success and result or nil
 end
 
--- [[ 2. TỰ ĐỘNG CHỌN PHE & NHẬP CODE ]]
-task.spawn(function()
-    while task.wait(0.5) do
-        if not LP.Team or LP.Team.Name == "" then
-            pcall(function()
-                local tr = RS:FindFirstChild("SetTeam", true) or (RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("SetTeam"))
-                if tr then tr:InvokeServer("Pirates") end
-            end)
-        else break end
-    end
-    
-    repeat task.wait() until LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level")
-    task.wait(2)
-    local Codes = {"KITT_RESET", "Sub2CaptainMaui", "DEVSCOOKING", "Sub2Fer999", "Enyu_is_Pro", "Magicbus", "JCWK", "Starcodeheo", "Sub2NoobMaster123", "THEGREATACE", "SUB2OFFICIALNOOB", "FUDD10", "BIGNEWS", "SUB2UNCLEKIZARU", "Sub2Normaler", "StrawHatMaine", "SUB2GAMERROBOT_EXP1"}
-    for _, v in pairs(Codes) do
-        pcall(function() GetCommF():InvokeServer("RedeemCode", v) end)
-        task.wait(0.1)
-    end
-end)
+-- [[ 2. HÀM DI CHUYỂN & TRANG BỊ ]] --
+local function GetCommF()
+    return RS:FindFirstChild("CommF_", true)
+end
 
--- [[ 3. HÀM DI CHUYỂN & TRANG BỊ ]]
 local function TweenTo(Pos, Speed)
     pcall(function()
         local char = LP.Character or LP.CharacterAdded:Wait()
@@ -50,6 +33,18 @@ local function TweenTo(Pos, Speed)
         local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
         bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
         TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+    end)
+end
+
+-- [[ 3. AUTO BUSO HAKI (MỚI) ]] --
+local function AutoBuso()
+    pcall(function()
+        if not LP.Character:FindFirstChild("HasBuso") then
+            local remote = RS:FindFirstChild("Buso", true) or RS:FindFirstChild("Buso")
+            if remote then 
+                remote:FireServer() 
+            end
+        end
     end)
 end
 
@@ -66,62 +61,32 @@ local function EquipMelee()
     end)
 end
 
--- [[ 4. THÔNG BÁO DISCORD & CẤT KHO (Y HỆT MẪU BẠN GỬI) ]]
-local function SendDiscordNotification(fruitName)
-    local data = {
-        ["content"] = "🚀 **THÔNG BÁO HỆ THỐNG KHO ĐỒ**",
-        ["embeds"] = {{
-            ["title"] = "📦 ĐÃ TỰ ĐỘNG CẤT TRÁI VÀO KHO!",
-            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n✅ Trạng thái: **Thành công!**",
-            ["color"] = 3447003,
-            ["footer"] = { ["text"] = "Giacdz Blox Fruit Script • " .. os.date("%X") }
-        }}
-    }
-    local req = (syn and syn.request) or (http and http.request) or http_request or request
-    if req then req({Url = getgenv().WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = game:GetService("HttpService"):JSONEncode(data)}) end
-end
-
--- [[ 5. FRUIT SNIPER & STORE ACTION ]]
+-- [[ 4. AUTO STATS & TEAM ]] --
 task.spawn(function()
     while task.wait(0.5) do
+        if not LP.Team or LP.Team.Name == "" then
+            pcall(function() RS.SetTeam:InvokeServer("Pirates") end)
+        else break end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.7) do
         pcall(function()
-            -- Sniper
-            for _, v in pairs(workspace:GetChildren()) do
-                if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
-                    local h = v:FindFirstChild("Handle") or v.PrimaryPart
-                    if h then 
-                        TweenTo(h.CFrame, getgenv().FruitSpeed)
-                        if (LP.Character.HumanoidRootPart.Position - h.Position).Magnitude < 10 then
-                            firetouchinterest(LP.Character.HumanoidRootPart, h, 0)
-                            firetouchinterest(LP.Character.HumanoidRootPart, h, 1)
-                        end
-                    end
+            local P = LP.Data.StatsPoints
+            if P.Value > 0 then
+                local mVal = LP.Data.Melee.Value
+                if mVal < getgenv().MaxStat then
+                    GetCommF():InvokeServer("AddPoint", "Melee", 1)
+                else
+                    GetCommF():InvokeServer("AddPoint", "Defense", 1)
                 end
-            end
-            -- Store
-            local char = LP.Character
-            for _, tool in pairs(LP.Backpack:GetChildren()) do
-                if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                    char.Humanoid:EquipTool(tool)
-                    task.wait(0.2)
-                end
-            end
-            local held = char:FindFirstChildOfClass("Tool")
-            if held and (held.ToolTip == "Fruit" or string.find(held.Name, "Fruit")) then
-                local fName = held.Name:gsub(" Fruit", "")
-                task.defer(function()
-                    local r = GetCommF()
-                    r:InvokeServer("StoreFruit", fName, held)
-                    r:InvokeServer("StoreFruit", fName.."-"..fName, held)
-                end)
-                SendDiscordNotification(held.Name)
-                task.wait(1)
             end
         end)
     end
 end)
 
--- [[ 6. DANH SÁCH QUEST ĐẦY ĐỦ (KHÔNG RÚT GỌN) ]]
+-- [[ 5. QUEST DATA ]] --
 local QuestList = {}
 if PlaceId == 2753915549 then -- SEA 1
     QuestList = {
@@ -174,18 +139,12 @@ elseif PlaceId == 4442245369 then -- SEA 2
     }
 end
 
--- [[ 7. VÒNG LẶP FARM CHÍNH ]]
+-- [[ 6. VÒNG LẶP FARM CHÍNH + AUTO BUSO ]] --
 task.spawn(function()
     while task.wait() do
         pcall(function()
             if not LP.Team then return end
             
-            -- Chuyển Sea 2
-            if PlaceId == 2753915549 and LP.Data.Level.Value >= 700 then
-                TweenTo(CFrame.new(1347, 37, -1325), getgenv().TweenSpeed)
-                return
-            end
-
             local myLv = LP.Data.Level.Value
             local q = nil
             for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
@@ -203,19 +162,27 @@ task.spawn(function()
                         Enemy = e break
                     end
                 end
-                if not Enemy then
-                    for _, e in pairs(workspace:GetChildren()) do
-                        if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                            Enemy = e break
-                        end
-                    end
-                end
 
                 if Enemy then
                     EquipMelee()
+                    AutoBuso() -- Tự động bật Haki khi có quái
+                    
+                    Enemy.HumanoidRootPart.CanCollide = false
+                    Enemy.HumanoidRootPart.CFrame = LP.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
-                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                    
+                    local AC = GetActiveController()
+                    if AC then
+                        AC.attackID = (AC.attackID or 0) + 1
+                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(AC.attackID)
+                        RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                        if AC.hitbox then AC.hitbox:stop() end 
+                    else
+                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                        RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                    end
+                    task.spawn(function() LP.Character:FindFirstChildOfClass("Tool"):Activate() end)
+                    task.wait(0.04)
                 else
                     TweenTo(q.MonPos, getgenv().TweenSpeed)
                 end
@@ -224,29 +191,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 8. AUTO STATS (Y HỆT MẪU BẠN GỬI) ]]
-task.spawn(function()
-    local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
-    while task.wait(0.7) do
-        pcall(function()
-            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
-            local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
-            if P and P.Value > 0 then
-                local mVal = 0; for _, n in pairs(S.M) do if Data:FindFirstChild(n) then mVal = Data[n].Value break end end
-                local remote = GetCommF()
-                if remote then
-                    if mVal < getgenv().MaxStat then
-                        for _, n in pairs(S.M) do remote:InvokeServer("AddPoint", n, 1) end
-                    else
-                        for _, n in pairs(S.D) do remote:InvokeServer("AddPoint", n, 1) end
-                    end
-                end
-            end
-        end)
-    end
-end)
-
--- [[ 9. HỆ THỐNG PHỤ (NOCLIP & HOP) ]]
+-- [[ 7. NOCLIP & ANTI-AFK ]] --
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
@@ -257,14 +202,10 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
-task.spawn(function()
-    task.wait(getgenv().ServerHopTime)
-    pcall(function()
-        local Servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"))
-        for _, s in pairs(Servers.data) do
-            if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceId, s.id, LP) break
-            end
-        end
-    end)
+local VirtualUser = game:GetService("VirtualUser")
+LP.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
 end)
+
+print("--- KAITUN HIJACKER + AUTO BUSO LOADED ---")

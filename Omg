@@ -1,56 +1,58 @@
--- [[ KAITUN FULL: FARM S1-S2 + FRUIT + STORE + BUSO + HIJACKER + DISCORD ]] --
+-- [[ KAITUN FULL: FARM S1-S2 + GHOST ATTACK (GRAVITY) + FRUIT + STORE ]] --
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 150      
 getgenv().FruitSpeed = 330      
-getgenv().MaxStat = 2800        
+getgenv().MaxStat = 2450 -- Đã update max stats mới nhất (nếu cần)        
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 local PlaceId = game.PlaceId
 
--- [[ 1. HÀM THÔNG BÁO DISCORD (PHẦN BẠN CẦN) ]] --
+-- [[ 1. HÀM THÔNG BÁO DISCORD ]] --
 local function SendDiscord(fruitName)
     local data = {
         ["embeds"] = {{
             ["title"] = "📦 ĐÃ CẤT TRÁI ÁC QUỶ VÀO KHO!",
             ["description"] = "👤 **Tên nhân vật:** " .. LP.Name .. "\n🍎 **Loại trái:** " .. fruitName .. "\n🌍 **Server:** Sea " .. (PlaceId == 2753915549 and "1" or "2"),
-            ["color"] = 65280, -- Màu xanh lá
+            ["color"] = 65280,
             ["footer"] = {["text"] = "Kaitun Hijacker System"}
         }}
     }
     pcall(function()
-        local req = (syn and syn.request) or (http and http.request) or http_request or request
-        if req then
-            req({
-                Url = getgenv().WebhookURL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = game:GetService("HttpService"):JSONEncode(data)
-            })
-        end
+        request({
+            Url = getgenv().WebhookURL,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = game:GetService("HttpService"):JSONEncode(data)
+        })
     end)
 end
 
 -- [[ 2. HÀM HỖ TRỢ HỆ THỐNG ]] --
 local function GetCommF() return RS:FindFirstChild("CommF_", true) end
 
-local function GetAC()
-    local s, r = pcall(function() return require(RS:WaitForChild("Controllers"):WaitForChild("CombatController")).activeController end)
-    return s and r or nil
-end
-
 local function TweenTo(Pos, Speed)
     pcall(function()
-        local root = LP.Character:WaitForChild("HumanoidRootPart")
-        local dist = (Pos.Position - root.Position).Magnitude
+        if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
+        local root = LP.Character.HumanoidRootPart
+        local targetPos = (typeof(Pos) == "CFrame" and Pos.Position or Pos)
+        local dist = (targetPos - root.Position).Magnitude
         local s = Speed or getgenv().TweenSpeed
-        if dist < 5 then root.CFrame = Pos return end
+        
+        if dist < 10 then 
+            root.CFrame = (typeof(Pos) == "CFrame" and Pos or CFrame.new(Pos))
+            return 
+        end
+        
         if not root:FindFirstChild("AntiFall") then
             local bv = Instance.new("BodyVelocity", root)
             bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
         end
-        TS:Create(root, TweenInfo.new(dist/s, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+        
+        local info = TweenInfo.new(dist/s, Enum.EasingStyle.Linear)
+        TS:Create(root, info, {CFrame = (typeof(Pos) == "CFrame" and Pos or CFrame.new(Pos))}):Play()
     end)
 end
 
@@ -69,7 +71,7 @@ task.spawn(function()
                     end
                 end
             end
-            -- Cất kho và gửi thông báo
+            -- Cất kho
             for _, tool in pairs(LP.Backpack:GetChildren()) do
                 if tool:IsA("Tool") and tool.ToolTip == "Fruit" then
                     local fName = tool.Name
@@ -83,36 +85,52 @@ task.spawn(function()
     end
 end)
 
--- [[ 4. FAST ATTACK HIJACKER & AUTO BUSO ]] --
+-- [[ 4. GHOST AUTO ATTACK (GRAVITY HUB INTEGRATION) ]] --
+-- Đây là phần thay thế cho Auto Attack cũ của bạn
 task.spawn(function()
-    while task.wait(0.01) do
+    -- A. Vòng lặp ẩn UI liên tục
+    game:GetService("RunService").Heartbeat:Connect(function()
         pcall(function()
-            local tool = LP.Character:FindFirstChildOfClass("Tool")
-            if tool and tool.ToolTip == "Melee" then
-                if not LP.Character:FindFirstChild("HasBuso") then RS.Buso:FireServer() end
-                for _, v in pairs(workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        local root = v:FindFirstChild("HumanoidRootPart")
-                        if (root.Position - LP.Character.HumanoidRootPart.Position).Magnitude <= 65 then
-                            local AC = GetAC()
-                            if AC then
-                                AC.attackID = (AC.attackID or 0) + 1
-                                RS.Modules.Net["RE/RegisterAttack"]:FireServer(AC.attackID)
-                                RS.Modules.Net["RE/RegisterHit"]:FireServer(root, {{v, root}})
-                                if AC.hitbox then AC.hitbox:stop() end 
-                            end
-                            tool:Activate()
-                        end
+            for _, gui in pairs(CoreGui:GetChildren()) do
+                if gui:IsA("ScreenGui") and gui.Enabled then
+                    local name = gui.Name:lower()
+                    -- Tìm tên UI của Gravity Hub để tắt hiển thị
+                    if name:find("gravity") or name:find("hub") or name:find("orion") or name:find("library") then
+                        gui.Enabled = false
                     end
                 end
             end
         end)
+    end)
+
+    -- B. Tải Script Gravity Hub
+    print("--> Loading Gravity Hub (Ghost Mode)...")
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-GravityHub/BloxFruit/refs/heads/main/Main.lua"))()
+    end)
+
+    -- C. Kích hoạt Auto Attack ngầm
+    task.wait(5) -- Đợi script load xong
+    if getgenv() then
+        getgenv().FastAttack = true
+        getgenv().AutoAttack = true
+        -- Nếu Gravity Hub dùng biến khác, bạn có thể thêm vào đây
+        print("--> Đã kích hoạt Fast Attack ngầm!")
     end
+    
+    -- D. Auto Buso & Haki (Kích hoạt thủ công cho chắc)
+    task.spawn(function()
+        while task.wait(5) do
+            if not LP.Character:FindFirstChild("HasBuso") then 
+                RS.Remotes.CommF_:InvokeServer("Buso")
+            end
+        end
+    end)
 end)
 
 -- [[ 5. DANH SÁCH QUEST S1-S2 ]] --
 local QuestList = {}
-if PlaceId == 2753915549 then
+if PlaceId == 2753915549 then -- SEA 1
     QuestList = {
         {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
         {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
@@ -169,19 +187,42 @@ task.spawn(function()
         pcall(function()
             local myLv = LP.Data.Level.Value
             local q = nil
-            for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
+            -- Tìm quest phù hợp với cấp độ
+            for _, v in pairs(QuestList) do 
+                if myLv >= v.Min and myLv <= v.Max then 
+                    q = v 
+                    break 
+                end 
+            end
+            
             if q then
+                -- Nếu chưa nhận quest thì đi nhận
                 if not LP.PlayerGui.Main.Quest.Visible then
                     TweenTo(q.NPC)
                     if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
                         GetCommF():InvokeServer("StartQuest", q.Name, q.Lv)
                     end
                 else
-                    local Enemy = workspace.Enemies:FindFirstChild(q.Mon) or workspace.Enemies:FindFirstChild(q.Mon.." [Lv. "..q.Lv.."]")
-                    if Enemy and Enemy:FindFirstChild("Humanoid") and Enemy.Humanoid.Health > 0 then
-                        for _, v in pairs(LP.Backpack:GetChildren()) do if v.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(v) end end
-                        TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    -- Đã có quest, tìm quái để farm
+                    local Enemy = nil
+                    for _,v in pairs(workspace.Enemies:GetChildren()) do
+                        if v.Name == q.Mon or v.Name == q.Mon.." [Lv. "..q.Lv.."]" then
+                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                Enemy = v
+                                break
+                            end
+                        end
+                    end
+
+                    if Enemy then
+                        -- Cầm vũ khí lên để Gravity Hub hoạt động
+                        for _, v in pairs(LP.Backpack:GetChildren()) do 
+                            if v.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(v) end 
+                        end
+                        -- Bay lên đầu quái để Hub tự đánh
+                        TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
                     else
+                        -- Không thấy quái thì bay về bãi quái
                         TweenTo(q.MonPos)
                     end
                 end
@@ -190,9 +231,15 @@ task.spawn(function()
     end
 end)
 
--- Noclip & Auto Stats
+-- [[ 7. NOCLIP & AUTO STATS ]] --
 game:GetService("RunService").Stepped:Connect(function()
-    pcall(function() for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end end)
+    pcall(function() 
+        if LP.Character then
+            for _, v in pairs(LP.Character:GetDescendants()) do 
+                if v:IsA("BasePart") then v.CanCollide = false end 
+            end 
+        end
+    end)
 end)
 
 task.spawn(function()
@@ -206,4 +253,4 @@ task.spawn(function()
     end
 end)
 
-print("--- FULL KAITUN SYSTEM (FIXED WEBHOOK) LOADED ---")
+print("--- FULL KAITUN SYSTEM (GRAVITY GHOST MODE) LOADED ---")

@@ -1,18 +1,3 @@
--- [[ PHẦN TỰ ĐỘNG CHỌN PHE HẢI TẶC ]]
-task.spawn(function()
-    pcall(function()
-        -- Chờ cho đến khi game load xong dữ liệu nhân vật
-        repeat task.wait() until game:GetService("Players").LocalPlayer.Parent ~= nil
-                
-        if game.Players.LocalPlayer.Team == nil then
-            local remote = GetCommF() -- Sử dụng hàm tìm Remote đã có của bạn
-            if remote then                
-                remote:InvokeServer("SetTeam", "Pirates")
-            end
-        end
-    end)
-end)
-
 -- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      
@@ -36,6 +21,37 @@ local function GetCommF()
     end
     return found
 end
+-- [[ CONFIGURATION CHỌN PHE ]]
+getgenv().Team = "Pirates" -- "Pirates" hoặc "Marines"
+getgenv().AutoLoad = false -- Tự động chạy khi chuyển Server
+
+-- [[ LOGIC TỰ ĐỘNG CHỌN PHE ]]
+task.spawn(function()
+    -- Đợi game tải xong hoàn toàn
+    if not game:IsLoaded() then game.Loaded:Wait() end
+    
+    -- Vòng lặp kiểm tra cho đến khi vào được phe chỉ định
+    while task.wait(0.5) do
+        -- Nếu đã vào đúng phe yêu cầu thì dừng vòng lặp
+        if game.Players.LocalPlayer.Team ~= nil and game.Players.LocalPlayer.Team.Name == getgenv().Team then 
+            break 
+        end
+        
+        pcall(function()
+            local remote = GetCommF() -- Hàm tìm Remote của bạn
+            
+            -- Ưu tiên sử dụng cách SetTeam chuẩn của Blox Fruit
+            if remote then
+                remote:InvokeServer("SetTeam", getgenv().Team)
+            end
+            
+            -- Cách dự phòng nếu cách trên bị chặn
+            if game:GetService("ReplicatedStorage"):FindFirstChild("SetTeam") then
+                game:GetService("ReplicatedStorage").SetTeam:FireServer(getgenv().Team)
+            end
+        end)                
+    end
+end)
 
 -- [[ 2. HÀM GỬI THÔNG BÁO DISCORD CẢI TIẾN ]]
 local function SendDiscordNotification(fruitName, status)
@@ -51,7 +67,7 @@ local function SendDiscordNotification(fruitName, status)
             ["title"] = "📦 HỆ THỐNG TỰ ĐỘNG CẤT TRÁI",
             ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n📊 Trạng thái: **" .. status .. "**",
             ["color"] = color,
-            ["footer"] = { ["text"] = "Gemini Blox Fruit • " .. os.date("%X") }
+            ["footer"] = { ["text"] = "Giacdz kaitun • " .. os.date("%X") }
         }}
     }
     

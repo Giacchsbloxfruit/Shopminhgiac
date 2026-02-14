@@ -1,30 +1,45 @@
--- [[ 0. CONFIGURATION ]]
+-- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
-getgenv().TweenSpeed = 250      
+getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
-_G.Grabfruit = true -- Mặc định bật tự động nhặt trái
+_G.Grabfruit = true 
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 
--- Hàm lấy Remote CommF_
+-- Biến kiểm soát thông báo (Chỉ báo 1 lần cho mỗi loại trái mới)
+local LastNotifiedFruit = ""
+
+-- Hàm tìm Remote
 local function GetCommF()
-    return RS:FindFirstChild("CommF_", true) or RS:WaitForChild("CommF_")
+    local found = RS:FindFirstChild("CommF_", true)
+    if not found then
+        for _, v in pairs(RS:GetDescendants()) do
+            if v.Name == "CommF_" then return v end
+        end
+    end
+    return found
 end
 
--- [[ 1. HÀM GỬI THÔNG BÁO DISCORD ]]
-local function SendDiscordNotification(fruitName)
+-- [[ 2. HÀM GỬI THÔNG BÁO DISCORD CẢI TIẾN ]]
+local function SendDiscordNotification(fruitName, status)
+    -- Nếu trái này vừa mới thông báo xong thì không gửi lại nữa
+    if LastNotifiedFruit == fruitName then return end 
+
     local url = getgenv().WebhookURL
+    local color = (status == "Thành công") and 3066993 or 15158332 -- Xanh nếu OK, Đỏ nếu đầy
+    
     local data = {
-        ["content"] = "🚀 **THÔNG BÁO HỆ THỐNG KHO ĐỒ**",
+        ["content"] = "🚀 **CẬP NHẬT TRẠNG THÁI KHO ĐỒ**",
         ["embeds"] = {{
-            ["title"] = "📦 ĐÃ TỰ ĐỘNG CẤT TRÁI VÀO KHO!",
-            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n✅ Trạng thái: **Đã ép lệnh cất kho thành công!**",
-            ["color"] = 3447003,
-            ["footer"] = { ["text"] = "Gemini Blox Fruit Script • " .. os.date("%X") }
+            ["title"] = "📦 HỆ THỐNG TỰ ĐỘNG CẤT TRÁI",
+            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n📊 Trạng thái: **" .. status .. "**",
+            ["color"] = color,
+            ["footer"] = { ["text"] = "Gemini Blox Fruit • " .. os.date("%X") }
         }}
     }
+    
     local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if request then
         request({
@@ -33,66 +48,50 @@ local function SendDiscordNotification(fruitName)
             Headers = {["Content-Type"] = "application/json"},
             Body = game:GetService("HttpService"):JSONEncode(data)
         })
+        -- Ghi nhận đã thông báo trái này
+        LastNotifiedFruit = fruitName 
     end
 end
 
--- [[ 2. AUTO TELEPORT FRUITS (PHẦN BẠN GỬI) ]]
--- Luồng này chạy độc lập, thấy trái là TP tới ngay lập tức
-spawn(function()
-    while wait(0.1) do
-        if _G.Grabfruit then
-            pcall(function()
-                for _, v in pairs(game.Workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        -- Teleport tức thời đến trái ác quỷ
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ TÍCH HỢP) ]]
+-- [[ 3. HÀM CẤT KHO + CHECK TÚI ĐẦY ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
         local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
         
-        -- Quét túi đồ để tìm trái
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool) -- Bắt buộc cầm lên tay
-                task.wait(0.2)
+                hum:EquipTool(tool)
+                task.wait(0.3)
             end
         end
 
-        -- Xử lý trái đang cầm trên tay
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
-            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            local fruitName = toolOnHand.Name
+            local storeName = fruitName:gsub(" Fruit", "")
             
-            -- Nhồi lệnh defer để bypass
-            task.defer(function()
-                if remote then
-                    -- Thử các loại tên biến thể của trái
-                    remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
-                end
-            end)
+            -- Gọi server để cất trái và lấy kết quả trả về
+            -- Trong Blox Fruit, result = 1 là thành công, result = 2 thường là túi đầy
+            local result = remote:InvokeServer("StoreFruit", storeName, toolOnHand)
             
-            -- Gửi thông báo (chỉ gửi nếu hành động diễn ra)
-            SendDiscordNotification(toolOnHand.Name)
-            task.wait(1) -- Tránh spam webhook
+            local statusMsg = "Thành công"
+            if result == 2 or result == "Full" then
+                statusMsg = "Thất bại - Túi đã đầy (Max Storage)"
+            elseif result ~= 1 and result ~= true then
+                -- Trường hợp khác (có thể là lỗi hoặc đã cất rồi)
+                statusMsg = "Thành công (Đã xử lý)" 
+            end
+            
+            SendDiscordNotification(fruitName, statusMsg)
+            task.wait(1)
         end
     end)
 end
 
--- Chạy vòng lặp cất kho riêng biệt
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(1) do
         StoreAction()
     end
 end)
@@ -120,22 +119,10 @@ local QuestList = {
     {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, NPC = CFrame.new(-7861, 5545, -381), Mon = "God's Guard", MonPos = CFrame.new(-7841, 5545, -450)},
     {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, NPC = CFrame.new(-7861, 5545, -381), Mon = "Shanda", MonPos = CFrame.new(-7680, 5550, -450)},
     {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Pirate", MonPos = CFrame.new(5570, 4, 3880)},
-    {Min = 650, Max = 2800, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
+    {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
 }
 
--- [[ 5. HÀM TWEEN DI CHUYỂN ]]
-local function TweenTo(Pos, Speed)
-    local root = LP.Character:WaitForChild("HumanoidRootPart")
-    local dist = (Pos.Position - root.Position).Magnitude
-    if dist < 10 then root.CFrame = Pos return end
-    if not root:FindFirstChild("AntiFall") then
-        local bv = Instance.new("BodyVelocity", root)
-        bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
-    end
-    TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
-end
-
--- [[ 5. CÁC HÀM HỖ TRỢ FARM ]]
+-- [[ 5. CÁC HÀM HỖ TRỢ ]]
 local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -146,37 +133,38 @@ local function TweenTo(Pos, Speed)
     TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
 end
 
-local function EquipMelee()
-    pcall(function()
-        local char = LP.Character
-        if not char:FindFirstChild("HasBuso") then 
-            local remote = GetCommF()
-            if remote then remote:InvokeServer("Buso") end
-        end
-        if not char:FindFirstChildOfClass("Tool") then
-            for _, v in pairs(LP.Backpack:GetChildren()) do
-                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
-                    char.Humanoid:EquipTool(v) break
-                end
-            end
-        end
-    end)
+local function IsFruitOnGround()
+    if not _G.Grabfruit then return false end
+    for _, v in pairs(game.Workspace:GetChildren()) do
+        if string.find(v.Name, "Fruit") then return true end
+    end
+    return false
 end
 
--- [[ 6. VÒNG LẶP FARM CHÍNH ]]
+-- [[ 6. AUTO TELEPORT FRUITS ]]
+spawn(function()
+    while wait(0.1) do
+        if _G.Grabfruit then
+            pcall(function()
+                for _, v in pairs(game.Workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") then
+                        local handle = v:FindFirstChild("Handle") or v:FindFirstChildWhichIsA("BasePart")
+                        if handle then
+                            LP.Character.HumanoidRootPart.CFrame = handle.CFrame
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- [[ 7. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
-            -- Kiểm tra xem có trái ác quỷ trên sân không
-            local hasFruit = false
-            for _, v in pairs(game.Workspace:GetChildren()) do
-                if string.find(v.Name, "Fruit") then hasFruit = true break end
-            end
+            if IsFruitOnGround() then return end
             
-            -- Nếu có trái, dừng farm để ưu tiên nhặt (Logic mục 2 sẽ tự TP)
-            if hasFruit and _G.Grabfruit then return end
-            
-            -- Nếu không có trái, tiếp tục farm level
             local myLv = LP.Data.Level.Value
             local q = nil
             for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
@@ -194,12 +182,10 @@ task.spawn(function()
                         Enemy = e break
                     end
                 end
-                
                 if Enemy then
-                    -- Loadstring Auto Attack bạn muốn ghép (Giacdz Hub)
-                    loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()
-                    
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
+                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
                     TweenTo(q.MonPos, getgenv().TweenSpeed)
                 end
@@ -208,29 +194,17 @@ task.spawn(function()
     end
 end)
 
--- [[ 8. AUTO STATS ]]
+-- AUTO STATS & NOCLIP
 task.spawn(function()
-    local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
-    while task.wait(0.7) do
+    while task.wait(1) do
         pcall(function()
-            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
-            local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
-            if P and P.Value > 0 then
-                local mVal = 0; for _, n in pairs(S.M) do if Data:FindFirstChild(n) then mVal = Data[n].Value break end end
-                local remote = GetCommF()
-                if remote then
-                    if mVal < getgenv().MaxStat then
-                        for _, n in pairs(S.M) do remote:InvokeServer("AddPoint", n, 1) end
-                    else
-                        for _, n in pairs(S.D) do remote:InvokeServer("AddPoint", n, 1) end
-                    end
-                end
+            if LP.Data.StatsPoints.Value > 0 then
+                GetCommF():InvokeServer("AddPoint", "Melee", 1)
             end
         end)
     end
 end)
 
--- NOCLIP
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
@@ -241,4 +215,5 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
+-- LOADSTRING AUTO ATTACK
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

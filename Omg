@@ -7,7 +7,6 @@ getgenv().MaxStat = 2800
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
-local VU = game:GetService("VirtualUser") -- Lấy service VirtualUser từ SourceBF
 
 -- Hàm tìm Remote CommF_ (ngay cả khi nó bị giấu)
 local function GetCommF()
@@ -45,36 +44,44 @@ local function SendDiscordNotification(fruitName)
     end
 end
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO ]]
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ TÍCH HỢP) ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
         local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
         
+        -- Quét túi đồ để tìm trái
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool)
+                hum:EquipTool(tool) -- Bắt buộc cầm lên tay
                 task.wait(0.2)
             end
         end
 
+        -- Xử lý trái đang cầm trên tay
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            
+            -- Nhồi lệnh defer để bypass
             task.defer(function()
                 if remote then
+                    -- Thử các loại tên biến thể của trái
                     remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
                     remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
                     remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
                 end
             end)
+            
+            -- Gửi thông báo (chỉ gửi nếu hành động diễn ra)
             SendDiscordNotification(toolOnHand.Name)
-            task.wait(1)
+            task.wait(1) -- Tránh spam webhook
         end
     end)
 end
 
+-- Chạy vòng lặp cất kho riêng biệt
 task.spawn(function()
     while task.wait(0.5) do
         StoreAction()
@@ -135,7 +142,7 @@ local function EquipMelee()
     end)
 end
 
--- [[ 6. FRUIT SNIPER ]]
+-- [[ 6. FRUIT SNIPER (ĐI NHẶT TRÁI TRÊN ĐẤT) ]]
 local function CheckFruitOnGround()
     for _, v in pairs(workspace:GetChildren()) do
         if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
@@ -156,22 +163,7 @@ local function CheckFruitOnGround()
     return false
 end
 
--- [[ 7. AUTO ATTACK LOGIC MỚI (TỪ SOURCE BẠN GỬI) ]]
--- Tạo luồng đánh riêng để không bị delay khi di chuyển
-local AutoAttacking = false
-task.spawn(function()
-    while task.wait() do
-        if AutoAttacking then
-            pcall(function()
-                -[span_0](start_span)[span_1](start_span)- Giả lập click chuột (VirtualUser) như trong file SourceBF.lua.txt[span_0](end_span)[span_1](end_span)
-                VU:CaptureController()
-                VU:Button1Down(Vector2.new(1280, 672))
-            end)
-        end
-    end
-end)
-
--- Vòng lặp Farm chính đã chỉnh sửa logic đánh
+-- [[ 7. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
@@ -183,7 +175,6 @@ task.spawn(function()
             if not q then return end
             
             if not LP.PlayerGui.Main.Quest.Visible then
-                AutoAttacking = false
                 TweenTo(q.NPC, getgenv().TweenSpeed)
                 if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
                     local remote = GetCommF()
@@ -196,33 +187,12 @@ task.spawn(function()
                         Enemy = e break
                     end
                 end
-                
                 if Enemy then
                     EquipMelee()
-                    
-                    -[span_2](start_span)- Logic xử lý quái từ SourceBF.lua.txt [cite: 893-896, 1264-1266, 1295-1298]
-                    -- 1. Tăng SimulationRadius để kiểm soát quái tốt hơn
-                    pcall(function() sethiddenproperty(LP, "SimulationRadius", math.huge) end)
-                    
-                    -- 2. Phóng to hitbox và làm đơ quái
-                    if Enemy:FindFirstChild("HumanoidRootPart") then
-                        [cite_start]Enemy.HumanoidRootPart.Size = Vector3.new(60, 60, 60) --[span_2](end_span)
-                        Enemy.HumanoidRootPart.Transparency = 1
-                        Enemy.HumanoidRootPart.CanCollide = false
-                        [span_3](start_span)Enemy.Humanoid.WalkSpeed = 0 --[span_3](end_span)
-                        Enemy.Humanoid.JumpPower = 0
-                        if Enemy.Humanoid:FindFirstChild("Animator") then
-                            Enemy.Humanoid.Animator:Destroy()
-                        end
-                    end
-                    
-                    -- 3. Di chuyển đến trên đầu quái
-                    [span_4](start_span)TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0), getgenv().TweenSpeed) --[span_4](end_span)
-                    
-                    -- 4. Bật biến đánh
-                    AutoAttacking = true
+                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
+                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    AutoAttacking = false
                     TweenTo(q.MonPos, getgenv().TweenSpeed)
                 end
             end
@@ -262,3 +232,4 @@ game:GetService("RunService").Stepped:Connect(function()
         end
     end)
 end)
+loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

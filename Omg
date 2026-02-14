@@ -53,22 +53,49 @@ spawn(function()
     end
 end)
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO ]]
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ TÍCH HỢP) ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
+        local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
+        
+        -- Quét túi đồ để tìm trái
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                char.Humanoid:EquipTool(tool)
-                task.wait(0.3)
-                remote:InvokeServer("StoreFruit", tool.Name:gsub(" Fruit", ""), tool)
+                hum:EquipTool(tool) -- Bắt buộc cầm lên tay
+                task.wait(0.2)
             end
+        end
+
+        -- Xử lý trái đang cầm trên tay
+        local toolOnHand = char:FindFirstChildOfClass("Tool")
+        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            
+            -- Nhồi lệnh defer để bypass
+            task.defer(function()
+                if remote then
+                    -- Thử các loại tên biến thể của trái
+                    remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+                    remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
+                    remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
+                end
+            end)
+            
+            -- Gửi thông báo (chỉ gửi nếu hành động diễn ra)
+            SendDiscordNotification(toolOnHand.Name)
+            task.wait(1) -- Tránh spam webhook
         end
     end)
 end
 
-task.spawn(function() while task.wait(2) do StoreAction() end end)
+-- Chạy vòng lặp cất kho riêng biệt
+task.spawn(function()
+    while task.wait(0.5) do
+        StoreAction()
+    end
+end)
 
 -- [[ 4. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
 local QuestList = {
@@ -106,6 +133,34 @@ local function TweenTo(Pos, Speed)
         bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
     end
     TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+end
+
+-- [[ 5. CÁC HÀM HỖ TRỢ FARM ]]
+local function TweenTo(Pos, Speed)
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local dist = (Pos.Position - root.Position).Magnitude
+    if dist < 5 then root.CFrame = Pos return end
+    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+end
+
+local function EquipMelee()
+    pcall(function()
+        local char = LP.Character
+        if not char:FindFirstChild("HasBuso") then 
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("Buso") end
+        end
+        if not char:FindFirstChildOfClass("Tool") then
+            for _, v in pairs(LP.Backpack:GetChildren()) do
+                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
+                    char.Humanoid:EquipTool(v) break
+                end
+            end
+        end
+    end)
 end
 
 -- [[ 6. VÒNG LẶP FARM CHÍNH ]]

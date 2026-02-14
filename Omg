@@ -1,6 +1,4 @@
--- [[ 1. ĐỢI 1 load game + 10 GIÂY TRƯỚC KHI CHẠY ]]
-if not game:IsLoaded() then game.Loaded:Wait() end
-task.wait(10) 
+
 -- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      

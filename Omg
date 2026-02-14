@@ -76,11 +76,29 @@ local function StoreAction()
 end
 task.spawn(function() while task.wait(1) do StoreAction() end end)
 
--- [[ 4. DANH SÁCH NHIỆM VỤ ]]
+-- [[ 4. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
-    -- ... (Các quest khác giữ nguyên như bản cũ của bạn)
+    {Min = 15, Max = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla", MonPos = CFrame.new(-1237, 6, -486)},
+    {Min = 30, Max = 39, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate", MonPos = CFrame.new(-1213, 4, 3920)},
+    {Min = 40, Max = 59, Name = "BuggyQuest1", Lv = 2, NPC = CFrame.new(-1140, 4, 3827), Mon = "Brute", MonPos = CFrame.new(-1146, 14, 4308)},
+    {Min = 60, Max = 74, Name = "DesertQuest", Lv = 1, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Bandit", MonPos = CFrame.new(985, 16, 4418)},
+    {Min = 75, Max = 89, Name = "DesertQuest", Lv = 2, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Officer", MonPos = CFrame.new(1547, 14, 4382)},
+    {Min = 90, Max = 104, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
+    {Min = 105, Max = 119, Name = "SnowQuest", Lv = 2, NPC = CFrame.new(1387, 87, -1298), Mon = "Snowman", MonPos = CFrame.new(1308, 150, -1475)},
+    {Min = 120, Max = 149, Name = "MarineQuest2", Lv = 1, NPC = CFrame.new(-4361, 73, 2991), Mon = "Chief Petty Officer", MonPos = CFrame.new(-4842, 22, 2854)},
+    {Min = 150, Max = 174, Name = "SkyQuest", Lv = 1, NPC = CFrame.new(-1242, 354, -5913), Mon = "Sky Bandit", MonPos = CFrame.new(-1319, 391, -5961)},
+    {Min = 175, Max = 199, Name = "SkyQuest", Lv = 2, NPC = CFrame.new(-1242, 354, -5913), Mon = "Dark Skilled", MonPos = CFrame.new(-1124, 401, -6339)},
+    {Min = 200, Max = 224, Name = "PrisonQuest", Lv = 1, NPC = CFrame.new(530, 1, 477), Mon = "Prisoner", MonPos = CFrame.new(517, 1, 608)},
+    {Min = 225, Max = 249, Name = "PrisonQuest", Lv = 2, NPC = CFrame.new(530, 1, 477), Mon = "Dangerous Prisoner", MonPos = CFrame.new(512, 1, 480)},
+    {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Soldier", MonPos = CFrame.new(-5395, 27, 8510)},
+    {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Spy", MonPos = CFrame.new(-5816, 83, 8438)},
+    {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Warrior", MonPos = CFrame.new(60938, 55, 1515)},
+    {Min = 400, Max = 449, Name = "FishmanQuest", Lv = 2, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Commando", MonPos = CFrame.new(61965, 30, 1475)},
+    {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, NPC = CFrame.new(-7861, 5545, -381), Mon = "God's Guard", MonPos = CFrame.new(-7841, 5545, -450)},
+    {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, NPC = CFrame.new(-7861, 5545, -381), Mon = "Shanda", MonPos = CFrame.new(-7680, 5550, -450)},
+    {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Pirate", MonPos = CFrame.new(5570, 4, 3880)},
     {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
 }
 

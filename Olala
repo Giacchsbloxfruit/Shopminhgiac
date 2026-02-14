@@ -142,26 +142,20 @@ local function EquipMelee()
     end)
 end
 
--- [[ 6. FRUIT SNIPER (ĐI NHẶT TRÁI TRÊN ĐẤT) ]]
-local function CheckFruitOnGround()
-    for _, v in pairs(workspace:GetChildren()) do
-        if v:IsA("Tool") or (v:IsA("Model") and string.find(v.Name, "Fruit")) then
-            local handle = v:FindFirstChild("Handle") or v.PrimaryPart
-            if handle then
-                TweenTo(handle.CFrame, getgenv().FruitSpeed)
-                if (LP.Character.HumanoidRootPart.Position - handle.Position).Magnitude < 10 then
-                    if v:IsA("Model") then
-                        firetouchinterest(LP.Character.HumanoidRootPart, handle, 0)
-                        task.wait(0.1)
-                        firetouchinterest(LP.Character.HumanoidRootPart, handle, 1)
+-- [[ 6. AUTO TELEPORT FRUITS ]]
+spawn(function()
+    while wait(0.1) do
+        if _G.Grabfruit then
+            pcall(function()
+                for _, v in pairs(game.Workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
                     end
                 end
-                return true
-            end
+            end)
         end
     end
-    return false
-end
+end)
 
 -- [[ 7. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()

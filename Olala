@@ -1,6 +1,6 @@
 -- [[ 1. CONFIGURATION ]]
 getgenv().Team = "Pirates" -- Tự động chọn phe Hải Tặc
-getgenv().TweenSpeed = 200      
+getgenv().TweenSpeed = 250      
 getgenv().MaxStat = 2800        
 _G.Grabfruit = true 
 
@@ -81,8 +81,8 @@ local QuestList = {
     {Min = 40, Max = 59, Name = "BuggyQuest1", Lv = 2, NPC = CFrame.new(-1140, 4, 3827), Mon = "Brute", MonPos = CFrame.new(-1146, 14, 4308)},
     {Min = 60, Max = 74, Name = "DesertQuest", Lv = 1, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Bandit", MonPos = CFrame.new(985, 16, 4418)},
     {Min = 75, Max = 89, Name = "DesertQuest", Lv = 2, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Officer", MonPos = CFrame.new(1547, 14, 4382)},
-    {Min = 90, Max = 104, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
-    {Min = 105, Max = 119, Name = "SnowQuest", Lv = 2, NPC = CFrame.new(1387, 87, -1298), Mon = "Snowman", MonPos = CFrame.new(1308, 150, -1475)},
+    {Min = 90, Max = 99, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
+    {Min = 100, Max = 119, Name = "SnowQuest", Lv = 2, NPC = CFrame.new(1387, 87, -1298), Mon = "Snowman", MonPos = CFrame.new(1308, 150, -1475)},
     {Min = 120, Max = 149, Name = "MarineQuest2", Lv = 1, NPC = CFrame.new(-4361, 73, 2991), Mon = "Chief Petty Officer", MonPos = CFrame.new(-4842, 22, 2854)},
     {Min = 150, Max = 174, Name = "SkyQuest", Lv = 1, NPC = CFrame.new(-1242, 354, -5913), Mon = "Sky Bandit", MonPos = CFrame.new(-1319, 391, -5961)},
     {Min = 175, Max = 199, Name = "SkyQuest", Lv = 2, NPC = CFrame.new(-1242, 354, -5913), Mon = "Dark Skilled", MonPos = CFrame.new(-1124, 401, -6339)},

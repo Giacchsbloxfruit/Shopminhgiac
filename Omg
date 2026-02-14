@@ -1,5 +1,4 @@
 -- [[ 1. CONFIGURATION ]]
-getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().Team = "Pirates" -- Tự động chọn phe Hải Tặc
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
@@ -8,7 +7,6 @@ _G.Grabfruit = true
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
-local LastNotifiedFruit = "" 
 
 -- Hàm tìm Remote
 local function GetCommF()
@@ -32,30 +30,8 @@ task.spawn(function()
         end)                
     end
 end)
--- [[ 2. HÀM GỬI THÔNG BÁO DISCORD ]]
-local function SendDiscordNotification(fruitName)
-    local url = getgenv().WebhookURL
-    local data = {
-        ["content"] = "🚀 **THÔNG BÁO HỆ THỐNG KHO ĐỒ**",
-        ["embeds"] = {{
-            ["title"] = "📦 ĐÃ TỰ ĐỘNG CẤT TRÁI VÀO KHO!",
-            ["description"] = "👤 Tài khoản: **" .. LP.Name .. "**\n🎁 Trái ác quỷ: **" .. fruitName .. "**\n✅ Trạng thái: **Đã ép lệnh cất kho thành công!**",
-            ["color"] = 3447003,
-            ["footer"] = { ["text"] = "Gemini Blox Fruit Script • " .. os.date("%X") }
-        }}
-    }
-    local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if request then
-        request({
-            Url = url,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = game:GetService("HttpService"):JSONEncode(data)
-        })
-    end
-end
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ TÍCH HỢP) ]]
+-- [[ 2. HÀM ÉP LỆNH CẤT KHO (ĐÃ XÓA THÔNG BÁO DISCORD) ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
@@ -84,10 +60,7 @@ local function StoreAction()
                     remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
                 end
             end)
-            
-            -- Gửi thông báo (chỉ gửi nếu hành động diễn ra)
-            SendDiscordNotification(toolOnHand.Name)
-            task.wait(1) -- Tránh spam webhook
+            task.wait(1) 
         end
     end)
 end
@@ -99,7 +72,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 4. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
+-- [[ 3. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
@@ -125,7 +98,7 @@ local QuestList = {
     {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
 }
 
--- [[ 5. CÁC HÀM HỖ TRỢ FARM ]]
+-- [[ 4. CÁC HÀM HỖ TRỢ FARM ]]
 local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -153,7 +126,7 @@ local function EquipMelee()
     end)
 end
 
--- [[ 6. AUTO TELEPORT FRUITS ]]
+-- [[ 5. AUTO TELEPORT FRUITS ]]
 spawn(function()
     while wait(0.1) do
         if _G.Grabfruit then
@@ -168,11 +141,16 @@ spawn(function()
     end
 end)
 
--- [[ 7. VÒNG LẶP FARM CHÍNH ]]
+-- [[ 6. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
-            if CheckFruitOnGround() then return end
+            -- Kiểm tra nếu có trái trên đất thì ưu tiên đi lấy
+            local hasFruit = false
+            for _, v in pairs(workspace:GetChildren()) do
+                if string.find(v.Name, "Fruit") then hasFruit = true break end
+            end
+            if hasFruit and _G.Grabfruit then return end
             
             local myLv = LP.Data.Level.Value
             local q = nil
@@ -205,7 +183,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 8. AUTO STATS ]]
+-- [[ 7. AUTO STATS ]]
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
@@ -237,4 +215,6 @@ game:GetService("RunService").Stepped:Connect(function()
         end
     end)
 end)
+
+-- LOAD AUTO ATTACK
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

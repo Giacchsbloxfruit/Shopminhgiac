@@ -1,33 +1,34 @@
--- [[ 0. PHẦN GIỚI THIỆU (WELCOME) ]]
-local LP = game.Players.LocalPlayer
-
-local function WelcomeMessage()
-    -- Thông báo trong Console (F9)
-    print("--------------------------------------------------")
-    print("🚀 GIACDZ KAITUN SYSTEM ACTIVATED!")
-    print("👤 Welcome, " .. LP.Name .. " (@" .. LP.DisplayName .. ")")
-    print("📅 Date: " .. os.date("%d/%m/%Y"))
-    print("🎮 Game: Blox Fruits")
-    print("--------------------------------------------------")
-
-    -- Thông báo Notify trong game (Góc dưới phải màn hình)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "★ GIACDZ KAITUN ★",
-        Text = "Xin chào " .. LP.DisplayName .. "!\nHệ thống đang bắt đầu khởi chạy...",
-        Icon = "rbxassetid://6023457285", -- Icon hình ngôi sao/robot
-        Duration = 5
+-- [[ 0. THÔNG BÁO KIỂU ADMIN (KHÔNG UI) ]]
+task.spawn(function()
+    if not game:IsLoaded() then game.Loaded:Wait() end
+    local LP = game.Players.LocalPlayer
+    
+    -- Gửi thông báo vào khung Chat hệ thống màu vàng
+    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+        Text = "< Welcome to Giacdz kaitun. Chúc bạn một ngày vui vẻ khi chơi >",
+        Color = Color3.fromRGB(255, 255, 0), -- Màu vàng Admin
+        Font = Enum.Font.GothamBold,
+        TextSize = 20
     })
-end
+    
+    -- Tạo thông báo hiện giữa màn hình (Message Object) - Giống ảnh bạn gửi
+    local Msg1 = Instance.new("Message", game.Workspace)
+    Msg1.Text = "< Welcome to Giacdz kaitun >"
+    task.wait(2.5)
+    Msg1.Text = "< Chúc bạn một ngày vui vẻ khi chơi >"
+    task.wait(2.5)
+    Msg1:Destroy()
+end)
 
--- Gọi hàm chào mừng
-WelcomeMessage()
-
--- [[ 1. CONFIGURATION ]]
-getgenv().Team = "Pirates"
+-- ========================================================
+-- [[ 1. CONFIGURATION & KAITUN LOGIC ]]
+-- ========================================================
+getgenv().Team = "Pirates" 
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
 _G.Grabfruit = true 
 
+local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 
@@ -233,5 +234,4 @@ game:GetService("RunService").Stepped:Connect(function()
 end)
 
 -- [[ 8. LOADS SCRIPTS ]]
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Omg"))()
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

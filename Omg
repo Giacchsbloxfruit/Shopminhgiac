@@ -1,3 +1,23 @@
+-- [[ PHẦN RANDOM PHE (PIRATES/MARINES) ]]
+task.spawn(function()
+    pcall(function()
+        -- Chờ game load xong nhân vật
+        repeat task.wait() until game:GetService("Players").LocalPlayer.Parent ~= nil
+        
+        -- Nếu người chơi chưa vào phe nào (Team là nil)
+        if game.Players.LocalPlayer.Team == nil then
+            local Teams = {"Pirates", "Marines"}
+            local SelectedTeam = Teams[math.random(1, #Teams)]
+            
+            -- Sử dụng hàm GetCommF đã có trong script của bạn
+            local remote = GetCommF() 
+            if remote then
+                remote:InvokeServer("SetTeam", SelectedTeam)
+            end
+        end
+    end)
+end)
+
 -- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 getgenv().TweenSpeed = 200      

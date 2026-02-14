@@ -1,18 +1,13 @@
--- [[ PHẦN RANDOM PHE (PIRATES/MARINES) ]]
+-- [[ PHẦN TỰ ĐỘNG CHỌN PHE HẢI TẶC ]]
 task.spawn(function()
     pcall(function()
-        -- Chờ game load xong nhân vật
+        -- Chờ cho đến khi game load xong dữ liệu nhân vật
         repeat task.wait() until game:GetService("Players").LocalPlayer.Parent ~= nil
-        
-        -- Nếu người chơi chưa vào phe nào (Team là nil)
+                
         if game.Players.LocalPlayer.Team == nil then
-            local Teams = {"Pirates", "Marines"}
-            local SelectedTeam = Teams[math.random(1, #Teams)]
-            
-            -- Sử dụng hàm GetCommF đã có trong script của bạn
-            local remote = GetCommF() 
-            if remote then
-                remote:InvokeServer("SetTeam", SelectedTeam)
+            local remote = GetCommF() -- Sử dụng hàm tìm Remote đã có của bạn
+            if remote then                
+                remote:InvokeServer("SetTeam", "Pirates")
             end
         end
     end)
@@ -178,6 +173,23 @@ spawn(function()
         end
     end
 end)
+
+local function EquipMelee()
+    pcall(function()
+        local char = LP.Character
+        if not char:FindFirstChild("HasBuso") then 
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("Buso") end
+        end
+        if not char:FindFirstChildOfClass("Tool") then
+            for _, v in pairs(LP.Backpack:GetChildren()) do
+                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
+                    char.Humanoid:EquipTool(v) break
+                end
+            end
+        end
+    end)
+end
 
 -- [[ 7. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()

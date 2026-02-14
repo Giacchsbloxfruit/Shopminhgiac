@@ -1,9 +1,6 @@
- ========================================================
--- [[ 2. PHẦN CODE KAITUN LOGIC (GIỮ NGUYÊN & THÊM STATUS) ]]
--- ========================================================
-
-getgenv().Team = "Pirates"
-getgenv().TweenSpeed = 200      
+-- [[ 1. CONFIGURATION ]]
+getgenv().Team = "Pirates" -- Tự động chọn phe Hải Tặc
+getgenv().TweenSpeed = 250      
 getgenv().MaxStat = 2800        
 _G.Grabfruit = true 
 
@@ -11,19 +8,21 @@ local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 
+-- Hàm tìm Remote
 local function GetCommF()
     local found = RS:FindFirstChild("CommF_", true)
     if not found then
-        for _, v in pairs(RS:GetDescendants()) do if v.Name == "CommF_" then return v end end
+        for _, v in pairs(RS:GetDescendants()) do
+            if v.Name == "CommF_" then return v end
+        end
     end
     return found
 end
 
--- TỰ ĐỘNG CHỌN PHE
+-- [[ LOGIC TỰ ĐỘNG CHỌN PHE ]]
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
-        getgenv().SetStatus("Đang chọn phe: " .. getgenv().Team)
         pcall(function()
             local remote = GetCommF()
             if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
@@ -32,27 +31,30 @@ task.spawn(function()
     end
 end)
 
--- HÀM CẤT KHO
+-- [[ 2. HÀM ÉP LỆNH CẤT KHO (ĐÃ XÓA THÔNG BÁO DISCORD) ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
         local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
         
+        -- Quét túi đồ để tìm trái
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                getgenv().SetStatus("Phát hiện trái trong túi: " .. tool.Name)
-                hum:EquipTool(tool)
+                hum:EquipTool(tool) -- Bắt buộc cầm lên tay
                 task.wait(0.2)
             end
         end
 
+        -- Xử lý trái đang cầm trên tay
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
-            getgenv().SetStatus("Đang thực hiện cất kho...")
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            
+            -- Nhồi lệnh defer để bypass
             task.defer(function()
                 if remote then
+                    -- Thử các loại tên biến thể của trái
                     remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
                     remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
                     remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
@@ -63,11 +65,14 @@ local function StoreAction()
     end)
 end
 
+-- Chạy vòng lặp cất kho riêng biệt
 task.spawn(function()
-    while task.wait(0.5) do StoreAction() end
+    while task.wait(0.5) do
+        StoreAction()
+    end
 end)
 
--- DANH SÁCH NHIỆM VỤ
+-- [[ 3. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
@@ -93,7 +98,7 @@ local QuestList = {
     {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
 }
 
--- HÀM TWEEN
+-- [[ 4. CÁC HÀM HỖ TRỢ FARM ]]
 local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -121,14 +126,13 @@ local function EquipMelee()
     end)
 end
 
--- AUTO NHẶT TRÁI
+-- [[ 5. AUTO TELEPORT FRUITS ]]
 spawn(function()
     while wait(0.1) do
         if _G.Grabfruit then
             pcall(function()
                 for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        getgenv().SetStatus("Đang bay đến nhặt: " .. v.Name)
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
                     end
                 end
@@ -137,12 +141,15 @@ spawn(function()
     end
 end)
 
--- VÒNG LẶP FARM CHÍNH
+-- [[ 6. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
+            -- Kiểm tra nếu có trái trên đất thì ưu tiên đi lấy
             local hasFruit = false
-            for _, v in pairs(workspace:GetChildren()) do if string.find(v.Name, "Fruit") then hasFruit = true break end end
+            for _, v in pairs(workspace:GetChildren()) do
+                if string.find(v.Name, "Fruit") then hasFruit = true break end
+            end
             if hasFruit and _G.Grabfruit then return end
             
             local myLv = LP.Data.Level.Value
@@ -151,10 +158,8 @@ task.spawn(function()
             if not q then return end
             
             if not LP.PlayerGui.Main.Quest.Visible then
-                getgenv().SetStatus("Đang bay đến đảo mới làm Q...")
                 TweenTo(q.NPC, getgenv().TweenSpeed)
                 if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
-                    getgenv().SetStatus("Đang nhận nhiệm vụ: " .. q.Name)
                     local remote = GetCommF()
                     if remote then remote:InvokeServer("StartQuest", q.Name, q.Lv) end
                 end
@@ -166,13 +171,11 @@ task.spawn(function()
                     end
                 end
                 if Enemy then
-                    getgenv().SetStatus("Đang đánh quái: " .. q.Mon)
                     EquipMelee()
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    getgenv().SetStatus("Đang đợi quái " .. q.Mon .. " hồi sinh...")
                     TweenTo(q.MonPos, getgenv().TweenSpeed)
                 end
             end
@@ -180,7 +183,7 @@ task.spawn(function()
     end
 end)
 
--- AUTO STATS
+-- [[ 7. AUTO STATS ]]
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
@@ -206,9 +209,12 @@ end)
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
-            for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+            for _, v in pairs(LP.Character:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide = false end
+            end
         end
     end)
 end)
 
+-- LOAD AUTO ATTACK
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

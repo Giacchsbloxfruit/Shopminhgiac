@@ -1,14 +1,16 @@
 -- [[ 1. CONFIGURATION ]]
 getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
+getgenv().Team = "Pirates" -- Tự động chọn phe Hải Tặc
 getgenv().TweenSpeed = 200      
-getgenv().FruitSpeed = 350      
 getgenv().MaxStat = 2800        
+_G.Grabfruit = true 
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
+local LastNotifiedFruit = "" 
 
--- Hàm tìm Remote CommF_ (ngay cả khi nó bị giấu)
+-- Hàm tìm Remote
 local function GetCommF()
     local found = RS:FindFirstChild("CommF_", true)
     if not found then
@@ -19,8 +21,17 @@ local function GetCommF()
     return found
 end
 
-local Remote = GetCommF()
-
+-- [[ LOGIC TỰ ĐỘNG CHỌN PHE ]]
+task.spawn(function()
+    while task.wait(0.5) do
+        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
+        pcall(function()
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
+            if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
+        end)                
+    end
+end)
 -- [[ 2. HÀM GỬI THÔNG BÁO DISCORD ]]
 local function SendDiscordNotification(fruitName)
     local url = getgenv().WebhookURL

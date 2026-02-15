@@ -1,27 +1,27 @@
--- [[ 0. THÔNG BÁO KIỂU ADMIN (KHÔNG UI) ]]
+-- [[ 0. THÔNG BÁO KIỂU ADMIN (WELCOME) ]]
 task.spawn(function()
     if not game:IsLoaded() then game.Loaded:Wait() end
     local LP = game.Players.LocalPlayer
     
-    -- Gửi thông báo vào khung Chat hệ thống màu vàng
+    -- Chat hệ thống màu vàng
     game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
         Text = "< Welcome to Giacdz kaitun. Chúc bạn một ngày vui vẻ khi chơi >",
-        Color = Color3.fromRGB(255, 255, 0), -- Màu vàng Admin
+        Color = Color3.fromRGB(255, 255, 0), 
         Font = Enum.Font.GothamBold,
         TextSize = 20
     })
     
-    -- Tạo thông báo hiện giữa màn hình (Message Object) - Giống ảnh bạn gửi
+    -- Thông báo giữa màn hình
     local Msg1 = Instance.new("Message", game.Workspace)
     Msg1.Text = "< Welcome to Giacdz kaitun >"
     task.wait(2.5)
-    Msg1.Text = "< Chúc bạn một ngày vui vẻ khi chơi >"
+    Msg1.Text = "< Gom quái: ON (Max 3 mobs) >" -- Báo đã bật gom quái
     task.wait(2.5)
     Msg1:Destroy()
 end)
 
 -- ========================================================
--- [[ 1. CONFIGURATION & KAITUN LOGIC ]]
+-- [[ 1. CONFIGURATION ]]
 -- ========================================================
 getgenv().Team = "Pirates" 
 getgenv().TweenSpeed = 200      
@@ -159,7 +159,7 @@ spawn(function()
     end
 end)
 
--- [[ 6. VÒNG LẶP FARM CHÍNH ]]
+-- [[ 6. VÒNG LẶP FARM CHÍNH + GOM QUÁI (MAX 3) ]]
 task.spawn(function()
     while task.wait() do
         pcall(function()
@@ -188,6 +188,23 @@ task.spawn(function()
                     end
                 end
                 if Enemy then
+                    -- [[ TÍNH NĂNG GOM QUÁI (TỐI ĐA 3 CON) ]]
+                    task.spawn(function()
+                        local count = 1 -- Đã có 1 con chính
+                        for _, sub in pairs(workspace.Enemies:GetChildren()) do
+                            if sub ~= Enemy and sub.Name == Enemy.Name and sub:FindFirstChild("Humanoid") and sub.Humanoid.Health > 0 then
+                                if (sub.HumanoidRootPart.Position - Enemy.HumanoidRootPart.Position).Magnitude < 300 then 
+                                    sub.HumanoidRootPart.CFrame = Enemy.HumanoidRootPart.CFrame
+                                    sub.HumanoidRootPart.CanCollide = false
+                                    sub.Humanoid.WalkSpeed = 0
+                                    count = count + 1
+                                    if count >= 3 then break end -- ĐỦ 3 CON LÀ DỪNG
+                                end
+                            end
+                        end
+                    end)
+                    -- [[ KẾT THÚC GOM QUÁI ]]
+
                     EquipMelee()
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)

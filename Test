@@ -1,7 +1,7 @@
 -- [[ CONFIG ]]
 getgenv().Team = "Pirates"
-getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- Thay link webhook vào đây
-_G.Grabfruit = true
+getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- Dán link Discord vào đây
+getgenv().Grabfruit = true
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -12,27 +12,6 @@ local GuiService = game:GetService("GuiService")
 -- [[ HÀM HỖ TRỢ ]]
 local function GetCommF()
     return RS:FindFirstChild("CommF_", true)
-end
-
--- [[ HÀM GỬI DISCORD ]]
-local function SendDiscord(fruitName)
-    if getgenv().Webhook and getgenv().Webhook ~= "" and getgenv().Webhook ~= "LINK_WEBHOOK_CỦA_BẠN_Ở_ĐÂY" then
-        local headers = {["Content-Type"] = "application/json"}
-        local data = {
-            ["embeds"] = {{
-                ["title"] = "🍎 FRUIT NOTIFICATION",
-                ["description"] = "Đã tìm thấy và cất kho: **" .. fruitName .. "**",
-                ["color"] = 65280, -- Màu xanh lá
-                ["footer"] = {["text"] = "Gemini Auto Hop - " .. os.date("%X")}
-            }}
-        }
-        local body = Http:JSONEncode(data)
-        -- Sử dụng request của executor (Hầu hết các bản hack đều hỗ trợ hàm này)
-        local request = syn and syn.request or http_request or request or HttpPost
-        if request then
-            request({Url = getgenv().Webhook, Method = "POST", Headers = headers, Body = body})
-        end
-    end
 end
 
 -- [[ 1. TỰ ĐỘNG CHỌN PHE ]]
@@ -58,17 +37,17 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. UI THÔNG BÁO ]]
+-- [[ 3. UI THÔNG BÁO GIỮA MÀN HÌNH ]]
 local screenGui = Instance.new("ScreenGui", game.CoreGui)
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 300, 0, 100)
-mainFrame.Position = UDim2.new(0.5, -150, 0.35, 0)
+mainFrame.Size = UDim2.new(0, 320, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -160, 0.35, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.4
 
 local statusLabel = Instance.new("TextLabel", mainFrame)
 statusLabel.Size = UDim2.new(1, 0, 0.5, 0)
-statusLabel.Text = "Đang kiểm tra..."
+statusLabel.Text = "Đang khởi động..."
 statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Font = Enum.Font.GothamBold
@@ -78,12 +57,12 @@ local timerLabel = Instance.new("TextLabel", mainFrame)
 timerLabel.Size = UDim2.new(1, 0, 0.5, 0)
 timerLabel.Position = UDim2.new(0, 0, 0.5, 0)
 timerLabel.Text = "Hop sever : 15s"
-timerLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+timerLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 timerLabel.BackgroundTransparency = 1
 timerLabel.Font = Enum.Font.GothamBold
 timerLabel.TextSize = 18
 
--- [[ 4. HÀM HOP SERVER NHANH ]]
+-- [[ 4. HÀM HOP SERVER SIÊU TỐC ]]
 local function HopServer()
     statusLabel.Text = "Đang đổi Server..."
     task.spawn(function()
@@ -102,7 +81,18 @@ local function HopServer()
     end)
 end
 
--- [[ 5. HÀM CẤT KHO (GIỮ NGUYÊN LOGIC CỦA BẠN) ]]
+-- [[ 5. HÀM THÔNG BÁO DISCORD ]]
+local function SendDiscord(fruitName)
+    if getgenv().Webhook and getgenv().Webhook ~= "" then
+        pcall(function()
+            local data = {["embeds"] = {{["title"] = "🍎 NHẬT ĐƯỢC TRÁI", ["description"] = "Đã cất thành công: **" .. fruitName .. "**", ["color"] = 65280}}}
+            local request = syn and syn.request or http_request or request or HttpPost
+            if request then request({Url = getgenv().Webhook, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = Http:JSONEncode(data)}) end
+        end)
+    end
+end
+
+-- [[ 6. HÀM CẤT KHO (Sử dụng code bạn yêu cầu) ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
@@ -122,7 +112,7 @@ local function StoreAction()
             
             -- Gửi thông báo Discord trước khi cất
             SendDiscord(toolOnHand.Name)
-            
+
             task.defer(function()
                 if remote then
                     remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
@@ -131,36 +121,53 @@ local function StoreAction()
                 end
             end)
             statusLabel.Text = "Đã cất: " .. fruitName
-            task.wait(1)
-            HopServer() -- Cất xong là đi luôn
+            task.wait(1) 
+            HopServer() -- Nhặt được và cất rồi thì đổi server luôn
         end
     end)
 end
 
--- [[ 6. VÒNG LẶP CHÍNH ]]
+-- [[ 7. VÒNG LẶP CHÍNH ]]
 local countdown = 15
+local grabAttempt = 0 -- Đếm thời gian đứng tại trái
+
 task.spawn(function()
     while task.wait(1) do
-        local fruitInWorkspace = nil
+        local fruit = nil
         for _, v in pairs(game.Workspace:GetChildren()) do
             if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                fruitInWorkspace = v
+                fruit = v
                 break
             end
         end
 
-        if fruitInWorkspace then
-            countdown = 15
+        if fruit then
+            -- NẾU CÓ TRÁI: Dừng đếm ngược, hiện trạng thái nhặt
+            countdown = 15 
             timerLabel.Visible = false
-            statusLabel.Text = "Đang nhặt: " .. fruitInWorkspace.Name
+            statusLabel.Text = "Đang nhặt: " .. fruit.Name
             statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
             
-            if _G.Grabfruit then
-                LP.Character.HumanoidRootPart.CFrame = fruitInWorkspace.Handle.CFrame
+            if getgenv().Grabfruit then
+                -- Bay tới trái
+                LP.Character.HumanoidRootPart.CFrame = fruit.Handle.CFrame
+                -- ÉP CHẠM (Giải kẹt - firetouchinterest)
+                firetouchinterest(LP.Character.HumanoidRootPart, fruit.Handle, 0)
+                firetouchinterest(LP.Character.HumanoidRootPart, fruit.Handle, 1)
             end
+
+            -- Chạy lệnh cất kho
             StoreAction()
+
+            -- Tự giải kẹt: Nếu đứng tại trái 5 giây mà chưa nhặt được thì Hop luôn
+            grabAttempt = grabAttempt + 1
+            if grabAttempt >= 5 then
+                HopServer()
+            end
         else
-            statusLabel.Text = "Không tìm thấy trái"
+            -- NẾU KHÔNG CÓ TRÁI
+            grabAttempt = 0
+            statusLabel.Text = "Không có trái ác quỷ"
             statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
             timerLabel.Visible = true
             timerLabel.Text = "Hop sever : " .. countdown .. "s"

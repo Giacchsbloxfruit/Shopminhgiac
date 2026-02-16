@@ -1,0 +1,145 @@
+-- [[ CONFIG ]]
+getgenv().Team = "Pirates"
+getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- <--- Dán link Discord của bạn vào đây
+_G.Grabfruit = true
+
+local LP = game.Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local TPS = game:GetService("TeleportService")
+local Http = game:GetService("HttpService")
+local GuiService = game:GetService("GuiService")
+
+local function GetCommF()
+    return RS:FindFirstChild("CommF_", true)
+end
+
+-- [[ 1. HÀM GỬI THÔNG BÁO DISCORD ]]
+local lastFruitNotify = "" -- Biến chặn spam thông báo cùng 1 loại trái trong 1 server
+local function SendDiscord(fruitName)
+    if getgenv().Webhook and getgenv().Webhook ~= "" and getgenv().Webhook ~= "DÁN_LINK_WEBHOOK_VÀO_ĐÂY" then
+        if lastFruitNotify == fruitName then return end -- Nếu đã báo trái này rồi thì thôi
+        lastFruitNotify = fruitName
+        
+        pcall(function()
+            local data = {
+                ["embeds"] = {{
+                    ["title"] = "🍎 NOTICE FRUIT",
+                    ["description"] = "FRUIT: **" .. fruitName .. "**\nServer ID: " .. game.JobId,
+                    ["color"] = 16711680, -- Màu Đỏ
+                    ["footer"] = {["text"] = "Giacdz auto fruit - " .. os.date("%X")}
+                }}
+            }
+            local body = Http:JSONEncode(data)
+            local request = syn and syn.request or http_request or request or HttpPost
+            if request then
+                request({Url = getgenv().Webhook, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = body})
+            end
+        end)
+    end
+end
+
+-- [[ 2. LOGIC TỰ ĐỘNG CHỌN PHE ]]
+task.spawn(function()
+    while task.wait(0.5) do
+        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
+        pcall(function()
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
+            if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
+        end)                
+    end
+end)
+
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ BỎ THÔNG BÁO ĐỂ TRÁNH SPAM) ]]
+local function StoreAction()
+    pcall(function()
+        local char = LP.Character
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local remote = GetCommF()
+        
+        for _, tool in pairs(LP.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
+                hum:EquipTool(tool)
+                task.wait(0.2)
+            end
+        end
+
+        local toolOnHand = char:FindFirstChildOfClass("Tool")
+        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            
+            task.defer(function()
+                if remote then
+                    remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+                    remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
+                    remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
+                end
+            end)
+            task.wait(1) 
+        end
+    end)
+end
+
+task.spawn(function()
+    while task.wait(0.5) do
+        StoreAction()
+    end
+end)
+
+-- [[ 4. AUTO TELEPORT FRUITS + GỬI THÔNG BÁO KHI NHẶT ]]
+task.spawn(function()
+    while task.wait(0.1) do
+        if _G.Grabfruit then
+            pcall(function()
+                for _, v in pairs(game.Workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+                        -- Gửi thông báo ngay khi vừa thấy trái và chuẩn bị Teleport
+                        SendDiscord(v.Name)
+                        
+                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
+                        firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 0)
+                        firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 1)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- [[ 5. HÀM HOP SERVER (Bypass Lỗi) ]]
+local function HopServer()
+    task.spawn(function()
+        while task.wait(0.1) do GuiService:ClearError() end
+    end)
+
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    local function ListServers(cursor)
+        local success, Raw = pcall(function() return game:HttpGet(Api .. ((cursor and "&cursor=" .. cursor) or "")) end)
+        return success and Http:JSONDecode(Raw) or nil
+    end
+
+    local Server = ListServers()
+    if Server and Server.data then
+        for _, v in pairs(Server.data) do
+            if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                TPS:TeleportToPlaceInstance(game.PlaceId, v.id, LP)
+                task.wait(1)
+            end
+        end
+    end
+    TPS:Teleport(game.PlaceId)
+end
+
+-- [[ 6. ÉP BUỘC HOP SAU ĐÚNG 30S ]]
+task.delay(30, function()
+    HopServer()
+end)
+
+-- SPAM NHẢY CHỐNG AFK
+task.spawn(function()
+    while task.wait(0.5) do
+        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.Jump = true
+        end
+    end
+end)

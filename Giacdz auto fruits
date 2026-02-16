@@ -25,7 +25,7 @@ local function SendDiscord(fruitName)
                 ["embeds"] = {{
                     ["title"] = "🍎 NOTICE FRUIT",
                     ["description"] = "FRUIT: **" .. fruitName .. "**\nServer ID: " .. game.JobId,
-                    ["color"] = 16711680, -- Màu Đỏ
+                    ["color"] = 65280,
                     ["footer"] = {["text"] = "Giacdz auto fruit - " .. os.date("%X")}
                 }}
             }

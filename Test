@@ -1,28 +1,41 @@
-
--- ========================================================
--- [[ 1. CONFIGURATION & KAITUN LOGIC ]]
--- ========================================================
-getgenv().Team = "Pirates" 
-getgenv().TweenSpeed = 200      
-getgenv().MaxStat = 2800        
-_G.Grabfruit = true 
+-- [[ CONFIG ]]
+getgenv().Team = "Pirates"
+getgenv().WebhookURL = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- Thay link webhook vào đây
+_G.Grabfruit = true
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
-local TS = game:GetService("TweenService")
+local TPS = game:GetService("TeleportService")
+local Http = game:GetService("HttpService")
+local GuiService = game:GetService("GuiService")
 
--- Hàm tìm Remote
+-- [[ HÀM HỖ TRỢ ]]
 local function GetCommF()
-    local found = RS:FindFirstChild("CommF_", true)
-    if not found then
-        for _, v in pairs(RS:GetDescendants()) do
-            if v.Name == "CommF_" then return v end
-        end
-    end
-    return found
+    return RS:FindFirstChild("CommF_", true)
 end
 
--- [[ LOGIC TỰ ĐỘNG CHỌN PHE ]]
+-- [[ HÀM GỬI DISCORD ]]
+local function SendDiscord(fruitName)
+    if getgenv().Webhook and getgenv().Webhook ~= "" and getgenv().Webhook ~= "LINK_WEBHOOK_CỦA_BẠN_Ở_ĐÂY" then
+        local headers = {["Content-Type"] = "application/json"}
+        local data = {
+            ["embeds"] = {{
+                ["title"] = "🍎 FRUIT NOTIFICATION",
+                ["description"] = "Đã tìm thấy và cất kho: **" .. fruitName .. "**",
+                ["color"] = 65280, -- Màu xanh lá
+                ["footer"] = {["text"] = "Gemini Auto Hop - " .. os.date("%X")}
+            }}
+        }
+        local body = Http:JSONEncode(data)
+        -- Sử dụng request của executor (Hầu hết các bản hack đều hỗ trợ hàm này)
+        local request = syn and syn.request or http_request or request or HttpPost
+        if request then
+            request({Url = getgenv().Webhook, Method = "POST", Headers = headers, Body = body})
+        end
+    end
+end
+
+-- [[ 1. TỰ ĐỘNG CHỌN PHE ]]
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
@@ -34,29 +47,62 @@ task.spawn(function()
     end
 end)
 
--- [[ 0. THÔNG BÁO KIỂU ADMIN (KHÔNG UI) ]]
+-- [[ 2. SPAM NÚT NHẢY ]]
 task.spawn(function()
-    if not game:IsLoaded() then game.Loaded:Wait() end
-    local LP = game.Players.LocalPlayer
-    
-    -- Gửi thông báo vào khung Chat hệ thống màu vàng
-    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
-        Text = "< Welcome to Giacdz kaitun. Chúc bạn một ngày vui vẻ khi chơi >",
-        Color = Color3.fromRGB(255, 255, 0), -- Màu vàng Admin
-        Font = Enum.Font.GothamBold,
-        TextSize = 20
-    })
-    
-    -- Tạo thông báo hiện giữa màn hình (Message Object) - Giống ảnh bạn gửi
-    local Msg1 = Instance.new("Message", game.Workspace)
-    Msg1.Text = "< Welcome to Giacdz kaitun >"
-    task.wait(2.5)
-    Msg1.Text = "< Chúc bạn một ngày vui vẻ khi chơi >"
-    task.wait(2.5)
-    Msg1:Destroy()
+    while task.wait(0.5) do
+        pcall(function()
+            if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
+                LP.Character.Humanoid.Jump = true
+            end
+        end)
+    end
 end)
 
--- [[ 2. HÀM ÉP LỆNH CẤT KHO ]]
+-- [[ 3. UI THÔNG BÁO ]]
+local screenGui = Instance.new("ScreenGui", game.CoreGui)
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 300, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -150, 0.35, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+mainFrame.BackgroundTransparency = 0.4
+
+local statusLabel = Instance.new("TextLabel", mainFrame)
+statusLabel.Size = UDim2.new(1, 0, 0.5, 0)
+statusLabel.Text = "Đang kiểm tra..."
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.TextSize = 20
+
+local timerLabel = Instance.new("TextLabel", mainFrame)
+timerLabel.Size = UDim2.new(1, 0, 0.5, 0)
+timerLabel.Position = UDim2.new(0, 0, 0.5, 0)
+timerLabel.Text = "Hop sever : 15s"
+timerLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+timerLabel.BackgroundTransparency = 1
+timerLabel.Font = Enum.Font.GothamBold
+timerLabel.TextSize = 18
+
+-- [[ 4. HÀM HOP SERVER NHANH ]]
+local function HopServer()
+    statusLabel.Text = "Đang đổi Server..."
+    task.spawn(function()
+        while task.wait(0.1) do GuiService:ClearError() end
+    end)
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    pcall(function()
+        local Raw = game:HttpGet(Api)
+        local Decode = Http:JSONDecode(Raw)
+        for _, v in pairs(Decode.data) do
+            if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                TPS:TeleportToPlaceInstance(game.PlaceId, v.id, LP)
+                task.wait(1)
+            end
+        end
+    end)
+end
+
+-- [[ 5. HÀM CẤT KHO (GIỮ NGUYÊN LOGIC CỦA BẠN) ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
@@ -73,6 +119,10 @@ local function StoreAction()
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            
+            -- Gửi thông báo Discord trước khi cất
+            SendDiscord(toolOnHand.Name)
+            
             task.defer(function()
                 if remote then
                     remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
@@ -80,161 +130,46 @@ local function StoreAction()
                     remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
                 end
             end)
-            task.wait(1) 
+            statusLabel.Text = "Đã cất: " .. fruitName
+            task.wait(1)
+            HopServer() -- Cất xong là đi luôn
         end
     end)
 end
 
+-- [[ 6. VÒNG LẶP CHÍNH ]]
+local countdown = 15
 task.spawn(function()
-    while task.wait(0.5) do
-        StoreAction()
-    end
-end)
-
--- [[ 3. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
-local QuestList = {
-    {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
-    {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
-    {Min = 15, Max = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla", MonPos = CFrame.new(-1237, 6, -486)},
-    {Min = 30, Max = 39, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate", MonPos = CFrame.new(-1213, 4, 3920)},
-    {Min = 40, Max = 59, Name = "BuggyQuest1", Lv = 2, NPC = CFrame.new(-1140, 4, 3827), Mon = "Brute", MonPos = CFrame.new(-1146, 14, 4308)},
-    {Min = 60, Max = 74, Name = "DesertQuest", Lv = 1, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Bandit", MonPos = CFrame.new(985, 16, 4418)},
-    {Min = 75, Max = 89, Name = "DesertQuest", Lv = 2, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Officer", MonPos = CFrame.new(1547, 14, 4382)},
-    {Min = 90, Max = 99, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
-    {Min = 100, Max = 119, Name = "SnowQuest", Lv = 2, NPC = CFrame.new(1387, 87, -1298), Mon = "Snowman", MonPos = CFrame.new(1308, 150, -1475)},
-    {Min = 120, Max = 149, Name = "MarineQuest2", Lv = 1, NPC = CFrame.new(-4361, 73, 2991), Mon = "Chief Petty Officer", MonPos = CFrame.new(-4842, 22, 2854)},
-    {Min = 150, Max = 174, Name = "SkyQuest", Lv = 1, NPC = CFrame.new(-1242, 354, -5913), Mon = "Sky Bandit", MonPos = CFrame.new(-1319, 391, -5961)},
-    {Min = 175, Max = 199, Name = "SkyQuest", Lv = 2, NPC = CFrame.new(-1242, 354, -5913), Mon = "Dark Skilled", MonPos = CFrame.new(-1124, 401, -6339)},
-    {Min = 200, Max = 224, Name = "PrisonQuest", Lv = 1, NPC = CFrame.new(530, 1, 477), Mon = "Prisoner", MonPos = CFrame.new(517, 1, 608)},
-    {Min = 225, Max = 249, Name = "PrisonQuest", Lv = 2, NPC = CFrame.new(530, 1, 477), Mon = "Dangerous Prisoner", MonPos = CFrame.new(512, 1, 480)},
-    {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Soldier", MonPos = CFrame.new(-5395, 27, 8510)},
-    {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Spy", MonPos = CFrame.new(-5816, 83, 8438)},
-    {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Warrior", MonPos = CFrame.new(60938, 55, 1515)},
-    {Min = 400, Max = 449, Name = "FishmanQuest", Lv = 2, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Commando", MonPos = CFrame.new(61965, 30, 1475)},
-    {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, NPC = CFrame.new(-7861, 5545, -381), Mon = "God's Guard", MonPos = CFrame.new(-7841, 5545, -450)},
-    {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, NPC = CFrame.new(-7861, 5545, -381), Mon = "Shanda", MonPos = CFrame.new(-7680, 5550, -450)},
-    {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Pirate", MonPos = CFrame.new(5570, 4, 3880)},
-    {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
-}
-
--- [[ 4. CÁC HÀM HỖ TRỢ FARM ]]
-local function TweenTo(Pos, Speed)
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    local root = char:WaitForChild("HumanoidRootPart")
-    local dist = (Pos.Position - root.Position).Magnitude
-    if dist < 5 then root.CFrame = Pos return end
-    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
-    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
-    TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
-end
-
-local function EquipMelee()
-    pcall(function()
-        local char = LP.Character
-        if not char:FindFirstChild("HasBuso") then 
-            local remote = GetCommF()
-            if remote then remote:InvokeServer("Buso") end
-        end
-        if not char:FindFirstChildOfClass("Tool") then
-            for _, v in pairs(LP.Backpack:GetChildren()) do
-                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
-                    char.Humanoid:EquipTool(v) break
-                end
+    while task.wait(1) do
+        local fruitInWorkspace = nil
+        for _, v in pairs(game.Workspace:GetChildren()) do
+            if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+                fruitInWorkspace = v
+                break
             end
         end
-    end)
-end
 
--- [[ 5. AUTO TELEPORT FRUITS ]]
-spawn(function()
-    while wait(0.1) do
-        if _G.Grabfruit then
-            pcall(function()
-                for _, v in pairs(game.Workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- [[ 6. VÒNG LẶP FARM CHÍNH ]]
-task.spawn(function()
-    while task.wait() do
-        pcall(function()
-            local hasFruit = false
-            for _, v in pairs(workspace:GetChildren()) do
-                if string.find(v.Name, "Fruit") then hasFruit = true break end
-            end
-            if hasFruit and _G.Grabfruit then return end
+        if fruitInWorkspace then
+            countdown = 15
+            timerLabel.Visible = false
+            statusLabel.Text = "Đang nhặt: " .. fruitInWorkspace.Name
+            statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
             
-            local myLv = LP.Data.Level.Value
-            local q = nil
-            for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
-            if not q then return end
+            if _G.Grabfruit then
+                LP.Character.HumanoidRootPart.CFrame = fruitInWorkspace.Handle.CFrame
+            end
+            StoreAction()
+        else
+            statusLabel.Text = "Không tìm thấy trái"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            timerLabel.Visible = true
+            timerLabel.Text = "Hop sever : " .. countdown .. "s"
             
-            if not LP.PlayerGui.Main.Quest.Visible then
-                TweenTo(q.NPC, getgenv().TweenSpeed)
-                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
-                    local remote = GetCommF()
-                    if remote then remote:InvokeServer("StartQuest", q.Name, q.Lv) end
-                end
-            else
-                local Enemy = nil
-                for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                        Enemy = e break
-                    end
-                end
-                if Enemy then
-                    EquipMelee()
-                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0), getgenv().TweenSpeed)
-                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
-                else
-                    TweenTo(q.MonPos, getgenv().TweenSpeed)
-                end
-            end
-        end)
-    end
-end)
-
--- [[ 7. AUTO STATS ]]
-task.spawn(function()
-    local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
-    while task.wait(0.7) do
-        pcall(function()
-            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
-            local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
-            if P and P.Value > 0 then
-                local mVal = 0; for _, n in pairs(S.M) do if Data:FindFirstChild(n) then mVal = Data[n].Value break end end
-                local remote = GetCommF()
-                if remote then
-                    if mVal < getgenv().MaxStat then
-                        for _, n in pairs(S.M) do remote:InvokeServer("AddPoint", n, 1) end
-                    else
-                        for _, n in pairs(S.D) do remote:InvokeServer("AddPoint", n, 1) end
-                    end
-                end
-            end
-        end)
-    end
-end)
-
--- NOCLIP
-game:GetService("RunService").Stepped:Connect(function()
-    pcall(function()
-        if LP.Character then
-            for _, v in pairs(LP.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
+            countdown = countdown - 1
+            if countdown <= 0 then
+                HopServer()
+                countdown = 15
             end
         end
-    end)
+    end
 end)
-
--- [[ 8. LOADS SCRIPTS ]]
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Omg"))()
-loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()
-

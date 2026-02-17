@@ -1,6 +1,6 @@
 -- [[ CONFIG ]]
 getgenv().Team = "Pirates"
-getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- <--- Dán link Discord của bạn vào đây
+getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
 _G.Grabfruit = true
 
 local LP = game.Players.LocalPlayer
@@ -8,23 +8,25 @@ local RS = game:GetService("ReplicatedStorage")
 local TPS = game:GetService("TeleportService")
 local Http = game:GetService("HttpService")
 local GuiService = game:GetService("GuiService")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 
 local function GetCommF()
     return RS:FindFirstChild("CommF_", true)
 end
 
 -- [[ 1. HÀM GỬI THÔNG BÁO DISCORD ]]
-local lastFruitNotify = "" -- Biến chặn spam thông báo cùng 1 loại trái trong 1 server
+local lastFruitNotify = "" 
 local function SendDiscord(fruitName)
-    if getgenv().Webhook and getgenv().Webhook ~= "" and getgenv().Webhook ~= "DÁN_LINK_WEBHOOK_VÀO_ĐÂY" then
-        if lastFruitNotify == fruitName then return end -- Nếu đã báo trái này rồi thì thôi
+    if getgenv().Webhook and getgenv().Webhook ~= "" then
+        if lastFruitNotify == fruitName then return end 
         lastFruitNotify = fruitName
         
         pcall(function()
             local data = {
                 ["embeds"] = {{
                     ["title"] = "🍎 NOTICE FRUIT",
-                    ["description"] = "FRUIT: **" .. fruitName .. "**\nServer ID: " .. game.JobId,
+                    ["description"] = "👤 Account: ||**" .. LP.Name .. "**||\n🍎 Fruit: **" .. fruitName .. "**\n🆔 Server ID: " .. game.JobId,
                     ["color"] = 65280,
                     ["footer"] = {["text"] = "Giacdz auto fruit - " .. os.date("%X")}
                 }}
@@ -50,7 +52,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ BỎ THÔNG BÁO ĐỂ TRÁNH SPAM) ]]
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
@@ -86,14 +88,14 @@ task.spawn(function()
     end
 end)
 
--- [[ 4. AUTO TELEPORT FRUITS + GỬI THÔNG BÁO KHI NHẶT ]]
+-- [[ 4. AUTO TELEPORT FRUITS ]]
 task.spawn(function()
     while task.wait(0.1) do
         if _G.Grabfruit then
             pcall(function()
                 for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        -- Gửi thông báo ngay khi vừa thấy trái và chuẩn bị Teleport
+                        -- Gửi thông báo ngay khi vừa thấy trái
                         SendDiscord(v.Name)
                         
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
@@ -106,13 +108,15 @@ task.spawn(function()
     end
 end)
 
--- [[ 5. HÀM HOP SERVER (Bypass Lỗi) ]]
+-- [[ 5. HÀM HOP SERVER (Random & Bypass Full) ]]
 local function HopServer()
+    -- Tự động xóa bảng lỗi
     task.spawn(function()
         while task.wait(0.1) do GuiService:ClearError() end
     end)
 
-    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    
     local function ListServers(cursor)
         local success, Raw = pcall(function() return game:HttpGet(Api .. ((cursor and "&cursor=" .. cursor) or "")) end)
         return success and Http:JSONDecode(Raw) or nil
@@ -120,13 +124,20 @@ local function HopServer()
 
     local Server = ListServers()
     if Server and Server.data then
+        local ValidServers = {}
         for _, v in pairs(Server.data) do
             if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                TPS:TeleportToPlaceInstance(game.PlaceId, v.id, LP)
-                task.wait(1)
+                table.insert(ValidServers, v.id)
             end
         end
+
+        if #ValidServers > 0 then
+            local RandomIndex = math.random(1, #ValidServers)
+            TPS:TeleportToPlaceInstance(game.PlaceId, ValidServers[RandomIndex], LP)
+        end
     end
+    
+    task.wait(1)
     TPS:Teleport(game.PlaceId)
 end
 
@@ -135,11 +146,20 @@ task.delay(30, function()
     HopServer()
 end)
 
--- SPAM NHẢY CHỐNG AFK
+-- [[ 7. SPAM NHẢY SIÊU CẤP (UPDATED) ]]
+-- Cách 1: Dùng RunService để spam lệnh nhảy mỗi khung hình
 task.spawn(function()
-    while task.wait(0.5) do
+    RunService.Stepped:Connect(function()
         if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.Jump = true
+            if not LP.Character.Humanoid.Jump then
+                LP.Character.Humanoid.Jump = true
+            end
         end
-    end
+    end)
+end)
+
+-- Cách 2: Anti-AFK chuẩn bằng VirtualUser (Dự phòng)
+LP.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
 end)

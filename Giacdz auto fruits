@@ -11,6 +11,12 @@ local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 
+-- Biến lưu trữ ID server cũ để chống Rejoin
+if not shared.BlacklistServer then
+    shared.BlacklistServer = {}
+end
+table.insert(shared.BlacklistServer, game.JobId)
+
 local function GetCommF()
     return RS:FindFirstChild("CommF_", true)
 end
@@ -95,9 +101,7 @@ task.spawn(function()
             pcall(function()
                 for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        -- Gửi thông báo ngay khi vừa thấy trái
                         SendDiscord(v.Name)
-                        
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
                         firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 0)
                         firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 1)
@@ -108,13 +112,13 @@ task.spawn(function()
     end
 end)
 
--- [[ 5. HÀM HOP SERVER (Random & Bypass Full) ]]
+-- [[ 5. HÀM HOP SERVER (FIX REJOIN) ]]
 local function HopServer()
-    -- Tự động xóa bảng lỗi
     task.spawn(function()
         while task.wait(0.1) do GuiService:ClearError() end
     end)
 
+    -- Lấy danh sách server đông (Desc)
     local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
     
     local function ListServers(cursor)
@@ -126,19 +130,31 @@ local function HopServer()
     if Server and Server.data then
         local ValidServers = {}
         for _, v in pairs(Server.data) do
-            if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                table.insert(ValidServers, v.id)
+            if type(v) == "table" and v.playing < v.maxPlayers then
+                -- KIỂM TRA BLACKLIST: Nếu ID server nằm trong danh sách cũ thì bỏ qua
+                local isBlacklisted = false
+                for _, blackId in pairs(shared.BlacklistServer) do
+                    if v.id == blackId then
+                        isBlacklisted = true
+                        break
+                    end
+                end
+                
+                if not isBlacklisted then
+                    table.insert(ValidServers, v.id)
+                end
             end
         end
 
         if #ValidServers > 0 then
-            local RandomIndex = math.random(1, #ValidServers)
-            TPS:TeleportToPlaceInstance(game.PlaceId, ValidServers[RandomIndex], LP)
+            -- Chọn server bất kỳ trừ server cũ
+            local TargetId = ValidServers[math.random(1, #ValidServers)]
+            TPS:TeleportToPlaceInstance(game.PlaceId, TargetId, LP)
+        else
+            -- Nếu tất cả server trong list đều bị blacklist, thử nhảy đại sang server bất kỳ
+            TPS:Teleport(game.PlaceId)
         end
     end
-    
-    task.wait(1)
-    TPS:Teleport(game.PlaceId)
 end
 
 -- [[ 6. ÉP BUỘC HOP SAU ĐÚNG 30S ]]
@@ -146,19 +162,17 @@ task.delay(30, function()
     HopServer()
 end)
 
--- [[ 7. SPAM NHẢY SIÊU CẤP (UPDATED) ]]
--- Cách 1: Dùng RunService để spam lệnh nhảy mỗi khung hình
+-- [[ 7. SPAM NHẢY SIÊU CẤP ]]
 task.spawn(function()
     RunService.Stepped:Connect(function()
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            if not LP.Character.Humanoid.Jump then
+        pcall(function()
+            if LP.Character and LP.Character:FindFirstChild("Humanoid") then
                 LP.Character.Humanoid.Jump = true
             end
-        end
+        end)
     end)
 end)
 
--- Cách 2: Anti-AFK chuẩn bằng VirtualUser (Dự phòng)
 LP.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())

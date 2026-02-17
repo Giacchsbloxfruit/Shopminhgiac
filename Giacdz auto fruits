@@ -1,6 +1,6 @@
 -- [[ CONFIG ]]
 getgenv().Team = "Pirates"
-getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" 
+getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- <--- Dán link Discord của bạn vào đây
 _G.Grabfruit = true
 
 local LP = game.Players.LocalPlayer
@@ -8,31 +8,23 @@ local RS = game:GetService("ReplicatedStorage")
 local TPS = game:GetService("TeleportService")
 local Http = game:GetService("HttpService")
 local GuiService = game:GetService("GuiService")
-local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
-
--- Biến lưu trữ ID server cũ để chống Rejoin
-if not shared.BlacklistServer then
-    shared.BlacklistServer = {}
-end
-table.insert(shared.BlacklistServer, game.JobId)
 
 local function GetCommF()
     return RS:FindFirstChild("CommF_", true)
 end
 
 -- [[ 1. HÀM GỬI THÔNG BÁO DISCORD ]]
-local lastFruitNotify = "" 
+local lastFruitNotify = "" -- Biến chặn spam thông báo cùng 1 loại trái trong 1 server
 local function SendDiscord(fruitName)
-    if getgenv().Webhook and getgenv().Webhook ~= "" then
-        if lastFruitNotify == fruitName then return end 
+    if getgenv().Webhook and getgenv().Webhook ~= "" and getgenv().Webhook ~= "DÁN_LINK_WEBHOOK_VÀO_ĐÂY" then
+        if lastFruitNotify == fruitName then return end -- Nếu đã báo trái này rồi thì thôi
         lastFruitNotify = fruitName
         
         pcall(function()
             local data = {
                 ["embeds"] = {{
                     ["title"] = "🍎 NOTICE FRUIT",
-                    ["description"] = "👤 Account: ||**" .. LP.Name .. "**||\n🍎 Fruit: **" .. fruitName .. "**\n🆔 Server ID: " .. game.JobId,
+                    ["description"] = "👤 Account: ||**" .. LP.Name .. "**||\n🍎 Fruit: **" .. fruitName .. "**\n Server ID: " .. game.JobId,
                     ["color"] = 65280,
                     ["footer"] = {["text"] = "Giacdz auto fruit - " .. os.date("%X")}
                 }}
@@ -58,7 +50,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO ]]
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ BỎ THÔNG BÁO ĐỂ TRÁNH SPAM) ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
@@ -94,14 +86,16 @@ task.spawn(function()
     end
 end)
 
--- [[ 4. AUTO TELEPORT FRUITS ]]
+-- [[ 4. AUTO TELEPORT FRUITS + GỬI THÔNG BÁO KHI NHẶT ]]
 task.spawn(function()
     while task.wait(0.1) do
         if _G.Grabfruit then
             pcall(function()
                 for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+                        -- Gửi thông báo ngay khi vừa thấy trái và chuẩn bị Teleport
                         SendDiscord(v.Name)
+                        
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
                         firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 0)
                         firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 1)
@@ -112,15 +106,13 @@ task.spawn(function()
     end
 end)
 
--- [[ 5. HÀM HOP SERVER (FIX REJOIN) ]]
+-- [[ 5. HÀM HOP SERVER (Bypass Lỗi) ]]
 local function HopServer()
     task.spawn(function()
         while task.wait(0.1) do GuiService:ClearError() end
     end)
 
-    -- Lấy danh sách server đông (Desc)
-    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
-    
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
     local function ListServers(cursor)
         local success, Raw = pcall(function() return game:HttpGet(Api .. ((cursor and "&cursor=" .. cursor) or "")) end)
         return success and Http:JSONDecode(Raw) or nil
@@ -128,33 +120,14 @@ local function HopServer()
 
     local Server = ListServers()
     if Server and Server.data then
-        local ValidServers = {}
         for _, v in pairs(Server.data) do
-            if type(v) == "table" and v.playing < v.maxPlayers then
-                -- KIỂM TRA BLACKLIST: Nếu ID server nằm trong danh sách cũ thì bỏ qua
-                local isBlacklisted = false
-                for _, blackId in pairs(shared.BlacklistServer) do
-                    if v.id == blackId then
-                        isBlacklisted = true
-                        break
-                    end
-                end
-                
-                if not isBlacklisted then
-                    table.insert(ValidServers, v.id)
-                end
+            if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                TPS:TeleportToPlaceInstance(game.PlaceId, v.id, LP)
+                task.wait(1)
             end
         end
-
-        if #ValidServers > 0 then
-            -- Chọn server bất kỳ trừ server cũ
-            local TargetId = ValidServers[math.random(1, #ValidServers)]
-            TPS:TeleportToPlaceInstance(game.PlaceId, TargetId, LP)
-        else
-            -- Nếu tất cả server trong list đều bị blacklist, thử nhảy đại sang server bất kỳ
-            TPS:Teleport(game.PlaceId)
-        end
     end
+    TPS:Teleport(game.PlaceId)
 end
 
 -- [[ 6. ÉP BUỘC HOP SAU ĐÚNG 30S ]]
@@ -162,18 +135,11 @@ task.delay(30, function()
     HopServer()
 end)
 
--- [[ 7. SPAM NHẢY SIÊU CẤP ]]
+-- SPAM NHẢY CHỐNG AFK
 task.spawn(function()
-    RunService.Stepped:Connect(function()
-        pcall(function()
-            if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-                LP.Character.Humanoid.Jump = true
-            end
-        end)
-    end)
-end)
-
-LP.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
+    while task.wait(0.5) do
+        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.Jump = true
+        end
+    end
 end)

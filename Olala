@@ -1,6 +1,30 @@
--- [[ 1. CONFIGURATION ]]
-getgenv().Team = "Pirates" -- Tự động chọn phe Hải Tặc
-getgenv().TweenSpeed = 250      
+-- [[ 0. THÔNG BÁO KIỂU ADMIN (KHÔNG UI) ]]
+task.spawn(function()
+    if not game:IsLoaded() then game.Loaded:Wait() end
+    local LP = game.Players.LocalPlayer
+    
+    -- Gửi thông báo vào khung Chat hệ thống màu vàng
+    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+        Text = "< Welcome to Giacdz kaitun. Chúc bạn một ngày vui vẻ khi chơi >",
+        Color = Color3.fromRGB(255, 255, 0), -- Màu vàng Admin
+        Font = Enum.Font.GothamBold,
+        TextSize = 20
+    })
+    
+    -- Tạo thông báo hiện giữa màn hình (Message Object) - Giống ảnh bạn gửi
+    local Msg1 = Instance.new("Message", game.Workspace)
+    Msg1.Text = "< Welcome to Giacdz kaitun >"
+    task.wait(2.5)
+    Msg1.Text = "< Chúc bạn một ngày vui vẻ khi chơi >"
+    task.wait(2.5)
+    Msg1:Destroy()
+end)
+
+-- ========================================================
+-- [[ 1. CONFIGURATION & KAITUN LOGIC ]]
+-- ========================================================
+getgenv().Team = "Pirates" 
+getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
 _G.Grabfruit = true 
 
@@ -31,30 +55,25 @@ task.spawn(function()
     end
 end)
 
--- [[ 2. HÀM ÉP LỆNH CẤT KHO (ĐÃ XÓA THÔNG BÁO DISCORD) ]]
+-- [[ 2. HÀM ÉP LỆNH CẤT KHO ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
         local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
         
-        -- Quét túi đồ để tìm trái
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool) -- Bắt buộc cầm lên tay
+                hum:EquipTool(tool)
                 task.wait(0.2)
             end
         end
 
-        -- Xử lý trái đang cầm trên tay
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
-            
-            -- Nhồi lệnh defer để bypass
             task.defer(function()
                 if remote then
-                    -- Thử các loại tên biến thể của trái
                     remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
                     remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
                     remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
@@ -65,7 +84,6 @@ local function StoreAction()
     end)
 end
 
--- Chạy vòng lặp cất kho riêng biệt
 task.spawn(function()
     while task.wait(0.5) do
         StoreAction()
@@ -145,7 +163,6 @@ end)
 task.spawn(function()
     while task.wait() do
         pcall(function()
-            -- Kiểm tra nếu có trái trên đất thì ưu tiên đi lấy
             local hasFruit = false
             for _, v in pairs(workspace:GetChildren()) do
                 if string.find(v.Name, "Fruit") then hasFruit = true break end
@@ -216,5 +233,5 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
--- LOAD AUTO ATTACK
+-- [[ 8. LOADS SCRIPTS ]]
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

@@ -191,7 +191,6 @@ function CheckQuest()
         NameQuest = "SnowQuest"; LevelQuest = 2; NameMon = "Snowman"
         CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91)
         CFrameMon = CFrame.new(1308.1, 150.2, -1475.2)
-    -- FIX: ĐẢO HẢI QUÂN CẤP 120-149
     elseif myLv >= 120 and myLv <= 149 then
         NameQuest = "MarineQuest2"; LevelQuest = 1; NameMon = "Chief Petty Officer"
         CFrameQuest = CFrame.new(-5039.58, 27.35, 4324.68)
@@ -309,7 +308,6 @@ task.spawn(function()
             end
             if hasFruit and _G.Grabfruit then return end
             
-            -- Gọi hàm CheckQuest để cập nhật các biến theo Level
             CheckQuest()
             
             if not LP.PlayerGui.Main.Quest.Visible then
@@ -371,5 +369,35 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
--- [[ 8. LOADS SCRIPTS ]]
+-- [[ 8. MỚI: TỰ ĐỘNG ĐỔI SERVER SAU 30 PHÚT ]]
+task.spawn(function()
+    local HopTime = 1800 -- 30 phút = 1800 giây
+    while task.wait(1) do
+        HopTime = HopTime - 1
+        if HopTime <= 0 then
+            print("Đang tìm server mới...")
+            local Http = game:GetService("HttpService")
+            local TPS = game:GetService("TeleportService")
+            local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+            
+            local function GetNextServer()
+                local Raw = game:HttpGet(Api)
+                local Decode = Http:JSONDecode(Raw)
+                for _, s in pairs(Decode.data) do
+                    if s.playing < s.maxTokens and s.id ~= game.JobId then
+                        return s.id
+                    end
+                end
+            end
+
+            local ServerId = GetNextServer()
+            if ServerId then
+                TPS:TeleportToPlaceInstance(game.PlaceId, ServerId, LP)
+            end
+            HopTime = 30 -- Reset chờ nếu không tìm thấy ngay
+        end
+    end
+end)
+
+-- [[ 9. LOADS SCRIPTS ]]
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

@@ -118,7 +118,7 @@ task.spawn(function()
 
             if myBeli >= 150000 and curName ~= "Black Leg" and curName ~= "Electric" and curName ~= "Water Kung Fu" then
                 targetPos = CFrame.new(1134, 5, 4373); buyCmd = "BuyBlackLeg"
-            elseif curName == "Black Leg" and curMas >= 450 and myBeli >= 300000 then
+            elseif curName == "Black Leg" and curMas >= 450 and myBeli >= 500000 then
                 targetPos = CFrame.new(-5381, 15, -2184); buyCmd = "BuyElectro"
             elseif curName == "Electric" and curMas >= 450 and myBeli >= 750000 then
                 targetPos = CFrame.new(61585, 19, 987); buyCmd = "BuyFishmanKarate"

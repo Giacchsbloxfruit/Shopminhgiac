@@ -1,145 +1,197 @@
 -- [[ CẤU HÌNH HỆ THỐNG ]]
-_G.SelectChip = "Ice" -- ĐÃ ĐỔI SANG CHIP ICE
+_G.SelectChip = "Ice" 
 _G.AutoBuyChip = true
 _G.StartRaid = true
 _G.Dungeon = true
 _G.SelectWeapon = "Melee" 
+_G.Grabfruit = true 
+_G.AutoBuso = true
+_G.AutoHop = true 
+getgenv().Team = "Pirates"
 
 local LP = game.Players.LocalPlayer
 local TS = game:GetService("TweenService")
-local Remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
+local RS = game:GetService("ReplicatedStorage")
+local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 
--- [[ 1. HÀM TWEEN CHỐNG BAN (TỐC ĐỘ 200) - DÙNG ĐỂ ĐÁNH QUÁI ]]
+-- [[ THÔNG BÁO NOTIFICATION ]]
+local function Notify(text, duration)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Gemini Hub",
+        Text = text,
+        Duration = duration or 3
+    })
+end
+
+-- [[ HÀM DI CHUYỂN ]]
 local function topos_tween(Pos)
     pcall(function()
         local Root = LP.Character:FindFirstChild("HumanoidRootPart")
         if not Root then return end
-        
         local Distance = (Pos.Position - Root.Position).Magnitude
         if Distance < 5 then Root.CFrame = Pos return end 
-
-        local Speed = 200 
-        local Time = Distance / Speed
-        
         if not Root:FindFirstChild("DungeonBV") then
-            local bv = Instance.new("BodyVelocity")
-            bv.Name = "DungeonBV"
-            bv.Velocity = Vector3.new(0,0,0)
-            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-            bv.Parent = Root
+            local bv = Instance.new("BodyVelocity", Root)
+            bv.Name = "DungeonBV"; bv.Velocity = Vector3.new(0,0,0); bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
         end
-        
-        local tween = TS:Create(Root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = Pos})
-        tween:Play()
+        TS:Create(Root, TweenInfo.new(Distance/200, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
     end)
 end
 
--- [[ 2. HÀM TELEPORT (ÉP TỌA ĐỘ) - DÙNG ĐỂ START RAID NHANH ]]
 local function topos_fast(Pos)
-    pcall(function()
-        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            LP.Character.HumanoidRootPart.CFrame = Pos
-        end
-    end)
+    pcall(function() if LP.Character:FindFirstChild("HumanoidRootPart") then LP.Character.HumanoidRootPart.CFrame = Pos end end)
 end
 
--- [[ 3. HÀM TÌM ĐẢO RAID ]]
-local function GetCurrentIsland()
-    local locations = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
-    if not locations then return nil end
-    for i = 5, 1, -1 do
-        local island = locations:FindFirstChild("Island " .. i)
-        if island then return island end
-    end
-    return nil
-end
-
--- [[ 4. HÀM TRANG BỊ VŨ KHÍ ]]
-local function EquipWeapon(toolName)
-    pcall(function()
-        if LP.Character:FindFirstChildOfClass("Tool") then return end
-        for _, v in pairs(LP.Backpack:GetChildren()) do
-            if v:IsA("Tool") and (v.ToolTip == toolName or v.Name == toolName or (toolName == "Melee" and v.ToolTip == "Melee")) then
-                LP.Character.Humanoid:EquipTool(v)
-                break
-            end
-        end
-    end)
-end
-
--- [[ 5. LOGIC AUTO BUY CHIP & START RAID (FAST TELEPORT) ]]
+-- [[ 1. CHỌN PHE ]]
 task.spawn(function()
     while task.wait(0.5) do
+        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
         pcall(function()
-            local inRaid = LP.PlayerGui.Main.Timer.Visible
-            local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+            Remote:InvokeServer("SetTeam", getgenv().Team)
+        end)
+    end
+end)
 
-            if not inRaid then
-                -- Auto Buy Chip Ice
-                if _G.AutoBuyChip and not hasChip then
-                    Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+-- [[ 2. NHẶT TRÁI & 3. CẤT KHO ]]
+task.spawn(function()
+    while task.wait(0.5) do
+        -- Nhặt trái
+        if _G.Grabfruit then
+            for _, v in pairs(workspace:GetChildren()) do
+                if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then 
+                    topos_fast(v.Handle.CFrame) 
                 end
-
-                -- Auto Start Raid
-                if _G.StartRaid and hasChip then
-                    local Sea2_RaidPos = CFrame.new(-6438.73, 250.64, -4501.5)
-                    topos_fast(Sea2_RaidPos) 
-                    
-                    task.wait(0.1)
-                    Remote:InvokeServer("SetSpawnPoint")
-                    
-                    local Button = workspace.Map.CircleIsland.RaidSummon2.Button.Main
-                    if Button and Button:FindFirstChild("ClickDetector") then
-                        fireclickdetector(Button.ClickDetector)
-                    end
+            end
+        end
+        -- Cất kho
+        pcall(function()
+            for _, tool in pairs(LP.Backpack:GetChildren()) do
+                if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
+                    LP.Character.Humanoid:EquipTool(tool)
+                    task.wait(0.3)
+                    local fruitName = tool.Name:gsub(" Fruit", "")
+                    Remote:InvokeServer("StoreFruit", fruitName, tool)
                 end
             end
         end)
     end
 end)
 
--- [[ 6. LOGIC KILL NEAREST RAID (TWEEN 200) ]]
+-- [[ 4. MUA CHIP & 5. START RAID ]]
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local inRaid = LP.PlayerGui.Main.Timer.Visible
+            local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+            
+            if not inRaid then
+                -- Nếu túi vẫn còn trái (do cất kho bị full) -> Ưu tiên mua chip bằng trái đó luôn
+                if _G.AutoBuyChip and not hasChip then
+                    Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+                end
+                
+                -- Start Raid
+                if _G.StartRaid and hasChip then
+                    local Sea2_RaidPos = CFrame.new(-6438.73, 250.64, -4501.5)
+                    topos_fast(Sea2_RaidPos)
+                    task.wait(0.2)
+                    Remote:InvokeServer("SetSpawnPoint")
+                    local Button = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
+                    if Button then fireclickdetector(Button.ClickDetector) end
+                end
+            end
+        end)
+    end
+end)
+
+-- [[ 6. COMPLETE RAID (KILL NEAREST) ]]
+local function GetCurrentIsland()
+    local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+    if loc then for i=5,1,-1 do if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end end end
+    return nil
+end
+
 task.spawn(function()
     while task.wait(0.1) do
-        local inRaid = (LP.PlayerGui.Main:FindFirstChild("Timer") and LP.PlayerGui.Main.Timer.Visible) or GetCurrentIsland()
-        
+        local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
         if _G.Dungeon and inRaid then
             pcall(function()
-                local targetIsland = GetCurrentIsland()
-                local targetMob = nil
-                local shortestDist = math.huge
-                
+                local island = GetCurrentIsland()
+                local target, dist = nil, math.huge
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
                     if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                        if targetIsland then
-                            local distToIsland = (v.HumanoidRootPart.Position - targetIsland.Position).Magnitude
-                            if distToIsland < 800 then
-                                local distToMe = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
-                                if distToMe < shortestDist then
-                                    shortestDist = distToMe
-                                    targetMob = v
-                                end
-                            end
+                        if island and (v.HumanoidRootPart.Position - island.Position).Magnitude < 800 then
+                            local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                            if d < dist then dist = d; target = v end
                         end
                     end
                 end
-
-                if targetMob then
-                    EquipWeapon(_G.SelectWeapon)
-                    topos_tween(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
-                elseif targetIsland then
-                    topos_tween(targetIsland.CFrame * CFrame.new(0, 60, 0))
-                end
+                if target then
+                    if not LP.Character:FindFirstChildOfClass("Tool") then
+                        for _, t in pairs(LP.Backpack:GetChildren()) do if t.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(t) end end
+                    end
+                    topos_tween(target.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                elseif island then topos_tween(island.CFrame * CFrame.new(0, 60, 0)) end
             end)
         end
     end
 end)
 
--- [[ 7. HỆ THỐNG NOCLIP ]]
-game:GetService("RunService").Stepped:Connect(function()
-    if (_G.Dungeon or _G.StartRaid) and LP.Character then
-        for _, v in pairs(LP.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
+-- [[ 7. HOP SERVER (ĐIỀU KIỆN CHẶT CHẼ) ]]
+function HopServer()
+    local PlaceId = game.PlaceId
+    local Servers = game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    for _, v in pairs(Servers.data) do
+        if v.playing < v.maxPlayers and v.id ~= game.JobId then
+            game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceId, v.id, LP)
+            break
+        end
+    end
+end
+
+task.spawn(function()
+    local waitTime = 30
+    while task.wait(1) do
+        if _G.AutoHop then
+            local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
+            local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+            local hasFruit = false
+            for _, v in pairs(LP.Backpack:GetChildren()) do
+                if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit")) then hasFruit = true break end
+            end
+
+            -- CHỈ HOP KHI: Không trái, không chip, không trong raid
+            if not inRaid and not hasChip and not hasFruit then
+                waitTime = waitTime - 1
+                if waitTime % 10 == 0 or waitTime <= 5 then
+                    Notify("Server Hop in " .. waitTime .. "s")
+                end
+                if waitTime <= 0 then
+                    Notify("Hopping...")
+                    HopServer()
+                    waitTime = 30
+                end
+            else
+                if waitTime < 30 then
+                    Notify("Hop Cancelled: Found Items or In Raid")
+                end
+                waitTime = 30
+            end
         end
     end
 end)
+
+-- [[ HỖ TRỢ: AUTO BUSO & NOCLIP ]]
+task.spawn(function()
+    while task.wait(1) do
+        if _G.AutoBuso and not LP.Character:FindFirstChild("HasBuso") then Remote:InvokeServer("Buso") end
+    end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+    if LP.Character then
+        for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+    end
+end)
+
+loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

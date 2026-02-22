@@ -1,101 +1,73 @@
--- [[ CONFIG ]]
+-- [[ CẤU HÌNH HỆ THỐNG - SEA 2 ]]
+_G.SelectChip = "Ice" 
+_G.AutoBuyChip = true
+_G.StartRaid = true
+_G.Dungeon = true
+_G.SelectWeapon = "Melee" 
+_G.Grabfruit = true 
+_G.AutoBuso = true
+_G.AutoHop = true 
 getgenv().Team = "Pirates"
-getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- <--- Dán link Discord của bạn vào đây
-_G.Grabfruit = true
 
 local LP = game.Players.LocalPlayer
+local TS = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
-local TPS = game:GetService("TeleportService")
-local Http = game:GetService("HttpService")
-local GuiService = game:GetService("GuiService")
+local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 
-local function GetCommF()
-    return RS:FindFirstChild("CommF_", true)
+local LastGrabTime = 0
+
+-- [[ HÀM HỖ TRỢ ]]
+local function GetCommF() return Remote end
+
+local function Notify(text)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Gemini Hub",
+        Text = text,
+        Duration = 3
+    })
 end
 
--- [[ 1. HÀM GỬI THÔNG BÁO DISCORD ]]
-local function SendDiscord(fruitName)
-    if getgenv().Webhook and getgenv().Webhook ~= "" and getgenv().Webhook ~= "DÁN_LINK_WEBHOOK_VÀO_ĐÂY" then
-        pcall(function()
-            local data = {
-                ["embeds"] = {{
-                    ["title"] = "🍎 ĐÃ NHẶT ĐƯỢC TRÁI",
-                    ["description"] = "Tên trái: **" .. fruitName .. "**\nServer ID: " .. game.JobId,
-                    ["color"] = 65280,
-                    ["footer"] = {["text"] = "Auto Hop 30s - " .. os.date("%X")}
-                }}
-            }
-            local body = Http:JSONEncode(data)
-            local request = syn and syn.request or http_request or request or HttpPost
-            if request then
-                request({Url = getgenv().Webhook, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = body})
-            end
-        end)
-    end
-end
-
--- [[ 2. LOGIC TỰ ĐỘNG CHỌN PHE ]]
-task.spawn(function()
-    while task.wait(0.5) do
-        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
-        pcall(function()
-            local remote = GetCommF()
-            if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
-            if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
-        end)                
-    end
-end)
-
--- [[ 3. HÀM ÉP LỆNH CẤT KHO ]]
-local function StoreAction()
+-- [[ HÀM TWEEN 200 ]]
+local function topos_tween(Pos)
     pcall(function()
-        local char = LP.Character
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local remote = GetCommF()
+        local Root = LP.Character:FindFirstChild("HumanoidRootPart")
+        if not Root then return end
+        local Distance = (Pos.Position - Root.Position).Magnitude
         
-        for _, tool in pairs(LP.Backpack:GetChildren()) do
-            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool)
-                task.wait(0.2)
-            end
-        end
+        if Distance < 5 then 
+            if Root:FindFirstChild("DungeonBV") then Root.DungeonBV:Destroy() end
+            return 
+        end 
 
-        local toolOnHand = char:FindFirstChildOfClass("Tool")
-        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
-            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
-            
-            -- Gửi thông báo Discord
-            SendDiscord(toolOnHand.Name)
-
-            task.defer(function()
-                if remote then
-                    remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
-                end
-            end)
-            task.wait(1) 
+        if not Root:FindFirstChild("DungeonBV") then
+            local bv = Instance.new("BodyVelocity", Root)
+            bv.Name = "DungeonBV"; bv.Velocity = Vector3.new(0,0,0); bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
         end
+        TS:Create(Root, TweenInfo.new(Distance/200, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
     end)
 end
 
+local function topos_fast(Pos)
+    pcall(function() if LP.Character:FindFirstChild("HumanoidRootPart") then LP.Character.HumanoidRootPart.CFrame = Pos end end)
+end
+
+-- [[ 1. CHỌN PHE ]]
 task.spawn(function()
     while task.wait(0.5) do
-        StoreAction()
+        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
+        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
     end
 end)
 
--- [[ 4. AUTO TELEPORT FRUITS ]]
+-- [[ 2. NHẶT TRÁI ]]
 task.spawn(function()
     while task.wait(0.1) do
         if _G.Grabfruit then
             pcall(function()
-                for _, v in pairs(game.Workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                        -- Ép chạm để nhặt ngay
-                        firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 0)
-                        firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 1)
+                for _, v in pairs(workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then 
+                        topos_fast(v.Handle.CFrame) 
+                        LastGrabTime = tick() 
                     end
                 end
             end)
@@ -103,40 +75,181 @@ task.spawn(function()
     end
 end)
 
--- [[ 5. HÀM HOP SERVER (Bypass Lỗi) ]]
-local function HopServer()
-    task.spawn(function()
-        while task.wait(0.1) do GuiService:ClearError() end
+-- [[ 3. CẤT KHO (LOGIC ÉP LỆNH) ]]
+local function StoreAction()
+    pcall(function()
+        local char = LP.Character
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        for _, tool in pairs(LP.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
+                hum:EquipTool(tool)
+                task.wait(0.2)
+            end
+        end
+        local toolOnHand = char:FindFirstChildOfClass("Tool")
+        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            task.defer(function()
+                Remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+                Remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
+                Remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
+            end)
+            task.wait(1) 
+        end
     end)
+end
 
-    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-    local function ListServers(cursor)
-        local success, Raw = pcall(function() return game:HttpGet(Api .. ((cursor and "&cursor=" .. cursor) or "")) end)
-        return success and Http:JSONDecode(Raw) or nil
+task.spawn(function()
+    while task.wait(0.5) do StoreAction() end
+end)
+
+-- [[ KIỂM TRA ĐẢO RAID ]]
+local function GetCurrentIsland()
+    local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+    if loc then 
+        for i=5,1,-1 do 
+            local isl = loc:FindFirstChild("Island "..i)
+            if isl then return isl end 
+        end 
     end
+    return nil
+end
 
-    local Server = ListServers()
-    if Server and Server.data then
-        for _, v in pairs(Server.data) do
-            if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                TPS:TeleportToPlaceInstance(game.PlaceId, v.id, LP)
-                task.wait(1)
+-- [[ 4 & 5. MUA CHIP & START RAID ]]
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
+            local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+            
+            if not inRaid then
+                if (tick() - LastGrabTime) > 5 then
+                    if _G.AutoBuyChip and not hasChip then
+                        Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+                        task.wait(1)
+                    end
+                    if _G.StartRaid and hasChip then
+                        local Sea2_Pos = CFrame.new(-6438.73, 250.64, -4501.5)
+                        topos_tween(Sea2_Pos)
+                        if (LP.Character.HumanoidRootPart.Position - Sea2_Pos.Position).Magnitude < 15 then
+                            task.wait(0.5)
+                            Remote:InvokeServer("SetSpawnPoint")
+                            local RaidButton = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
+                            if RaidButton then
+                                LP.Character.HumanoidRootPart.CFrame = RaidButton.CFrame
+                                task.wait(0.2)
+                                fireclickdetector(RaidButton.ClickDetector)
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- [[ 6. COMPLETE RAID ]]
+task.spawn(function()
+    while task.wait(0.1) do
+        local island = GetCurrentIsland()
+        local inRaid = LP.PlayerGui.Main.Timer.Visible
+        
+        if _G.Dungeon and (inRaid or island) then
+            pcall(function()
+                local target, dist = nil, math.huge
+                for _, v in pairs(workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                        if island and (v.HumanoidRootPart.Position - island.Position).Magnitude < 800 then
+                            local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                            if d < dist then dist = d; target = v end
+                        end
+                    end
+                end
+
+                if target then
+                    if not LP.Character:FindFirstChildOfClass("Tool") then
+                        for _, t in pairs(LP.Backpack:GetChildren()) do if t.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(t) end end
+                    end
+                    topos_tween(target.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                elseif island then
+                    topos_tween(island.CFrame * CFrame.new(0, 60, 0))
+                end
+            end)
+        else
+            local Root = LP.Character:FindFirstChild("HumanoidRootPart")
+            if Root and Root:FindFirstChild("DungeonBV") then Root.DungeonBV:Destroy() end
+        end
+    end
+end)
+
+-- [[ 7. HOP SERVER (LOGIC: 10S CHECK + 20S HOP) ]]
+function HopServer()
+    local PlaceId = game.PlaceId
+    local Servers = game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    for _, v in pairs(Servers.data) do
+        if v.playing < v.maxPlayers and v.id ~= game.JobId then
+            game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceId, v.id, LP)
+            break
+        end
+    end
+end
+
+task.spawn(function()
+    local waitTime = 30
+    while task.wait(1) do
+        if _G.AutoHop then
+            local island = GetCurrentIsland()
+            local inRaid = LP.PlayerGui.Main.Timer.Visible or island
+            local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+            local hasFruit = false
+            for _, v in pairs(LP.Backpack:GetChildren()) do
+                if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit")) then hasFruit = true break end
+            end
+
+            -- Nếu thỏa điều kiện trống túi và không raid
+            if not inRaid and not hasChip and not hasFruit then
+                waitTime = waitTime - 1
+                
+                if waitTime > 20 then
+                    -- Trong 10 giây đầu (30 -> 21)
+                    if waitTime % 2 == 0 then Notify("Checking Backpack... " .. (waitTime - 20) .. "s") end
+                else
+                    -- Trong 20 giây sau (20 -> 0)
+                    if waitTime % 5 == 0 or waitTime <= 5 then
+                        Notify("Backpack Clear. Server Hop in: " .. waitTime .. "s")
+                    end
+                end
+
+                if waitTime <= 0 then 
+                    Notify("Hopping to New Server...")
+                    HopServer()
+                    waitTime = 30 
+                end
+            else
+                -- Nếu nhặt được đồ trong lúc đang đếm
+                if waitTime < 30 then Notify("Hop Cancelled: Item Found") end
+                waitTime = 30
             end
         end
     end
-    TPS:Teleport(game.PlaceId)
-end
-
--- [[ 6. ÉP BUỘC HOP SAU ĐÚNG 30S ]]
-task.delay(30, function()
-    HopServer()
 end)
 
--- SPAM NHẢY CHỐNG AFK
+-- [[ AUTO BUSO (HAKI) - CẢI TIẾN ]]
 task.spawn(function()
-    while task.wait(0.5) do
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.Jump = true
+    while task.wait(1) do
+        if _G.AutoBuso then
+            pcall(function()
+                -- Kiểm tra HasBuso (Check trạng thái Haki của game)
+                if not LP.Character:FindFirstChild("HasBuso") then
+                    Remote:InvokeServer("Buso")
+                end
+            end)
         end
+    end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") and LP.Character.HumanoidRootPart:FindFirstChild("DungeonBV") then
+        for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
     end
 end)

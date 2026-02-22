@@ -14,6 +14,9 @@ local TS = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
 local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 
+local LastGrabTime = 0
+local IsProcessingRaid = false -- Biến chống spam
+
 -- [[ THÔNG BÁO NOTIFICATION ]]
 local function Notify(text, duration)
     game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -23,7 +26,7 @@ local function Notify(text, duration)
     })
 end
 
--- [[ HÀM DI CHUYỂN ]]
+-- [[ HÀM DI CHUYỂN TWEEN 200 ]]
 local function topos_tween(Pos)
     pcall(function()
         local Root = LP.Character:FindFirstChild("HumanoidRootPart")
@@ -46,24 +49,21 @@ end
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
-        pcall(function()
-            Remote:InvokeServer("SetTeam", getgenv().Team)
-        end)
+        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
     end
 end)
 
 -- [[ 2. NHẶT TRÁI & 3. CẤT KHO ]]
 task.spawn(function()
     while task.wait(0.5) do
-        -- Nhặt trái
         if _G.Grabfruit then
             for _, v in pairs(workspace:GetChildren()) do
                 if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then 
                     topos_fast(v.Handle.CFrame) 
+                    LastGrabTime = tick() -- Đánh dấu thời gian nhặt trái gần nhất
                 end
             end
         end
-        -- Cất kho
         pcall(function()
             for _, tool in pairs(LP.Backpack:GetChildren()) do
                 if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
@@ -77,27 +77,49 @@ task.spawn(function()
     end
 end)
 
--- [[ 4. MUA CHIP & 5. START RAID ]]
+-- [[ HÀM KIỂM TRA ĐANG TRONG RAID ]]
+local function GetCurrentIsland()
+    local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+    if loc then for i=5,1,-1 do if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end end end
+    return nil
+end
+
+-- [[ 4. MUA CHIP & 5. START RAID (TỐI ƯU CHỐNG SPAM) ]]
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            local inRaid = LP.PlayerGui.Main.Timer.Visible
+            local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
             local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
             
-            if not inRaid then
-                -- Nếu túi vẫn còn trái (do cất kho bị full) -> Ưu tiên mua chip bằng trái đó luôn
-                if _G.AutoBuyChip and not hasChip then
-                    Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+            if inRaid then 
+                IsProcessingRaid = true 
+            else
+                -- Chỉ tiếp tục nếu đã kết thúc Raid trước đó và đã nhặt trái xong ít nhất 5 giây
+                if (tick() - LastGrabTime) > 5 then
+                    -- Mua Chip
+                    if _G.AutoBuyChip and not hasChip then
+                        Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+                        task.wait(1)
+                    end
+                    
+                    -- Start Raid (Dùng Tween)
+                    if _G.StartRaid and hasChip then
+                        local Sea2_RaidPos = CFrame.new(-6438.73, 250.64, -4501.5)
+                        topos_tween(Sea2_RaidPos) -- Đổi sang Tween theo ý bạn
+                        
+                        -- Chờ bay tới nơi rồi mới bấm
+                        if (LP.Character.HumanoidRootPart.Position - Sea2_RaidPos.Position).Magnitude < 15 then
+                            task.wait(0.2)
+                            Remote:InvokeServer("SetSpawnPoint")
+                            local Button = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
+                            if Button then fireclickdetector(Button.ClickDetector) end
+                        end
+                    end
                 end
                 
-                -- Start Raid
-                if _G.StartRaid and hasChip then
-                    local Sea2_RaidPos = CFrame.new(-6438.73, 250.64, -4501.5)
-                    topos_fast(Sea2_RaidPos)
-                    task.wait(0.2)
-                    Remote:InvokeServer("SetSpawnPoint")
-                    local Button = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
-                    if Button then fireclickdetector(Button.ClickDetector) end
+                -- Sau khi thực hiện xong các bước ở sảnh, reset trạng thái
+                if not inRaid and not hasChip then
+                    IsProcessingRaid = false
                 end
             end
         end)
@@ -105,18 +127,13 @@ task.spawn(function()
 end)
 
 -- [[ 6. COMPLETE RAID (KILL NEAREST) ]]
-local function GetCurrentIsland()
-    local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
-    if loc then for i=5,1,-1 do if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end end end
-    return nil
-end
-
 task.spawn(function()
     while task.wait(0.1) do
-        local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
+        local island = GetCurrentIsland()
+        local inRaid = LP.PlayerGui.Main.Timer.Visible or island
+        
         if _G.Dungeon and inRaid then
             pcall(function()
-                local island = GetCurrentIsland()
                 local target, dist = nil, math.huge
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
                     if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
@@ -131,13 +148,15 @@ task.spawn(function()
                         for _, t in pairs(LP.Backpack:GetChildren()) do if t.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(t) end end
                     end
                     topos_tween(target.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
-                elseif island then topos_tween(island.CFrame * CFrame.new(0, 60, 0)) end
+                elseif island then 
+                    topos_tween(island.CFrame * CFrame.new(0, 60, 0)) 
+                end
             end)
         end
     end
 end)
 
--- [[ 7. HOP SERVER (ĐIỀU KIỆN CHẶT CHẼ) ]]
+-- [[ 7. HOP SERVER ]]
 function HopServer()
     local PlaceId = game.PlaceId
     local Servers = game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
@@ -160,28 +179,18 @@ task.spawn(function()
                 if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit")) then hasFruit = true break end
             end
 
-            -- CHỈ HOP KHI: Không trái, không chip, không trong raid
             if not inRaid and not hasChip and not hasFruit then
                 waitTime = waitTime - 1
-                if waitTime % 10 == 0 or waitTime <= 5 then
-                    Notify("Server Hop in " .. waitTime .. "s")
-                end
-                if waitTime <= 0 then
-                    Notify("Hopping...")
-                    HopServer()
-                    waitTime = 30
-                end
+                if waitTime % 10 == 0 or waitTime <= 5 then Notify("Server Hop in " .. waitTime .. "s") end
+                if waitTime <= 0 then Notify("Hopping..."); HopServer(); waitTime = 30 end
             else
-                if waitTime < 30 then
-                    Notify("Hop Cancelled: Found Items or In Raid")
-                end
                 waitTime = 30
             end
         end
     end
 end)
 
--- [[ HỖ TRỢ: AUTO BUSO & NOCLIP ]]
+-- [[ HỖ TRỢ ]]
 task.spawn(function()
     while task.wait(1) do
         if _G.AutoBuso and not LP.Character:FindFirstChild("HasBuso") then Remote:InvokeServer("Buso") end

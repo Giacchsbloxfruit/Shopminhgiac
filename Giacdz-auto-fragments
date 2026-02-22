@@ -1,0 +1,230 @@
+-- ========================================================
+-- [[ 0. THÔNG BÁO KHỞI ĐỘNG ]]
+-- ========================================================
+task.spawn(function()
+    if not game:IsLoaded() then game.Loaded:Wait() end
+    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+        Text = "< Giacdz Auto Raid - FIX BUSO & MELEE >",
+        Color = Color3.fromRGB(255, 255, 0), 
+        Font = Enum.Font.GothamBold,
+        TextSize = 20
+    })
+end)
+
+-- ========================================================
+-- [[ 1. CONFIGURATION CHÍNH ]]
+-- ========================================================
+getgenv().Team = "Pirates"
+_G.Grabfruit = true 
+_G.AutoFarmRaid = true 
+_G.SelectChip = "Flame"    
+_G.SelectWeapon = "Melee" 
+
+local LP = game.Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local TS = game:GetService("TweenService")
+local VU = game:GetService("VirtualUser")
+
+local function GetCommF()
+    return RS:FindFirstChild("CommF_", true)
+end
+
+-- ========================================================
+-- [[ 2. HÀM TỰ ĐỘNG BẬT HAKI & CẦM MELEE (QUAN TRỌNG) ]]
+-- ========================================================
+-- Hàm này sẽ chạy ngầm liên tục để đảm bảo bạn luôn bật Haki và cầm vũ khí
+task.spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            if _G.AutoFarmRaid and LP.Character then
+                -- 1. Auto Buso (Haki)
+                if not LP.Character:FindFirstChild("HasBuso") then
+                    local remote = GetCommF()
+                    if remote then remote:InvokeServer("Buso") end
+                end
+                
+                -- 2. Auto Equip Melee (Chỉ cầm khi chưa cầm gì hoặc cầm sai)
+                local tool = LP.Character:FindFirstChildOfClass("Tool")
+                if not tool or (tool.ToolTip ~= "Melee" and tool.Name ~= "Combat") then
+                    for _, v in pairs(LP.Backpack:GetChildren()) do
+                        if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Superhuman" or v.Name == "Godhuman" or v.Name == "Electric Claw" or v.Name == "Sharkman Karate" or v.Name == "Death Step" or v.Name == "Dragon Talon") then
+                            LP.Character.Humanoid:EquipTool(v)
+                            break
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 3. HÀM HOP SERVER (CŨ & LIÊN TỤC) ]]
+-- ========================================================
+local function HopServer()
+    local Http = game:GetService("HttpService")
+    local TPS = game:GetService("TeleportService")
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    
+    local function GetNextServer()
+        local Raw = game:HttpGet(Api)
+        local Decode = Http:JSONDecode(Raw)
+        if Decode and Decode.data then
+            for _, s in pairs(Decode.data) do
+                if s.playing and s.playing < s.maxPlayers and s.id ~= game.JobId then
+                    return s.id
+                end
+            end
+        end
+        return nil
+    end
+
+    print("Đang tìm server cũ và thực hiện Hop liên tục...")
+    repeat
+        task.wait(0.5)
+        local ServerId = GetNextServer()
+        if ServerId then
+            pcall(function()
+                TPS:TeleportToPlaceInstance(game.PlaceId, ServerId, LP)
+            end)
+        end
+    until not LP 
+end
+
+-- ========================================================
+-- [[ 4. CÁC HÀM HỖ TRỢ FARM ]]
+-- ========================================================
+local function topos(Pos)
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local dist = (Pos.Position - root.Position).Magnitude
+    if dist < 5 then root.CFrame = Pos return end
+    
+    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    TS:Create(root, TweenInfo.new(dist/250, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+end
+
+-- ========================================================
+-- [[ 5. LOGIC CHỌN PHE & NHẶT TRÁI ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(1) do
+        if LP.Team == nil or LP.Team.Name ~= getgenv().Team then
+            pcall(function() GetCommF():InvokeServer("SetTeam", getgenv().Team) end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if _G.Grabfruit then
+            pcall(function()
+                for _, v in pairs(game.Workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:IsA("Tool") then
+                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- ========================================================
+-- [[ 6. QUY TRÌNH MUA CHIP & KIỂM TRA HOP ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(1) do
+        if _G.AutoFarmRaid and not LP.PlayerGui.Main.Timer.Visible and not workspace._WorldOrigin.Locations:FindFirstChild("Island 1") then
+            pcall(function()
+                local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or LP.Character:FindFirstChild("Special Microchip")
+                local fruitInBag = nil
+                
+                for _, v in pairs(LP.Backpack:GetChildren()) do
+                    if v:IsA("Tool") and string.find(v.Name, "Fruit") then fruitInBag = v break end
+                end
+
+                if not hasChip then
+                    if fruitInBag then
+                        LP.Character.Humanoid:EquipTool(fruitInBag)
+                        task.wait(0.5)
+                        local fruitName = fruitInBag.Name:gsub(" Fruit", "")
+                        GetCommF():InvokeServer("StoreFruit", fruitName, fruitInBag)
+                        task.wait(1)
+
+                        if fruitInBag.Parent == LP.Backpack or fruitInBag.Parent == LP.Character then
+                            GetCommF():InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+                        end
+                    else
+                        local fruitOnGround = false
+                        for _, v in pairs(workspace:GetChildren()) do
+                            if string.find(v.Name, "Fruit") then fruitOnGround = true break end
+                        end
+                        if not fruitOnGround then HopServer() end
+                    end
+                else
+                    if game.PlaceId == 7449423635 then -- Sea 3
+                        GetCommF():InvokeServer("requestEntrance", Vector3.new(-5075.5, 314.51, -3150.02))
+                        task.wait(1)
+                        topos(CFrame.new(-5017.4, 314.84, -2823.01))
+                        fireclickdetector(workspace.Map["Boat Castle"].RaidSummon2.Button.Main.ClickDetector)
+                    elseif game.PlaceId == 4442272183 then -- Sea 2
+                        topos(CFrame.new(-6438.73, 250.64, -4501.5))
+                        task.wait(1)
+                        fireclickdetector(workspace.Map.CircleIsland.RaidSummon2.Button.Main.ClickDetector)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- ========================================================
+-- [[ 7. LOGIC TRONG TRẬN RAID ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait() do
+        if _G.AutoFarmRaid and LP.PlayerGui.Main.Timer.Visible then
+            pcall(function()
+                local enemies = workspace.Enemies:GetChildren()
+                if #enemies > 0 then
+                    for _, mob in pairs(enemies) do
+                        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                            topos(mob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                            RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                            RS.Modules.Net["RE/RegisterHit"]:FireServer(mob.PrimaryPart, {{mob, mob.PrimaryPart}})
+                        end
+                    end
+                else
+                    for i = 5, 1, -1 do
+                        local island = workspace._WorldOrigin.Locations:FindFirstChild("Island " .. i)
+                        if island and (island.Position - LP.Character.HumanoidRootPart.Position).Magnitude <= 4000 then
+                            topos(island.CFrame * CFrame.new(0, 80, 0))
+                            break
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Noclip & Chống AFK
+game:GetService("RunService").Stepped:Connect(function()
+    if _G.AutoFarmRaid and LP.Character then
+        for _, v in pairs(LP.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
+    end
+end)
+
+LP.Idled:connect(function()
+    VU:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VU:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+end)
+
+-- ========================================================
+-- [[ 8. SCRIPT HỖ TRỢ ĐI KÈM ]]
+-- ========================================================
+loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

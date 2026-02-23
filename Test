@@ -1,15 +1,3 @@
--- [[ ĐỢI GAME VÀ NHÂN VẬT LOAD XONG (CHỐNG LỖI LV 1) ]]
-if not game:IsLoaded() then game.Loaded:Wait() end
-local LP = game.Players.LocalPlayer
-
--- Đợi nhân vật và các bộ phận xuất hiện
-repeat task.wait(0.5) until LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-
--- Đợi dữ liệu Level load xong (chắc chắn không bị kẹt Level 1)
-repeat task.wait(0.5) until LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level") and LP.Data.Level.Value > 0
-
-task.wait(2) -- Nghỉ thêm 2 giây cho chắc cốp rồi mới chạy phần code Auto Raid ở dưới
--- =======================================================
 
 -- [[ CẤU HÌNH HỆ THỐNG - AUTO RAID SIÊU CẤP ]]
 _G.SelectChip = "Ice" 

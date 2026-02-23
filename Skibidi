@@ -15,15 +15,11 @@ local RS = game:GetService("ReplicatedStorage")
 local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 local LastGrabTime = 0
 
--- [[ HÀM THÔNG BÁO CHUẨN ]]
-local function Notify(text)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub",
-            Text = text,
-            Duration = 5 -- Tăng thời gian hiển thị lên 5s
-        })
-    end)
+-- [[ THÔNG BÁO CHỮ GIỮA MÀN HÌNH ]]
+local function ScreenMsg(text)
+    local msg = Instance.new("Hint", game.CoreGui) -- Dùng Hint để hiện dòng chữ nhỏ trên đầu màn hình, không gây phiền
+    msg.Text = text
+    task.delay(2, function() msg:Destroy() end)
 end
 
 -- [[ HÀM KIỂM TRA VẬT PHẨM ]]
@@ -37,20 +33,6 @@ local function HasItem(itemName)
         end
     end
     return false
-end
-
--- [[ TỰ ĐỘNG CẦM MELEE ]]
-local function EquipMelee()
-    pcall(function()
-        if not LP.Character:FindFirstChildOfClass("Tool") or LP.Character:FindFirstChildOfClass("Tool").ToolTip ~= "Melee" then
-            for _, t in pairs(LP.Backpack:GetChildren()) do
-                if t.ToolTip == "Melee" then
-                    LP.Character.Humanoid:EquipTool(t)
-                    break
-                end
-            end
-        end
-    end)
 end
 
 -- [[ HÀM DI CHUYỂN ]]
@@ -128,7 +110,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 6. COMPLETE RAID + AUTO EQUIP ]]
+-- [[ 6. CHỈ ĐÁNH KHI TRONG RAID ]]
 local function GetCurrentIsland()
     local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
     if loc then for i=5,1,-1 do if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end end end
@@ -139,33 +121,50 @@ task.spawn(function()
     while task.wait(0.1) do
         local island = GetCurrentIsland()
         if _G.Dungeon and island then
-            EquipMelee() -- Luôn cầm melee khi trong Raid
-            local target, dist = nil, math.huge
-            for _, v in pairs(workspace.Enemies:GetChildren()) do
-                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
-                    if d < dist then dist = d; target = v end
+            -- Tự cầm Melee khi bắt đầu đánh trong Raid
+            if not LP.Character:FindFirstChildOfClass("Tool") or LP.Character:FindFirstChildOfClass("Tool").ToolTip ~= "Melee" then
+                for _, t in pairs(LP.Backpack:GetChildren()) do
+                    if t.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(t) break end
                 end
             end
+
+            local target = nil
+            local dist = math.huge
+            for _, v in pairs(workspace.Enemies:GetChildren()) do
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                    if (v.HumanoidRootPart.Position - island.Position).Magnitude < 1000 then
+                        local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                        if d < dist then dist = d; target = v end
+                    end
+                end
+            end
+            
             if target then
                 topos_tween(target.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                -- Click đánh
+                game:GetService("VirtualUser"):CaptureController()
+                game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
             else
-                topos_tween(island.CFrame * CFrame.new(0, 60, 0))
+                topos_tween(island.CFrame * CFrame.new(0, 70, 0))
             end
         end
     end
 end)
 
--- [[ 7. HOP SERVER + THÔNG BÁO ]]
-function ForceHop()
+-- [[ 7. HOP SERVER ]]
+function HopServer()
     local HttpService = game:GetService("HttpService")
-    local result = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-    for _, s in pairs(result.data) do
-        if s.id ~= game.JobId and s.playing < s.maxPlayers then
-            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LP)
-            break
+    local TeleportService = game:GetService("TeleportService")
+    local PlaceId = game.PlaceId
+    pcall(function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")).data
+        for _, s in pairs(servers) do
+            if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
+                return
+            end
         end
-    end
+    end)
 end
 
 task.spawn(function()
@@ -178,32 +177,25 @@ task.spawn(function()
 
             if not inRaid and not hasChip and not hasFruit then
                 waitTime = waitTime - 1
-                if waitTime == 10 then Notify("Hệ thống: Đang kiểm tra Server... (10s)")
-                elseif waitTime == 5 then Notify("Hệ thống: Sắp đổi Server... (5s)")
+                if waitTime == 10 then ScreenMsg("Checking... Hop Server in 10s")
+                elseif waitTime == 5 then ScreenMsg("Preparing... Hop Server in 5s")
                 elseif waitTime <= 0 then
-                    Notify("Hệ thống: Đang nhảy Server!")
-                    ForceHop()
+                    ScreenMsg("Hopping Server...")
+                    HopServer()
                     waitTime = 15
                 end
             else
-                -- Nếu có Trái/Chip hoặc đang Raid, reset thời gian và báo cho người dùng
-                if waitTime < 15 then
-                    Notify("Hệ thống: Đã dừng Hop để ưu tiên Raid/Trái ác quỷ")
-                    waitTime = 15
-                end
+                waitTime = 15 
             end
         end
     end
 end)
 
--- [[ AUTO BUSO (HAKI) ]]
+-- [[ AUTO BUSO (CỰC NHẠY) ]]
 task.spawn(function()
     while task.wait(0.1) do
-        if _G.AutoBuso then
-            -- Kiểm tra nếu nhân vật chưa bật Haki (thường không có object "HasBuso")
-            if not LP.Character:FindFirstChild("HasBuso") then
-                Remote:InvokeServer("Buso")
-            end
+        if _G.AutoBuso and not LP.Character:FindFirstChild("HasBuso") then
+            Remote:InvokeServer("Buso")
         end
     end
 end)

@@ -25,7 +25,7 @@ local LastGrabTime = 0
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Gemini Hub",
+            Title = "concak Hub",
             Text = text,
             Duration = 3
         })

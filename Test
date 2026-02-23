@@ -21,7 +21,7 @@ getgenv().Team = "Pirates"
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giac Hub",
+            Title = "Giacdz Hub",
             Text = text,
             Duration = 3
         })

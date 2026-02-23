@@ -1,4 +1,4 @@
--- [[ 0. ĐỢI GAME VÀ NHÂN VẬT LOAD XONG ]]
+-- [[ 0. CHỐNG LỖI TÀNG HÌNH & KẸT DỮ LIỆU ]]
 if not game:IsLoaded() then game.Loaded:Wait() end
 local LP = game.Players.LocalPlayer
 repeat task.wait(0.5) until LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
@@ -32,9 +32,14 @@ local function Notify(text)
     end)
 end
 
+-- [[ KIỂM TRA ĐẢO RAID ]]
 local function GetCurrentIsland()
     local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
-    if loc then for i=5,1,-1 do if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end end end
+    if loc then 
+        for i=5,1,-1 do 
+            if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end 
+        end 
+    end
     return nil
 end
 
@@ -74,7 +79,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 2. NHẶT TRÁI ]]
+-- [[ 2. NHẶT TRÁI - DỪNG KHI TRONG RAID ]]
 task.spawn(function()
     while task.wait(0.1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
@@ -82,10 +87,8 @@ task.spawn(function()
             pcall(function()
                 for _, v in pairs(workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then 
-                        if LP.Character:FindFirstChild("HumanoidRootPart") then
-                            LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                            LastGrabTime = tick()
-                        end
+                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
+                        LastGrabTime = tick()
                     end
                 end
             end)
@@ -93,32 +96,28 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. CẤT KHO ]]
-local function StoreAction()
-    local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
-    if inRaid then return end
-    pcall(function()
-        local char = LP.Character
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        for _, tool in pairs(LP.Backpack:GetChildren()) do
-            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool)
-                task.wait(0.2)
-            end
-        end
-        local toolOnHand = char:FindFirstChildOfClass("Tool")
-        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
-            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
-            task.defer(function()
-                Remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+-- [[ 3. CẤT KHO - DỪNG KHI TRONG RAID ]]
+task.spawn(function()
+    while task.wait(0.5) do
+        local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
+        if not inRaid then
+            pcall(function()
+                local char = LP.Character
+                for _, tool in pairs(LP.Backpack:GetChildren()) do
+                    if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
+                        char.Humanoid:EquipTool(tool)
+                    end
+                end
+                local toolOnHand = char:FindFirstChildOfClass("Tool")
+                if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+                    Remote:InvokeServer("StoreFruit", toolOnHand.Name:gsub(" Fruit", ""), toolOnHand)
+                end
             end)
-            task.wait(1) 
         end
-    end)
-end
-task.spawn(function() while task.wait(0.5) do StoreAction() end end)
+    end
+end)
 
--- [[ 4 & 5. MUA CHIP & START RAID ]]
+-- [[ 4 & 5. MUA CHIP & START RAID - CHẶT CHẼ ]]
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
@@ -127,18 +126,16 @@ task.spawn(function()
                 local hasChip = HasItem("Microchip")
                 if _G.AutoBuyChip and not hasChip then
                     Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
-                    task.wait(1)
                 end
                 if _G.StartRaid and hasChip then
                     local Sea2_Pos = CFrame.new(-6438.73, 250.64, -4501.5)
                     topos_tween(Sea2_Pos)
                     if (LP.Character.HumanoidRootPart.Position - Sea2_Pos.Position).Magnitude < 15 then
-                        task.wait(0.5)
                         Remote:InvokeServer("SetSpawnPoint")
-                        local RaidButton = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
-                        if RaidButton then
-                            LP.Character.HumanoidRootPart.CFrame = RaidButton.CFrame
-                            fireclickdetector(RaidButton.ClickDetector)
+                        local RaidBtn = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
+                        if RaidBtn then 
+                            LP.Character.HumanoidRootPart.CFrame = RaidBtn.CFrame
+                            fireclickdetector(RaidBtn.ClickDetector) 
                         end
                     end
                 end
@@ -147,7 +144,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 6. COMPLETE RAID ]]
+-- [[ 6. COMPLETE RAID - ƯU TIÊN SỐ 1 ]]
 task.spawn(function()
     while task.wait(0.1) do
         local island = GetCurrentIsland()
@@ -178,14 +175,13 @@ task.spawn(function()
     end
 end)
 
--- [[ 7. FIX HOP SERVER (DÙNG API MỚI) ]]
+-- [[ 7. FIX HOP SERVER (5S CHECK + 10S HOP) ]]
 function HopServer()
     local TeleportService = game:GetService("TeleportService")
     local HttpService = game:GetService("HttpService")
     local PlaceId = game.PlaceId
-    
     pcall(function()
-        local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"))
+        local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
         for _, s in pairs(Servers.data) do
             if s.playing < s.maxPlayers and s.id ~= game.JobId then
                 TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
@@ -200,26 +196,18 @@ task.spawn(function()
     while task.wait(1) do
         if _G.AutoHop then
             local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
-            local hasChip = HasItem("Microchip")
-            local hasFruit = HasItem("Fruit")
-
-            if not inRaid and not hasChip and not hasFruit then
+            if not inRaid and not HasItem("Microchip") and not HasItem("Fruit") then
                 waitTime = waitTime - 1
-                -- Chỉ thông báo tại các mốc 15, 10, 5 giây
-                if waitTime == 14 then Notify("Backpack Clear! Starting Hop timer.")
-                elseif waitTime == 10 then Notify("Server Hop in 10 seconds...")
-                elseif waitTime == 5 then Notify("Server Hop in 5 seconds...")
+                if waitTime == 14 then Notify("Backpack Clear! Waiting 5s...")
+                elseif waitTime == 10 then Notify("Server Hop in 10s...")
+                elseif waitTime == 5 then Notify("Server Hop in 5s...")
                 elseif waitTime <= 0 then
-                    Notify("Teleporting...")
+                    Notify("Searching Server...")
                     HopServer()
-                    task.wait(5)
-                    waitTime = 15 -- Reset nếu teleport thất bại
+                    waitTime = 10 -- Đợi 10s để hệ thống phản hồi
                 end
             else
-                if waitTime < 15 then
-                    Notify("Hop Cancelled: Found Item or Entered Raid.")
-                    waitTime = 15
-                end
+                if waitTime < 15 then Notify("Hop Cancelled!"); waitTime = 15 end
             end
         end
     end
@@ -238,4 +226,5 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
+-- Script Panda
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

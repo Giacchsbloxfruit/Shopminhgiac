@@ -24,7 +24,7 @@ end
 -- [[ THÔNG BÁO NOTIFICATION ]]
 local function Notify(text)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Gemini Hub",
+        Title = "Giacdz Hub",
         Text = text,
         Duration = 3
     })

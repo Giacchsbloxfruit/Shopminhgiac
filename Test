@@ -142,7 +142,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 6. COMPLETE RAID (DÙNG LOGIC FARM CHUẨN CỦA BẠN) ]]
+-- [[ 6. COMPLETE RAID (ĐÃ THAY THẾ THEO YÊU CẦU) ]]
 task.spawn(function()
     while task.wait(0.1) do
         local island = GetCurrentIsland()
@@ -151,12 +151,14 @@ task.spawn(function()
                 local target, dist = nil, math.huge
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
                     if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                        -- Giữ nguyên logic farm quái từ code ổn định của bạn
-                        local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
-                        if d < dist then dist = d; target = v end
+                        if (v.HumanoidRootPart.Position - island.Position).Magnitude < 800 then
+                            local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                            if d < dist then dist = d; target = v end
+                        end
                     end
                 end
                 if target then
+                    -- Trang bị vũ khí
                     if not LP.Character:FindFirstChildOfClass("Tool") then
                         for _, t in pairs(LP.Backpack:GetChildren()) do if t.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(t) end end
                     end

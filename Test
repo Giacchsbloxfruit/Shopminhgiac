@@ -1,9 +1,3 @@
--- [[ 0. CHỐNG LỖI TÀNG HÌNH & KẸT DỮ LIỆU ]]
-if not game:IsLoaded() then game.Loaded:Wait() end
-local LP = game.Players.LocalPlayer
-repeat task.wait(0.5) until LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-repeat task.wait(0.5) until LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level") and LP.Data.Level.Value > 0
-task.wait(2)
 
 -- [[ CẤU HÌNH HỆ THỐNG ]]
 _G.SelectChip = "Ice" 
@@ -32,7 +26,6 @@ local function Notify(text)
     end)
 end
 
--- [[ KIỂM TRA ĐẢO RAID ]]
 local function GetCurrentIsland()
     local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
     if loc then 
@@ -79,7 +72,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 2. NHẶT TRÁI - DỪNG KHI TRONG RAID ]]
+-- [[ 2. NHẶT TRÁI ]]
 task.spawn(function()
     while task.wait(0.1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
@@ -96,25 +89,37 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. CẤT KHO - DỪNG KHI TRONG RAID ]]
-task.spawn(function()
-    while task.wait(0.5) do
-        local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
-        if not inRaid then
-            pcall(function()
-                local char = LP.Character
-                for _, tool in pairs(LP.Backpack:GetChildren()) do
-                    if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                        char.Humanoid:EquipTool(tool)
-                    end
-                end
-                local toolOnHand = char:FindFirstChildOfClass("Tool")
-                if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
-                    Remote:InvokeServer("StoreFruit", toolOnHand.Name:gsub(" Fruit", ""), toolOnHand)
-                end
-            end)
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ GẮN BẢN CŨ CỦA BẠN) ]]
+local function StoreAction()
+    local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
+    if inRaid then return end -- Không cất kho khi đang Raid để tránh lỗi
+
+    pcall(function()
+        local char = LP.Character
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        
+        for _, tool in pairs(LP.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
+                hum:EquipTool(tool)
+                task.wait(0.2)
+            end
         end
-    end
+
+        local toolOnHand = char:FindFirstChildOfClass("Tool")
+        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
+            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
+            task.defer(function()
+                Remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
+                Remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
+                Remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
+            end)
+            task.wait(1) 
+        end
+    end)
+end
+
+task.spawn(function()
+    while task.wait(0.5) do StoreAction() end
 end)
 
 -- [[ 4 & 5. MUA CHIP & START RAID ]]
@@ -175,36 +180,28 @@ task.spawn(function()
     end
 end)
 
--- [[ 7. HÀM HOP SERVER CƯỠNG CHẾ (NEW) ]]
+-- [[ 7. HOP SERVER CƯỠNG CHẾ (ĐÃ FIX) ]]
 function ForceHop()
     local HttpService = game:GetService("HttpService")
     local TeleportService = game:GetService("TeleportService")
     local PlaceId = game.PlaceId
-    
-    Notify("Đang tìm Server mới...")
-    
-    -- Quét liên tục cho đến khi nhảy thành công
+    Notify("Đang quét Server...")
     while task.wait(1) do
         local success, result = pcall(function()
-            -- Lấy danh sách server ngẫu nhiên để tránh bị kẹt server cũ
-            local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
-            return HttpService:JSONDecode(game:HttpGet(url))
+            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
         end)
-        
         if success and result and result.data then
             for _, s in pairs(result.data) do
                 if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                    Notify("Đã thấy server! Đang chuyển...")
+                    Notify("Đã thấy server! Đang nhảy...")
                     TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
-                    task.wait(3) -- Chờ phản hồi từ Roblox
+                    task.wait(3)
                 end
             end
         end
-        Notify("Đang thử lại danh sách Server khác...")
     end
 end
 
--- Vòng lặp kiểm tra thời gian Hop
 task.spawn(function()
     local waitTime = 15
     while task.wait(1) do
@@ -212,18 +209,14 @@ task.spawn(function()
             local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
             if not inRaid and not HasItem("Microchip") and not HasItem("Fruit") then
                 waitTime = waitTime - 1
-                if waitTime == 14 then Notify("Túi đồ sạch! Chờ 5s check...")
-                elseif waitTime == 10 then Notify("Sẽ đổi Server sau 10s...")
-                elseif waitTime == 5 then Notify("Chuẩn bị nhảy Server: 5s")
+                if waitTime == 10 then Notify("Sẽ đổi Server sau 10s...")
+                elseif waitTime == 5 then Notify("Chuẩn bị đổi Server: 5s")
                 elseif waitTime <= 0 then
                     ForceHop()
-                    break -- Thoát vòng lặp đếm để hàm ForceHop chiếm quyền kiểm soát
+                    break 
                 end
             else
-                if waitTime < 15 then 
-                    Notify("Hủy nhảy Server (Có đồ/Trong Raid)")
-                    waitTime = 15 
-                end
+                waitTime = 15
             end
         end
     end

@@ -1,4 +1,4 @@
--- [[ CẤU HÌNH HỆ THỐNG - SEA 2 ]]
+-- [[ CẤU HÌNH HỆ THỐNG - TỔNG HỢP SIÊU CẤP ]]
 _G.SelectChip = "Ice" 
 _G.AutoBuyChip = true
 _G.StartRaid = true
@@ -27,18 +27,17 @@ local function Notify(text)
     })
 end
 
--- [[ HÀM TWEEN 200 ]]
+-- [[ HÀM DI CHUYỂN TWEEN 200 ]]
 local function topos_tween(Pos)
     pcall(function()
         local Root = LP.Character:FindFirstChild("HumanoidRootPart")
         if not Root then return end
         local Distance = (Pos.Position - Root.Position).Magnitude
-        
         if Distance < 5 then 
             if Root:FindFirstChild("DungeonBV") then Root.DungeonBV:Destroy() end
+            Root.CFrame = Pos 
             return 
         end 
-
         if not Root:FindFirstChild("DungeonBV") then
             local bv = Instance.new("BodyVelocity", Root)
             bv.Name = "DungeonBV"; bv.Velocity = Vector3.new(0,0,0); bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
@@ -103,15 +102,10 @@ task.spawn(function()
     while task.wait(0.5) do StoreAction() end
 end)
 
--- [[ KIỂM TRA ĐẢO RAID ]]
+-- [[ HÀM KIỂM TRA ĐẢO ]]
 local function GetCurrentIsland()
     local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
-    if loc then 
-        for i=5,1,-1 do 
-            local isl = loc:FindFirstChild("Island "..i)
-            if isl then return isl end 
-        end 
-    end
+    if loc then for i=5,1,-1 do if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end end end
     return nil
 end
 
@@ -148,41 +142,38 @@ task.spawn(function()
     end
 end)
 
--- [[ 6. COMPLETE RAID ]]
+-- [[ 6. COMPLETE RAID (DÙNG LOGIC FARM CHUẨN CỦA BẠN) ]]
 task.spawn(function()
     while task.wait(0.1) do
         local island = GetCurrentIsland()
-        local inRaid = LP.PlayerGui.Main.Timer.Visible
-        
-        if _G.Dungeon and (inRaid or island) then
+        if _G.Dungeon and island then
             pcall(function()
                 local target, dist = nil, math.huge
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
                     if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                        if island and (v.HumanoidRootPart.Position - island.Position).Magnitude < 800 then
-                            local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
-                            if d < dist then dist = d; target = v end
-                        end
+                        -- Giữ nguyên logic farm quái từ code ổn định của bạn
+                        local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                        if d < dist then dist = d; target = v end
                     end
                 end
-
                 if target then
                     if not LP.Character:FindFirstChildOfClass("Tool") then
                         for _, t in pairs(LP.Backpack:GetChildren()) do if t.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(t) end end
                     end
                     topos_tween(target.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
-                elseif island then
+                else
                     topos_tween(island.CFrame * CFrame.new(0, 60, 0))
                 end
             end)
         else
+            -- Xóa BV khi xong raid để làm việc khác
             local Root = LP.Character:FindFirstChild("HumanoidRootPart")
             if Root and Root:FindFirstChild("DungeonBV") then Root.DungeonBV:Destroy() end
         end
     end
 end)
 
--- [[ 7. HOP SERVER (LOGIC: 10S CHECK + 20S HOP) ]]
+-- [[ 7. HOP SERVER (10S CHECK + 20S HOP) ]]
 function HopServer()
     local PlaceId = game.PlaceId
     local Servers = game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
@@ -198,48 +189,33 @@ task.spawn(function()
     local waitTime = 30
     while task.wait(1) do
         if _G.AutoHop then
-            local island = GetCurrentIsland()
-            local inRaid = LP.PlayerGui.Main.Timer.Visible or island
+            local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
             local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
             local hasFruit = false
             for _, v in pairs(LP.Backpack:GetChildren()) do
                 if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit")) then hasFruit = true break end
             end
 
-            -- Nếu thỏa điều kiện trống túi và không raid
             if not inRaid and not hasChip and not hasFruit then
                 waitTime = waitTime - 1
-                
                 if waitTime > 20 then
-                    -- Trong 10 giây đầu (30 -> 21)
                     if waitTime % 2 == 0 then Notify("Checking Backpack... " .. (waitTime - 20) .. "s") end
                 else
-                    -- Trong 20 giây sau (20 -> 0)
-                    if waitTime % 5 == 0 or waitTime <= 5 then
-                        Notify("Backpack Clear. Server Hop in: " .. waitTime .. "s")
-                    end
+                    if waitTime % 5 == 0 or waitTime <= 5 then Notify("Server Hop in: " .. waitTime .. "s") end
                 end
-
-                if waitTime <= 0 then 
-                    Notify("Hopping to New Server...")
-                    HopServer()
-                    waitTime = 30 
-                end
+                if waitTime <= 0 then HopServer(); waitTime = 30 end
             else
-                -- Nếu nhặt được đồ trong lúc đang đếm
-                if waitTime < 30 then Notify("Hop Cancelled: Item Found") end
                 waitTime = 30
             end
         end
     end
 end)
 
--- [[ AUTO BUSO (HAKI) - CẢI TIẾN ]]
+-- [[ AUTO BUSO (HAKI) - BẬT LẠI KHI MẤT ]]
 task.spawn(function()
     while task.wait(1) do
         if _G.AutoBuso then
             pcall(function()
-                -- Kiểm tra HasBuso (Check trạng thái Haki của game)
                 if not LP.Character:FindFirstChild("HasBuso") then
                     Remote:InvokeServer("Buso")
                 end
@@ -249,9 +225,10 @@ task.spawn(function()
 end)
 
 game:GetService("RunService").Stepped:Connect(function()
-    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") and LP.Character.HumanoidRootPart:FindFirstChild("DungeonBV") then
+    if LP.Character then
         for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
     end
 end)
 
-loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))    
+-- Script Panda
+loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

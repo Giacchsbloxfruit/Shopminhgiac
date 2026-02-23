@@ -1,5 +1,12 @@
+-- [[ KHỞI TẠO NHANH ]]
+if not game:IsLoaded() then game.Loaded:Wait() end
+local LP = game.Players.LocalPlayer
+local TS = game:GetService("TweenService")
+local RS = game:GetService("ReplicatedStorage")
+local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
+local LastGrabTime = 0
 
--- [[ CẤU HÌNH HỆ THỐNG ]]
+-- [[ CẤU HÌNH ]]
 _G.SelectChip = "Ice" 
 _G.AutoBuyChip = true
 _G.StartRaid = true
@@ -9,11 +16,6 @@ _G.Grabfruit = true
 _G.AutoBuso = true
 _G.AutoHop = true 
 getgenv().Team = "Pirates"
-
-local TS = game:GetService("TweenService")
-local RS = game:GetService("ReplicatedStorage")
-local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
-local LastGrabTime = 0
 
 -- [[ HÀM HỖ TRỢ ]]
 local function Notify(text)
@@ -64,11 +66,18 @@ local function topos_tween(Pos)
     end)
 end
 
--- [[ 1. CHỌN PHE ]]
+-- [[ 1. CHỌN PHE CƯỠNG CHẾ (ĐÃ FIX) ]]
 task.spawn(function()
-    while task.wait(0.5) do
-        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
-        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
+    while task.wait(1) do
+        -- Kiểm tra nếu chưa vào phe hoặc sai phe
+        if tostring(LP.Team) == "nil" or LP.Team.Name ~= getgenv().Team then
+            pcall(function()
+                Remote:InvokeServer("SetTeam", getgenv().Team)
+            end)
+        else
+            -- Đã vào phe thành công
+            break 
+        end
     end
 end)
 
@@ -89,10 +98,10 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ GẮN BẢN CŨ CỦA BẠN) ]]
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO (GIỮ NGUYÊN BẢN CŨ) ]]
 local function StoreAction()
     local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
-    if inRaid then return end -- Không cất kho khi đang Raid để tránh lỗi
+    if inRaid then return end
 
     pcall(function()
         local char = LP.Character
@@ -180,12 +189,11 @@ task.spawn(function()
     end
 end)
 
--- [[ 7. HOP SERVER CƯỠNG CHẾ (ĐÃ FIX) ]]
+-- [[ 7. HOP SERVER CƯỠNG CHẾ ]]
 function ForceHop()
     local HttpService = game:GetService("HttpService")
     local TeleportService = game:GetService("TeleportService")
     local PlaceId = game.PlaceId
-    Notify("Đang quét Server...")
     while task.wait(1) do
         local success, result = pcall(function()
             return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
@@ -193,7 +201,6 @@ function ForceHop()
         if success and result and result.data then
             for _, s in pairs(result.data) do
                 if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                    Notify("Đã thấy server! Đang nhảy...")
                     TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
                     task.wait(3)
                 end
@@ -222,7 +229,7 @@ task.spawn(function()
     end
 end)
 
--- [[ AUTO BUSO ]]
+-- [[ PHỤ TRỢ ]]
 task.spawn(function()
     while task.wait(1) do
         if _G.AutoBuso and not LP.Character:FindFirstChild("HasBuso") then Remote:InvokeServer("Buso") end

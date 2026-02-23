@@ -117,7 +117,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 4 & 5. MUA CHIP & START RAID - CHẶT CHẼ ]]
+-- [[ 4 & 5. MUA CHIP & START RAID ]]
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
@@ -144,7 +144,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 6. COMPLETE RAID - ƯU TIÊN SỐ 1 ]]
+-- [[ 6. COMPLETE RAID ]]
 task.spawn(function()
     while task.wait(0.1) do
         local island = GetCurrentIsland()
@@ -175,22 +175,36 @@ task.spawn(function()
     end
 end)
 
--- [[ 7. FIX HOP SERVER (5S CHECK + 10S HOP) ]]
-function HopServer()
-    local TeleportService = game:GetService("TeleportService")
+-- [[ 7. HÀM HOP SERVER CƯỠNG CHẾ (NEW) ]]
+function ForceHop()
     local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
     local PlaceId = game.PlaceId
-    pcall(function()
-        local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-        for _, s in pairs(Servers.data) do
-            if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
-                return
+    
+    Notify("Đang tìm Server mới...")
+    
+    -- Quét liên tục cho đến khi nhảy thành công
+    while task.wait(1) do
+        local success, result = pcall(function()
+            -- Lấy danh sách server ngẫu nhiên để tránh bị kẹt server cũ
+            local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+        
+        if success and result and result.data then
+            for _, s in pairs(result.data) do
+                if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                    Notify("Đã thấy server! Đang chuyển...")
+                    TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
+                    task.wait(3) -- Chờ phản hồi từ Roblox
+                end
             end
         end
-    end)
+        Notify("Đang thử lại danh sách Server khác...")
+    end
 end
 
+-- Vòng lặp kiểm tra thời gian Hop
 task.spawn(function()
     local waitTime = 15
     while task.wait(1) do
@@ -198,16 +212,18 @@ task.spawn(function()
             local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
             if not inRaid and not HasItem("Microchip") and not HasItem("Fruit") then
                 waitTime = waitTime - 1
-                if waitTime == 14 then Notify("Backpack Clear! Waiting 5s...")
-                elseif waitTime == 10 then Notify("Server Hop in 10s...")
-                elseif waitTime == 5 then Notify("Server Hop in 5s...")
+                if waitTime == 14 then Notify("Túi đồ sạch! Chờ 5s check...")
+                elseif waitTime == 10 then Notify("Sẽ đổi Server sau 10s...")
+                elseif waitTime == 5 then Notify("Chuẩn bị nhảy Server: 5s")
                 elseif waitTime <= 0 then
-                    Notify("Searching Server...")
-                    HopServer()
-                    waitTime = 10 -- Đợi 10s để hệ thống phản hồi
+                    ForceHop()
+                    break -- Thoát vòng lặp đếm để hàm ForceHop chiếm quyền kiểm soát
                 end
             else
-                if waitTime < 15 then Notify("Hop Cancelled!"); waitTime = 15 end
+                if waitTime < 15 then 
+                    Notify("Hủy nhảy Server (Có đồ/Trong Raid)")
+                    waitTime = 15 
+                end
             end
         end
     end

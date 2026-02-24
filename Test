@@ -19,21 +19,10 @@ local HttpService = game:GetService("HttpService")
 
 local LastGrabTime = tick() 
 local BoughtChip = false
-local RaidEndTime = 0
+local RaidEndTime = tick() 
 local ScriptStartedTime = tick() 
 
--- [[ HÀM HỖ TRỢ LẤY REMOTE ]]
-local function GetCommF() return Remote end
-
--- [[ 1. CHỌN PHE (BẮT BUỘC) ]]
-task.spawn(function()
-    while task.wait(0.5) do
-        if LP.Team ~= nil then break end
-        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
-    end
-end)
-
--- [[ THÔNG BÁO ]]
+-- [[ HÀM THÔNG BÁO PREMIUM ]]
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -44,20 +33,36 @@ local function Notify(text)
     end)
 end
 
--- [[ KIỂM TRA TÚI & TAY (CHUẨN) ]]
-local function CheckFull()
-    local has = false
-    if not LP.Character then return false end
-    for _, v in pairs(LP.Backpack:GetChildren()) do
-        if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then has = true end
-    end
-    for _, v in pairs(LP.Character:GetChildren()) do
-        if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then has = true end
-    end
-    return has
+-- [[ KIỂM TRA ĐANG TRONG RAID/ĐẢO ]]
+local function IsInRaid()
+    local Timer = LP.PlayerGui.Main.Timer.Visible
+    local Location = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+    local InIsland = Location and (Location:FindFirstChild("Island 1") or Location:FindFirstChild("Island 5"))
+    return Timer or InIsland
 end
 
--- [[ TWEEN 170 ]]
+-- [[ CHỌN TEAM ]]
+task.spawn(function()
+    while task.wait(0.5) do
+        if LP.Team ~= nil then break end
+        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
+    end
+end)
+
+-- [[ KIỂM TRA TÚI ]]
+local function CheckFull()
+    if not LP.Character then return false end
+    local items = LP.Backpack:GetChildren()
+    for _, v in pairs(LP.Character:GetChildren()) do table.insert(items, v) end
+    for _, v in pairs(items) do
+        if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then 
+            return true 
+        end
+    end
+    return false
+end
+
+-- [[ TWEEN ]]
 local function topos_tween(Pos)
     pcall(function()
         local Root = LP.Character:FindFirstChild("HumanoidRootPart")
@@ -75,42 +80,23 @@ local function topos_tween(Pos)
     end)
 end
 
--- [[ 2. HÀM ÉP LỆNH CẤT KHO (GIỮ NGUYÊN CỦA BRO) ]]
+-- [[ CẤT KHO ]]
 local function StoreAction()
     pcall(function()
+        if IsInRaid() then return end
         local char = LP.Character
-        if not char then return end
-        local inRaid = LP.PlayerGui.Main.Timer.Visible or (workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations"):FindFirstChild("Island 1"))
-        if inRaid then return end
-
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local remote = GetCommF()
-        
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool)
-                task.wait(0.2)
+                char.Humanoid:EquipTool(tool)
             end
         end
-
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
-            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
-            task.defer(function()
-                if remote then
-                    remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
-                end
-            end)
-            task.wait(1) 
+            Remote:InvokeServer("StoreFruit", toolOnHand.Name:gsub(" Fruit", ""), toolOnHand)
         end
     end)
 end
-
-task.spawn(function()
-    while task.wait(0.5) do StoreAction() end
-end)
+task.spawn(function() while task.wait(0.5) do StoreAction() end end)
 
 -- [[ 5. AUTO TELEPORT FRUITS ]]
 spawn(function()
@@ -127,97 +113,66 @@ spawn(function()
     end
 end)
 
--- [[ HÀM SIÊU CẤP HOP - LẤY SERVER CŨ & CỰC CŨ ]]
+-- [[ HOP SERVER CŨ (DEEP HOP) ]]
 local function ForceDeepHop()
-    Notify("Có cái nịt. Đang tìm Server")
+    Notify("Không có trái. Đang tìm Server cũ...")
     local PlaceId = game.PlaceId
-    local JobId = game.JobId
     local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-    
-    local function GetServerList(cursor)
-        local success, result = pcall(function()
-            return game:HttpGet(url .. (cursor and "&cursor=" .. cursor or ""))
-        end)
-        return success and HttpService:JSONDecode(result) or nil
+    local function GetList(cursor)
+        local s, r = pcall(function() return game:HttpGet(url .. (cursor and "&cursor=" .. cursor or "")) end)
+        return s and HttpService:JSONDecode(r) or nil
     end
-
-    local data = GetServerList()
-    -- Nhảy ngẫu nhiên sâu vào danh sách trang (tới trang 3 hoặc 4 để tìm sv cũ)
-    for i = 1, math.random(2, 4) do
-        if data and data.nextPageCursor then
-            data = GetServerList(data.nextPageCursor)
-        end
-    end
-
+    local data = GetList()
+    for i = 1, math.random(2, 4) do if data and data.nextPageCursor then data = GetList(data.nextPageCursor) end end
     if data and data.data then
-        local possibleServers = {}
-        for _, s in pairs(data.data) do
-            if s.id ~= JobId and s.playing < s.maxPlayers - 1 then
-                table.insert(possibleServers, s.id)
+        for i = #data.data, 1, -1 do
+            local s = data.data[i]
+            if s.id ~= game.JobId and s.playing < s.maxPlayers - 1 then
+                TeleportService:TeleportToPlaceInstance(PlaceId, s.id, LP)
+                return
             end
         end
-
-        if #possibleServers > 0 then
-            -- Chọn server ở cuối danh sách trang đó (thường là sv cũ hơn)
-            local randomTarget = possibleServers[math.random(math.floor(#possibleServers/2), #possibleServers)]
-            Notify("Đang hop Server mới!...")
-            task.wait(0.5)
-            TeleportService:TeleportToPlaceInstance(PlaceId, randomTarget, LP)
-        else
-            Notify("Không tìm thấy Server, hop random...")
-            TeleportService:Teleport(PlaceId, LP) -- Fallback nhảy đại
-        end
-    else
-        Notify("Lỗi API Roblox, đang nhảy server ngẫu nhiên...")
-        TeleportService:Teleport(PlaceId, LP)
     end
+    TeleportService:Teleport(PlaceId, LP)
 end
 
--- [[ LOGIC AUTO CHECK & HOP (SAU 10S BẬT) ]]
 task.spawn(function()
     local counter = 0
-    task.wait(10) -- Chờ 10s ổn định theo ý bro
     Notify("Script Loading - 10s")
-    
+    task.wait(10)
     while task.wait(1) do
-        local inRaid = LP.PlayerGui.Main.Timer.Visible
-        if not inRaid then
-            if CheckFull() then
-                if counter > 0 then Notify("Có đồ! Đã hủy Hop.") end
-                counter = 0
-            else
+        if not IsInRaid() then
+            if CheckFull() then counter = 0 else
                 counter = counter + 1
-                if counter == 5 then 
-                    Notify("Check túi - 5s")
-                elseif counter >= 15 then
-                    ForceDeepHop()
-                    counter = 0 -- Reset counter để tránh spam nếu hop fail
-                    task.wait(5) -- Chờ thêm trước khi thử lại
-                end
+                if counter == 5 then Notify("Check túi - 5s")
+                elseif counter >= 15 then ForceDeepHop() counter = 0 end
             end
-        else
-            counter = 0
-        end
+        else counter = 0 end
     end
 end)
 
--- [[ MUA CHIP & RAID ]]
+-- [[ LOGIC RAID CHUẨN 5S ]]
 task.spawn(function()
     while task.wait(1) do
-        local inRaid = LP.PlayerGui.Main.Timer.Visible
-        local hasChip = CheckFull()
+        local inRaid = IsInRaid()
+        local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+        
         if not inRaid then
-            if RaidEndTime == 0 then RaidEndTime = tick() end
             local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
-            if not hasChip and not BoughtChip and canBuy then
-                Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
-                BoughtChip = true
+
+            if _G.AutoBuyChip and not hasChip and not BoughtChip and canBuy then
+                local res = Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+                if res then 
+                    BoughtChip = true 
+                    Notify("Đã mua Chip Raid: " .. _G.SelectChip)
+                end
             end
-            if (LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))) then
+
+            if hasChip then
                 topos_tween(CFrame.new(-6438.73, 250.64, -4501.5))
-                if (LP.Character.HumanoidRootPart.Position - Vector3.new(-6438.73, 250.64, -4501.5)).Magnitude < 20 then
-                    local RaidBtn = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
-                    if RaidBtn then fireclickdetector(RaidBtn.ClickDetector) end
+                if (LP.Character.HumanoidRootPart.Position - Vector3.new(-6438.73, 250.64, -4501.5)).Magnitude < 15 then
+                    local btn = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
+                    if btn then fireclickdetector(btn.ClickDetector) end
                 end
             end
         else
@@ -227,7 +182,7 @@ task.spawn(function()
     end
 end)
 
--- [[ BUSO & NO COLLIDE ]]
+-- [[ HAKI & NO COLLIDE ]]
 task.spawn(function()
     while task.wait(0.1) do
         if _G.AutoBuso and LP.Character and not LP.Character:FindFirstChild("HasBuso") then

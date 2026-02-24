@@ -26,7 +26,7 @@ local ScriptStartedTime = tick()
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub Premium",
+            Title = "Giacdz Hub Ultra Premium",
             Text = text,
             Duration = 3
         })
@@ -49,15 +49,26 @@ task.spawn(function()
     end
 end)
 
--- [[ KIỂM TRA TÚI ]]
-local function CheckFull()
-    if not LP.Character then return false end
+-- [[ KIỂM TRA TÚI CÓ TRÁI (DÙNG ĐỂ HOP) ]]
+local function HasFruit()
+    local char = LP.Character
+    if not char then return false end
     local items = LP.Backpack:GetChildren()
-    for _, v in pairs(LP.Character:GetChildren()) do table.insert(items, v) end
+    for _, v in pairs(char:GetChildren()) do table.insert(items, v) end
     for _, v in pairs(items) do
-        if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then 
+        if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit")) then 
             return true 
         end
+    end
+    return false
+end
+
+-- [[ KIỂM TRA CÓ CHIP CHƯA ]]
+local function HasChip()
+    local char = LP.Character
+    if not char then return false end
+    if LP.Backpack:FindFirstChild("Special Microchip") or char:FindFirstChild("Special Microchip") then
+        return true
     end
     return false
 end
@@ -98,14 +109,15 @@ local function StoreAction()
 end
 task.spawn(function() while task.wait(0.5) do StoreAction() end end)
 
--- [[ 5. AUTO TELEPORT FRUITS ]]
-spawn(function()
-    while wait(0.1) do
-        if _G.Grabfruit then
+-- [[ NHẶT TRÁI ]]
+task.spawn(function()
+    while task.wait(0.1) do
+        if _G.Grabfruit and not IsInRaid() then
             pcall(function()
-                for _, v in pairs(game.Workspace:GetChildren()) do
+                for _, v in pairs(workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
+                        LastGrabTime = tick()
                     end
                 end
             end)
@@ -113,7 +125,7 @@ spawn(function()
     end
 end)
 
--- [[ HOP SERVER CŨ (DEEP HOP) ]]
+-- [[ HOP SERVER ]]
 local function ForceDeepHop()
     Notify("Không có trái. Đang tìm Server cũ...")
     local PlaceId = game.PlaceId
@@ -142,7 +154,10 @@ task.spawn(function()
     task.wait(10)
     while task.wait(1) do
         if not IsInRaid() then
-            if CheckFull() then counter = 0 else
+            -- Nếu có trái hoặc có chip thì reset counter để không Hop
+            if HasFruit() or HasChip() then 
+                counter = 0 
+            else
                 counter = counter + 1
                 if counter == 5 then Notify("Check túi - 5s")
                 elseif counter >= 15 then ForceDeepHop() counter = 0 end
@@ -151,16 +166,17 @@ task.spawn(function()
     end
 end)
 
--- [[ LOGIC RAID CHUẨN 5S ]]
+-- [[ LOGIC RAID FIX: DÙ CÓ TRÁI VẪN MUA CHIP ]]
 task.spawn(function()
     while task.wait(1) do
         local inRaid = IsInRaid()
-        local hasChip = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+        local chipStatus = HasChip()
         
         if not inRaid then
             local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
 
-            if _G.AutoBuyChip and not hasChip and not BoughtChip and canBuy then
+            -- Chỗ này quan trọng: Chỉ cần chưa có chip trên người là mua, không quan tâm có trái hay không
+            if _G.AutoBuyChip and not chipStatus and not BoughtChip and canBuy then
                 local res = Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
                 if res then 
                     BoughtChip = true 
@@ -168,7 +184,7 @@ task.spawn(function()
                 end
             end
 
-            if hasChip then
+            if chipStatus then
                 topos_tween(CFrame.new(-6438.73, 250.64, -4501.5))
                 if (LP.Character.HumanoidRootPart.Position - Vector3.new(-6438.73, 250.64, -4501.5)).Magnitude < 15 then
                     local btn = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main

@@ -26,7 +26,7 @@ local ScriptStartedTime = tick()
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub Premium",
+            Title = "Giacdz Hub Ultra Premium",
             Text = text,
             Duration = 3
         })
@@ -94,9 +94,7 @@ end
 -- [[ CẤT KHO - ĐÃ THÊM LỆNH DỪNG TRONG RAID ]]
 local function StoreAction()
     pcall(function()
-        -- [[ Dừng cất kho nếu đang trong Raid ]]
         if IsInRaid() then return end
-        
         local char = LP.Character
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
@@ -200,7 +198,7 @@ task.spawn(function()
     end
 end)
 
--- [[ LOGIC RAID FIX ]]
+-- [[ PHẦN MỚI: LOGIC RAID FIX (DÙ CÓ TRÁI VẪN MUA CHIP) ]]
 task.spawn(function()
     while task.wait(1) do
         local inRaid = IsInRaid()
@@ -209,6 +207,7 @@ task.spawn(function()
         if not inRaid then
             local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
 
+            -- Luôn mua chip nếu chưa có, bất kể trên tay đang cầm gì
             if _G.AutoBuyChip and not chipStatus and not BoughtChip and canBuy then
                 local res = Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
                 if res then 

@@ -129,7 +129,7 @@ end)
 
 -- [[ HÀM SIÊU CẤP HOP - LẤY SERVER CŨ & CỰC CŨ ]]
 local function ForceDeepHop()
-    Notify("Đang quét tìm Server cũ (Trang 2-5)...")
+    Notify("Đang tìm Server")
     local PlaceId = game.PlaceId
     local JobId = game.JobId
     local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -160,11 +160,11 @@ local function ForceDeepHop()
         if #possibleServers > 0 then
             -- Chọn server ở cuối danh sách trang đó (thường là sv cũ hơn)
             local randomTarget = possibleServers[math.random(math.floor(#possibleServers/2), #possibleServers)]
-            Notify("Đã tìm thấy! Đang nhảy Server...")
+            Notify("Đang hop Server mới!...")
             task.wait(0.5)
             TeleportService:TeleportToPlaceInstance(PlaceId, randomTarget, LP)
         else
-            Notify("Không tìm thấy server trống ở trang này, đang nhảy đại...")
+            Notify("Không tìm thấy Server, hop random...")
             TeleportService:Teleport(PlaceId, LP) -- Fallback nhảy đại
         end
     else
@@ -177,7 +177,7 @@ end
 task.spawn(function()
     local counter = 0
     task.wait(10) -- Chờ 10s ổn định theo ý bro
-    Notify("Bắt đầu chu kỳ kiểm tra liên tục!")
+    Notify("Script Loading - 10s")
     
     while task.wait(1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible

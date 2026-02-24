@@ -129,7 +129,7 @@ end)
 
 -- [[ HÀM SIÊU CẤP HOP - LẤY SERVER CŨ & CỰC CŨ ]]
 local function ForceDeepHop()
-    Notify("Đang tìm Server")
+    Notify("Có cái nịt. Đang tìm Server")
     local PlaceId = game.PlaceId
     local JobId = game.JobId
     local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -183,12 +183,12 @@ task.spawn(function()
         local inRaid = LP.PlayerGui.Main.Timer.Visible
         if not inRaid then
             if CheckFull() then
-                if counter > 0 then Notify("Có đồ! Đã hủy đếm ngược Hop.") end
+                if counter > 0 then Notify("Có đồ! Đã hủy Hop.") end
                 counter = 0
             else
                 counter = counter + 1
                 if counter == 5 then 
-                    Notify("Túi sạch (5s). Đang chuẩn bị Deep Hop...")
+                    Notify("Check túi - 5s")
                 elseif counter >= 15 then
                     ForceDeepHop()
                     counter = 0 -- Reset counter để tránh spam nếu hop fail

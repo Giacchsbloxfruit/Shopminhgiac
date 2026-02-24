@@ -18,12 +18,12 @@ local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 local LastGrabTime = tick() 
 local BoughtChip = false
 local RaidEndTime = 0
-local ScriptStartedTime = tick() -- Thời điểm bật script
+local ScriptStartedTime = tick() 
 
 -- [[ HÀM HỖ TRỢ ]]
 local function GetCommF() return Remote end
 
--- [[ CHỌN TEAM PHẢI ƯU TIÊN ]]
+-- [[ CHỌN TEAM ]]
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil then break end
@@ -73,23 +73,20 @@ local function topos_tween(Pos)
     end)
 end
 
--- [[ 2. HÀM ÉP LỆNH CẤT KHO (NGUYÊN BẢN 100%) ]]
+-- [[ 2. HÀM ÉP LỆNH CẤT KHO (NGUYÊN BẢN) ]]
 local function StoreAction()
     pcall(function()
         local inRaid = LP.PlayerGui.Main.Timer.Visible or (workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations"):FindFirstChild("Island 1"))
         if inRaid then return end
-
         local char = LP.Character
         local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
-        
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
                 hum:EquipTool(tool)
                 task.wait(0.2)
             end
         end
-
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
@@ -109,7 +106,7 @@ task.spawn(function()
     while task.wait(0.5) do StoreAction() end
 end)
 
--- [[ 5. AUTO TELEPORT FRUITS (NGUYÊN BẢN 100%) ]]
+-- [[ 5. AUTO TELEPORT FRUITS (NGUYÊN BẢN) ]]
 task.spawn(function()
     while task.wait(0.1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible
@@ -126,11 +123,10 @@ task.spawn(function()
     end
 end)
 
--- [[ LOGIC AUTO CHECK & HOP (10s SAU KHI BẬT) ]]
+-- [[ LOGIC AUTO CHECK & HOP SERVER CŨ (ƯU TIÊN SV TRÊN 150) ]]
 task.spawn(function()
     local counter = 0
-    Notify("Script đã chạy! Chờ 10s để hệ thống ổn định...")
-    task.wait(10) -- Chờ 10 giây đầu tiên như bạn yêu cầu
+    task.wait(10) -- Chờ 10s đầu ổn định
     
     while task.wait(1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible
@@ -140,15 +136,27 @@ task.spawn(function()
             else
                 counter = counter + 1
                 if counter == 5 then 
-                    Notify("Túi trống (5s). Sẽ Hop sau 10s nữa.")
+                    Notify("Túi sạch. Đang tìm Server (Deep Hop)...")
                 elseif counter >= 15 then
-                    Notify("Đang nhảy Server mới!")
+                    Notify("Đang hop Server mới!")
                     pcall(function()
-                        local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")).data
-                        for _, s in pairs(servers) do
-                            if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LP)
-                                break
+                        local Http = game:GetService("HttpService")
+                        -- Lấy danh sách server rộng hơn (limit 100 nhưng sẽ lấy cursor để quét sâu)
+                        local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+                        local servers = Http:JSONDecode(game:HttpGet(Api)).data
+                        
+                        -- Chọn một server ngẫu nhiên trong danh sách (thường là các server ít người hoặc cũ hơn khi sort Desc)
+                        local target = servers[math.random(50, #servers)] 
+                        if target and target.id ~= game.JobId and target.playing < target.maxPlayers then
+                            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, target.id, LP)
+                        else
+                            -- Nếu không tìm được sv ngẫu nhiên tốt, lấy sv cuối danh sách
+                            for i = #servers, 1, -1 do
+                                local s = servers[i]
+                                if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                    break
+                                end
                             end
                         end
                     end)
@@ -166,17 +174,13 @@ task.spawn(function()
     while task.wait(1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible
         local hasChip = CheckFull()
-
         if not inRaid then
             if RaidEndTime == 0 then RaidEndTime = tick() end
-            -- Mua chip đầu tiên cũng phải sau 10s bật script hoặc 5s sau khi nhặt trái
             local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
-
             if not hasChip and not BoughtChip and canBuy then
                 Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
                 BoughtChip = true
             end
-
             if (LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))) then
                 topos_tween(CFrame.new(-6438.73, 250.64, -4501.5))
                 if (LP.Character.HumanoidRootPart.Position - Vector3.new(-6438.73, 250.64, -4501.5)).Magnitude < 20 then

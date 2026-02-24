@@ -26,7 +26,7 @@ local ScriptStartedTime = tick()
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub Ultra Premium",
+            Title = "Giacdz Hub Premium",
             Text = text,
             Duration = 3
         })
@@ -49,7 +49,7 @@ task.spawn(function()
     end
 end)
 
--- [[ KIỂM TRA TÚI CÓ TRÁI (DÙNG ĐỂ HOP) ]]
+-- [[ KIỂM TRA TÚI CÓ TRÁI ]]
 local function HasFruit()
     local char = LP.Character
     if not char then return false end
@@ -91,10 +91,12 @@ local function topos_tween(Pos)
     end)
 end
 
--- [[ CẤT KHO ]]
+-- [[ CẤT KHO - ĐÃ THÊM LỆNH DỪNG TRONG RAID ]]
 local function StoreAction()
     pcall(function()
+        -- [[ Dừng cất kho nếu đang trong Raid ]]
         if IsInRaid() then return end
+        
         local char = LP.Character
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
@@ -109,16 +111,49 @@ local function StoreAction()
 end
 task.spawn(function() while task.wait(0.5) do StoreAction() end end)
 
--- [[ NHẶT TRÁI ]]
-task.spawn(function()
-    while task.wait(0.1) do
-        if _G.Grabfruit and not IsInRaid() then
+-- [[ 5. AUTO TELEPORT FRUITS ]]
+spawn(function()
+    while wait(0.1) do
+        if _G.Grabfruit then
             pcall(function()
-                for _, v in pairs(workspace:GetChildren()) do
+                for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                        LastGrabTime = tick()
                     end
+                end
+            end)
+        end
+    end
+end)
+
+-- [[ 6. COMPLETE RAID (FARM FRAG) ]]
+local function GetCurrentIsland()
+    local loc = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+    if loc then for i=5,1,-1 do if loc:FindFirstChild("Island "..i) then return loc:FindFirstChild("Island "..i) end end end
+    return nil
+end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        local island = GetCurrentIsland()
+        if _G.Dungeon and island then
+            pcall(function()
+                local target, dist = nil, math.huge
+                for _, v in pairs(workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                        if (v.HumanoidRootPart.Position - island.Position).Magnitude < 800 then
+                            local d = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                            if d < dist then dist = d; target = v end
+                        end
+                    end
+                end
+                if target then
+                    if not LP.Character:FindFirstChildOfClass("Tool") then
+                        for _, t in pairs(LP.Backpack:GetChildren()) do if t.ToolTip == _G.SelectWeapon then LP.Character.Humanoid:EquipTool(t) end end
+                    end
+                    topos_tween(target.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                else
+                    topos_tween(island.CFrame * CFrame.new(0, 60, 0))
                 end
             end)
         end
@@ -154,7 +189,6 @@ task.spawn(function()
     task.wait(10)
     while task.wait(1) do
         if not IsInRaid() then
-            -- Nếu có trái hoặc có chip thì reset counter để không Hop
             if HasFruit() or HasChip() then 
                 counter = 0 
             else
@@ -166,7 +200,7 @@ task.spawn(function()
     end
 end)
 
--- [[ LOGIC RAID FIX: DÙ CÓ TRÁI VẪN MUA CHIP ]]
+-- [[ LOGIC RAID FIX ]]
 task.spawn(function()
     while task.wait(1) do
         local inRaid = IsInRaid()
@@ -175,7 +209,6 @@ task.spawn(function()
         if not inRaid then
             local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
 
-            -- Chỗ này quan trọng: Chỉ cần chưa có chip trên người là mua, không quan tâm có trái hay không
             if _G.AutoBuyChip and not chipStatus and not BoughtChip and canBuy then
                 local res = Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
                 if res then 

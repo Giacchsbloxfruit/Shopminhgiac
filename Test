@@ -18,17 +18,18 @@ local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 local LastGrabTime = tick() 
 local BoughtChip = false
 local RaidEndTime = 0
+local ScriptStartedTime = tick() -- Thời điểm bật script
 
 -- [[ HÀM HỖ TRỢ ]]
 local function GetCommF() return Remote end
 
--- [[ 1. CHỌN PHE - PHẢI XONG CÁI NÀY MỚI LÀM VIỆC KHÁC ]]
-repeat
-    task.wait(0.5)
-    pcall(function()
-        Remote:InvokeServer("SetTeam", getgenv().Team)
-    end)
-until LP.Team ~= nil
+-- [[ CHỌN TEAM PHẢI ƯU TIÊN ]]
+task.spawn(function()
+    while task.wait(0.5) do
+        if LP.Team ~= nil then break end
+        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
+    end
+end)
 
 -- [[ THÔNG BÁO ]]
 local function Notify(text)
@@ -43,8 +44,8 @@ end
 
 -- [[ KIỂM TRA TÚI & TAY ]]
 local function CheckFull()
-    if not LP.Character then return true end -- Nếu chưa có char coi như đang bận
     local has = false
+    if not LP.Character then return false end
     for _, v in pairs(LP.Backpack:GetChildren()) do
         if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then has = true end
     end
@@ -72,10 +73,9 @@ local function topos_tween(Pos)
     end)
 end
 
--- [[ 2. HÀM ÉP LỆNH CẤT KHO (NGUYÊN BẢN CỦA BẠN) ]]
+-- [[ 2. HÀM ÉP LỆNH CẤT KHO (NGUYÊN BẢN 100%) ]]
 local function StoreAction()
     pcall(function()
-        if not LP.Team then return end
         local inRaid = LP.PlayerGui.Main.Timer.Visible or (workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations"):FindFirstChild("Island 1"))
         if inRaid then return end
 
@@ -109,10 +109,9 @@ task.spawn(function()
     while task.wait(0.5) do StoreAction() end
 end)
 
--- [[ 5. AUTO TELEPORT FRUITS (NGUYÊN BẢN CỦA BẠN) ]]
+-- [[ 5. AUTO TELEPORT FRUITS (NGUYÊN BẢN 100%) ]]
 task.spawn(function()
     while task.wait(0.1) do
-        if not LP.Team then return end
         local inRaid = LP.PlayerGui.Main.Timer.Visible
         if _G.Grabfruit and not inRaid then
             pcall(function()
@@ -127,13 +126,12 @@ task.spawn(function()
     end
 end)
 
--- [[ AUTO HOP SERVER - CHỈ CHẠY KHI ĐÃ VÀO PHE ]]
+-- [[ LOGIC AUTO CHECK & HOP (10s SAU KHI BẬT) ]]
 task.spawn(function()
     local counter = 0
-    -- Chờ cho đến khi vào Team hoàn tất mới hiện thông báo check
-    repeat task.wait(1) until LP.Team ~= nil
-    Notify("Đã vào phe Pirates! Bắt đầu check túi...")
-
+    Notify("Script đã chạy! Chờ 10s để hệ thống ổn định...")
+    task.wait(10) -- Chờ 10 giây đầu tiên như bạn yêu cầu
+    
     while task.wait(1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible
         if not inRaid then
@@ -142,9 +140,9 @@ task.spawn(function()
             else
                 counter = counter + 1
                 if counter == 5 then 
-                    Notify("Túi sạch (5s). Sẽ nhảy Server sau 10s!")
+                    Notify("Túi trống (5s). Sẽ Hop sau 10s nữa.")
                 elseif counter >= 15 then
-                    Notify("Đang nhảy Server...")
+                    Notify("Đang nhảy Server mới!")
                     pcall(function()
                         local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")).data
                         for _, s in pairs(servers) do
@@ -166,13 +164,13 @@ end)
 -- [[ MUA CHIP & RAID ]]
 task.spawn(function()
     while task.wait(1) do
-        if not LP.Team then return end
         local inRaid = LP.PlayerGui.Main.Timer.Visible
         local hasChip = CheckFull()
 
         if not inRaid then
             if RaidEndTime == 0 then RaidEndTime = tick() end
-            local canBuy = (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
+            -- Mua chip đầu tiên cũng phải sau 10s bật script hoặc 5s sau khi nhặt trái
+            local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
 
             if not hasChip and not BoughtChip and canBuy then
                 Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)

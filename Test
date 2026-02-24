@@ -37,7 +37,7 @@ end)
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub MVIP",
+            Title = "Giacdz Hub Premium",
             Text = text,
             Duration = 3
         })

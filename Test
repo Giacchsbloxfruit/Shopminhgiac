@@ -112,16 +112,14 @@ task.spawn(function()
     while task.wait(0.5) do StoreAction() end
 end)
 
--- [[ 5. AUTO TELEPORT FRUITS (GIỮ NGUYÊN CỦA BRO) ]]
-task.spawn(function()
-    while task.wait(0.1) do
-        local inRaid = LP.PlayerGui.Main.Timer.Visible
-        if _G.Grabfruit and not inRaid then
+-- [[ 5. AUTO TELEPORT FRUITS ]]
+spawn(function()
+    while wait(0.1) do
+        if _G.Grabfruit then
             pcall(function()
                 for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                        LastGrabTime = tick()
                     end
                 end
             end)

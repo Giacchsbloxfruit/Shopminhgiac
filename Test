@@ -20,10 +20,10 @@ local BoughtChip = false
 local RaidEndTime = 0
 local ScriptStartedTime = tick() 
 
--- [[ HÀM HỖ TRỢ ]]
+-- [[ HÀM HỖ TRỢ LẤY REMOTE ]]
 local function GetCommF() return Remote end
 
--- [[ CHỌN TEAM ]]
+-- [[ 1. CHỌN PHE (ƯU TIÊN HÀNG ĐẦU) ]]
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil then break end
@@ -35,14 +35,14 @@ end)
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub VIP",
+            Title = "Giacdz Hub SVip",
             Text = text,
             Duration = 3
         })
     end)
 end
 
--- [[ KIỂM TRA TÚI & TAY ]]
+-- [[ KIỂM TRA TÚI & TAY (QUÉT KỸ) ]]
 local function CheckFull()
     local has = false
     if not LP.Character then return false end
@@ -73,20 +73,23 @@ local function topos_tween(Pos)
     end)
 end
 
--- [[ 2. HÀM ÉP LỆNH CẤT KHO (NGUYÊN BẢN) ]]
+-- [[ 2. HÀM ÉP LỆNH CẤT KHO (ĐÚNG Ý BRO 100%) ]]
 local function StoreAction()
     pcall(function()
         local inRaid = LP.PlayerGui.Main.Timer.Visible or (workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations"):FindFirstChild("Island 1"))
         if inRaid then return end
+
         local char = LP.Character
         local hum = char:FindFirstChildOfClass("Humanoid")
         local remote = GetCommF()
+        
         for _, tool in pairs(LP.Backpack:GetChildren()) do
             if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
                 hum:EquipTool(tool)
                 task.wait(0.2)
             end
         end
+
         local toolOnHand = char:FindFirstChildOfClass("Tool")
         if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
             local fruitName = toolOnHand.Name:gsub(" Fruit", "")
@@ -106,7 +109,7 @@ task.spawn(function()
     while task.wait(0.5) do StoreAction() end
 end)
 
--- [[ 5. AUTO TELEPORT FRUITS (NGUYÊN BẢN) ]]
+-- [[ 5. AUTO TELEPORT FRUITS (ĐÚNG Ý BRO 100%) ]]
 task.spawn(function()
     while task.wait(0.1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible
@@ -123,10 +126,51 @@ task.spawn(function()
     end
 end)
 
--- [[ LOGIC AUTO CHECK & HOP SERVER CŨ (ƯU TIÊN SV TRÊN 150) ]]
+-- [[ HÀM DEEP HOP - TÌM SERVER SIÊU CŨ ]]
+local function DeepHop()
+    local Http = game:GetService("HttpService")
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    local function GetServers(cursor)
+        local url = Api .. (cursor and "&cursor=" .. cursor or "")
+        return Http:JSONDecode(game:HttpGet(url))
+    end
+
+    Notify("Đang quét tìm Server cũ...")
+    local Data = GetServers()
+    local Servers = Data.data
+    local FinalServer = nil
+    
+    -- Nhảy ngẫu nhiên qua vài trang để tìm server "sâu" hơn
+    for i = 1, math.random(2, 5) do 
+        if Data.nextPageCursor then
+            Data = GetServers(Data.nextPageCursor)
+            Servers = Data.data
+        end
+    end
+
+    if Servers and #Servers > 0 then
+        -- Lấy server ở cuối danh sách của trang đó (thường là server cũ hơn)
+        for i = #Servers, 1, -1 do
+            local s = Servers[i]
+            if s.id ~= game.JobId and s.playing < s.maxPlayers - 1 then
+                FinalServer = s.id
+                break
+            end
+        end
+    end
+
+    if FinalServer then
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, FinalServer, LP)
+    else
+        Notify("Không tìm thấy Server cũ, đang thử lại...")
+    end
+end
+
+-- [[ LOGIC AUTO CHECK & HOP (SAU 10S BẬT) ]]
 task.spawn(function()
     local counter = 0
-    task.wait(10) -- Chờ 10s đầu ổn định
+    task.wait(10) -- Chờ 10s ổn định theo ý bro
     
     while task.wait(1) do
         local inRaid = LP.PlayerGui.Main.Timer.Visible
@@ -136,30 +180,9 @@ task.spawn(function()
             else
                 counter = counter + 1
                 if counter == 5 then 
-                    Notify("Túi sạch. Đang tìm Server (Deep Hop)...")
+                    Notify("Túi sạch. Chuẩn bị Deep Hop (Server cũ)...")
                 elseif counter >= 15 then
-                    Notify("Đang hop Server mới!")
-                    pcall(function()
-                        local Http = game:GetService("HttpService")
-                        -- Lấy danh sách server rộng hơn (limit 100 nhưng sẽ lấy cursor để quét sâu)
-                        local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
-                        local servers = Http:JSONDecode(game:HttpGet(Api)).data
-                        
-                        -- Chọn một server ngẫu nhiên trong danh sách (thường là các server ít người hoặc cũ hơn khi sort Desc)
-                        local target = servers[math.random(50, #servers)] 
-                        if target and target.id ~= game.JobId and target.playing < target.maxPlayers then
-                            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, target.id, LP)
-                        else
-                            -- Nếu không tìm được sv ngẫu nhiên tốt, lấy sv cuối danh sách
-                            for i = #servers, 1, -1 do
-                                local s = servers[i]
-                                if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LP)
-                                    break
-                                end
-                            end
-                        end
-                    end)
+                    DeepHop()
                     counter = 0
                 end
             end

@@ -31,7 +31,7 @@ local RaidEndTime = 0 -- Biến từ bản cũ của bạn
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub",
+            Title = "Giacdz Hub 3",
             Text = text,
             Duration = 3
         })

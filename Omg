@@ -1,22 +1,18 @@
--- [[ 0. THÔNG BÁO KIỂU ADMIN (KHÔNG UI) ]]
-task.spawn(function()
-    if not game:IsLoaded() then game.Loaded:Wait() end
-    local LP = game.Players.LocalPlayer
-    
-    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
-        Text = "< Welcome to Giacdz kaitun. Chúc bạn một ngày vui vẻ khi chơi >",
-        Color = Color3.fromRGB(255, 255, 0), 
-        Font = Enum.Font.GothamBold,
-        TextSize = 20
-    })
-    
-    local Msg1 = Instance.new("Message", game.Workspace)
-    Msg1.Text = "< Welcome to Giacdz kaitun >"
-    task.wait(2.5)
-    Msg1.Text = "< Chúc bạn một ngày vui vẻ khi chơi >"
-    task.wait(2.5)
-    Msg1:Destroy()
-end)
+-- ========================================================
+-- [[ 0. HÀM THÔNG BÁO (LẤY TỪ BẢN RAID) ]]
+-- ========================================================
+local function Notify(text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Giacdz Hub",
+            Text = text,
+            Duration = 3
+        })
+    end)
+end
+
+-- Thông báo khi vừa chạy script
+Notify("Welcome to Giacdz kaitun!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & KAITUN LOGIC ]]
@@ -41,7 +37,6 @@ local function GetCommF()
     return found
 end
 
--- [[ LOGIC TỰ ĐỘNG CHỌN PHE ]]
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
@@ -52,39 +47,51 @@ task.spawn(function()
         end)                
     end
 end)
-
--- [[ 2. HÀM ÉP LỆNH CẤT KHO ]]
-local function StoreAction()
-    pcall(function()
-        local char = LP.Character
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local remote = GetCommF()
-        
-        for _, tool in pairs(LP.Backpack:GetChildren()) do
-            if tool:IsA("Tool") and (tool.ToolTip == "Fruit" or string.find(tool.Name, "Fruit")) then
-                hum:EquipTool(tool)
-                task.wait(0.2)
-            end
-        end
-
-        local toolOnHand = char:FindFirstChildOfClass("Tool")
-        if toolOnHand and (toolOnHand.ToolTip == "Fruit" or string.find(toolOnHand.Name, "Fruit")) then
-            local fruitName = toolOnHand.Name:gsub(" Fruit", "")
-            task.defer(function()
-                if remote then
-                    remote:InvokeServer("StoreFruit", fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", fruitName.."-"..fruitName, toolOnHand)
-                    remote:InvokeServer("StoreFruit", toolOnHand.Name, toolOnHand)
-                end
-            end)
-            task.wait(1) 
-        end
-    end)
-end
+Notify("Chúc bạn một ngày may mắn!")
+-- ========================================================
+-- [[ 2. HỆ THỐNG CẤT KHO CHẠY NGẦM ]]
+-- ========================================================
+local FruitList = {
+    {"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"},
+    {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"},
+    {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"},
+    {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"},
+    {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"},
+    {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"},
+    {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"},
+    {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"},
+    {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"},
+    {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"},
+    {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"},
+    {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"},
+    {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"},
+    {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"},
+    {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"},
+    {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"},
+    {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"},
+    {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"},
+    {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"},
+    {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"},
+    {"Dragon Fruit", "Dragon-Dragon"}
+}
 
 task.spawn(function()
     while task.wait(0.5) do
-        StoreAction()
+        pcall(function()
+            local Character = LP.Character or LP.CharacterAdded:Wait()
+            local Backpack = LP:WaitForChild("Backpack")
+            local CommF = GetCommF()
+            if CommF then
+                for _, fruitData in ipairs(FruitList) do
+                    local fruitTool = Backpack:FindFirstChild(fruitData[1]) or Character:FindFirstChild(fruitData[1])
+                    if fruitTool then
+                        CommF:InvokeServer("StoreFruit", fruitData[2], fruitTool)
+                        Notify("Stored" .. fruitData[1])
+                        break 
+                    end
+                end
+            end
+        end)
     end
 end)
 
@@ -134,13 +141,13 @@ task.spawn(function()
                 
                 local dist = (LP.Character.HumanoidRootPart.Position - targetPos.Position).Magnitude
                 if dist > 10 then
-                    local char = LP.Character
-                    local root = char.HumanoidRootPart
+                    local root = LP.Character.HumanoidRootPart
                     local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
                     bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
                     TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
                 else
                     GetCommF():InvokeServer(buyCmd)
+                    Notify("Đã mua võ mới!")
                 end
             else
                 _G.StopFarmForMelee = false
@@ -148,9 +155,9 @@ task.spawn(function()
         end)
     end
 end)
-
+Notify("Buy New Melee")
 -- ========================================================
--- [[ 3. MỚI: DANH SÁCH QUÁI (DẠNG IF ELSEIF) ]]
+-- [[ 3. DANH SÁCH QUÁI (DẠNG IF ELSEIF) ]]
 -- ========================================================
 function CheckQuest()
     local myLv = LP.Data.Level.Value
@@ -282,7 +289,7 @@ local function EquipMelee()
     end)
 end
 
--- [[ 5. AUTO nhặt trái ]]
+-- [[ 5. AUTO NHẶT TRÁI ]]
 spawn(function()
     while wait(0.1) do
         if _G.Grabfruit then
@@ -290,13 +297,14 @@ spawn(function()
                 for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
+                        Notify("Đã tìm thấy trái ác quỷ!")
                     end
                 end
             end)
         end
     end
 end)
-
+Notify("Collect fruits")
 -- [[ 6. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
@@ -369,13 +377,16 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
--- [[ 8. MỚI: TỰ ĐỘNG ĐỔI SERVER SAU 30 PHÚT ]]
+-- [[ 8. TỰ ĐỘNG ĐỔI SERVER SAU 30 PHÚT ]]
 task.spawn(function()
-    local HopTime = 1800 -- 30 phút = 1800 giây
+    local HopTime = 1800 
     while task.wait(1) do
         HopTime = HopTime - 1
+        -- Thông báo đếm ngược lúc sắp đổi server (tùy chọn)
+        if HopTime == 10 then Notify("Server hop in 10 seconds ") end
+        
         if HopTime <= 0 then
-            print("Đang tìm server mới...")
+            Notify("Hopping server...")
             local Http = game:GetService("HttpService")
             local TPS = game:GetService("TeleportService")
             local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -391,10 +402,8 @@ task.spawn(function()
             end
 
             local ServerId = GetNextServer()
-            if ServerId then
-                TPS:TeleportToPlaceInstance(game.PlaceId, ServerId, LP)
-            end
-            HopTime = 30 -- Reset chờ nếu không tìm thấy ngay
+            if ServerId then TPS:TeleportToPlaceInstance(game.PlaceId, ServerId, LP) end
+            HopTime = 30 
         end
     end
 end)

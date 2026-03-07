@@ -1,4 +1,6 @@
+-- ==========================================
 -- [[ CẤU HÌNH HỆ THỐNG ]]
+-- ==========================================
 _G.SelectChip = "Dark" 
 _G.AutoBuyChip = true
 _G.StartRaid = true
@@ -10,49 +12,66 @@ _G.AutoHop = true
 _G.TweenSpeed = 170
 getgenv().Team = "Pirates"
 
-local LP = game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
 local TS = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 
 local LastGrabTime = tick() 
 local BoughtChip = false
-local RaidEndTime = 0
 local ScriptStartedTime = tick()
 
--- [[ HÀM HỖ TRỢ ]]
+-- ==========================================
+-- [[ HÀM HỖ TRỢ & KIỂM TRA ]]
+-- ==========================================
 local function GetCommF() return Remote end
 
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub 1",
+            Title = "Giacdz Hub",
             Text = text,
             Duration = 3
         })
     end)
 end
 
--- Kiểm tra xem trong túi hoặc trên tay có Trái/Chip không
+-- Kiểm tra xem đang ở trong Raid không (Bao gồm lúc có đồng hồ và lúc ở map Raid)
+local function IsInRaid()
+    local hasTimer = LP.PlayerGui.Main:FindFirstChild("Timer") and LP.PlayerGui.Main.Timer.Visible
+    local inRaidMap = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations"):FindFirstChild("Island 1")
+    return hasTimer or inRaidMap
+end
+
+-- Kiểm tra xem trong người có Trái Ác Quỷ hoặc Chip Raid không
 local function CheckFull()
     local has = false
     if not LP.Character then return false end
+    
+    -- Quét Balo
     for _, v in pairs(LP.Backpack:GetChildren()) do
-        if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then has = true break end
+        if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then 
+            has = true 
+            break 
+        end
     end
+    
+    -- Quét Trên Tay
     if not has then
         for _, v in pairs(LP.Character:GetChildren()) do
-            if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then has = true break end
+            if v:IsA("Tool") and (v.ToolTip == "Fruit" or string.find(v.Name, "Fruit") or v.Name == "Special Microchip") then 
+                has = true 
+                break 
+            end
         end
     end
     return has
 end
 
-local function IsInRaid()
-    return LP.PlayerGui.Main.Timer.Visible or (workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations"):FindFirstChild("Island 1"))
-end
-
--- [[ TWEEN DI CHUYỂN ]]
+-- Hàm di chuyển mượt
 local function topos_tween(Pos)
     pcall(function()
         local Root = LP.Character:FindFirstChild("HumanoidRootPart")
@@ -70,9 +89,9 @@ local function topos_tween(Pos)
     end)
 end
 
--- ========================================================
--- [[ 1. HỆ THỐNG CẤT TRÁI (BẢN TỐI ƯU CỦA BẠN) ]]
--- ========================================================
+-- ==========================================
+-- [[ 1. AUTO CẤT TRÁI (TỐI ƯU) ]]
+-- ==========================================
 local FruitList = {
     {"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"},
     {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"},
@@ -100,7 +119,8 @@ local FruitList = {
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
-            if IsInRaid() then return end -- Không cất trái khi đang trong Raid
+            if IsInRaid() then return end -- Ngừng cất khi đang Raid
+            
             local Character = LP.Character or LP.CharacterAdded:Wait()
             local Backpack = LP:WaitForChild("Backpack")
             local CommF = GetCommF()
@@ -121,9 +141,9 @@ task.spawn(function()
     end
 end)
 
--- ========================================================
+-- ==========================================
 -- [[ 2. AUTO NHẶT TRÁI ]]
--- ========================================================
+-- ==========================================
 task.spawn(function()
     while task.wait(0.1) do
         if _G.Grabfruit and not IsInRaid() then
@@ -139,62 +159,68 @@ task.spawn(function()
     end
 end)
 
--- ========================================================
--- [[ 3. AUTO MUA CHIP & VÀO RAID (CHỈ LÀM RAID MÌNH) ]]
--- ========================================================
+-- ==========================================
+-- [[ 3. AUTO MUA CHIP & VÀO RAID (ĐÃ LƯỢC BỎ CẦM CHIP) ]]
+-- ==========================================
 task.spawn(function()
     while task.wait(1) do
-        local inRaid = IsInRaid()
-        local chipTool = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+        pcall(function()
+            if IsInRaid() then 
+                BoughtChip = false 
+                return 
+            end
 
-        if not inRaid then
-            if RaidEndTime == 0 then RaidEndTime = tick() end
-            local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
+            local chipTool = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+            
+            -- ĐIỀU KIỆN MUA CHIP: Chưa có chip, túi không có trái ác quỷ, và đã qua 10s ổn định, 5s sau khi nhặt trái
+            local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5)
 
-            -- Chỉ mua chip nếu túi chưa có chip/trái và đủ thời gian chờ
             if _G.AutoBuyChip and not CheckFull() and not BoughtChip and canBuy then
                 Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
                 BoughtChip = true
             end
 
-            -- CHỐNG RAID NGƯỜI KHÁC: Chỉ bay tới bảng điều khiển nếu CHÍNH MÌNH cầm Chip
-            if chipTool then
+            -- LOGIC BẤM NÚT VÀO RAID
+            if _G.StartRaid and chipTool then
                 local RaidControlPos = CFrame.new(-6438.73, 250.64, -4501.5)
                 topos_tween(RaidControlPos)
                 
                 if (LP.Character.HumanoidRootPart.Position - RaidControlPos.Position).Magnitude < 15 then
+                    -- Bấm nút trực tiếp luôn, không cần lấy Chip ra tay
                     local RaidBtn = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
-                    if RaidBtn then 
+                    if RaidBtn and RaidBtn:FindFirstChild("ClickDetector") then 
                         fireclickdetector(RaidBtn.ClickDetector) 
                     end
                 end
             end
-        else
-            BoughtChip = false 
-            RaidEndTime = tick()
-        end
+        end)
     end
 end)
 
--- ========================================================
--- [[ 4. LOGIC AUTO HOP (CHECK TÚI TRỐNG 15S) ]]
--- ========================================================
+-- ==========================================
+-- [[ 4. AUTO HOP SERVER (TÌM SERVER VẮNG NGƯỜI) ]]
+-- ==========================================
 task.spawn(function()
     local counter = 0
-    task.wait(10) -- Chờ 10s đầu ổn định
+    task.wait(10) -- Chờ 10s đầu tiên để game load xong
+    
     while task.wait(1) do
         if _G.AutoHop and not IsInRaid() then
             if CheckFull() then
-                counter = 0 
+                counter = 0 -- Reset đếm nếu trong túi có Trái/Chip
             else
                 counter = counter + 1
                 if counter >= 15 then
-                    Notify("Túi trống 15s. Đang đổi Server...")
+                    Notify("Túi trống 15s. Đang tìm Server Vắng...")
                     pcall(function()
-                        local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")).data
-                        for _, s in pairs(servers) do
-                            if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                        -- sortOrder=Asc giúp đưa các server ít người lên đầu
+                        local Api = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+                        local Result = HttpService:JSONDecode(game:HttpGet(Api))
+                        
+                        for _, s in pairs(Result.data) do
+                            -- Chỉ vào server có người chơi nhưng dưới 5 người
+                            if s.id ~= game.JobId and s.playing > 0 and s.playing < 5 then
+                                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
                                 break
                             end
                         end
@@ -208,11 +234,9 @@ task.spawn(function()
     end
 end)
 
--- ========================================================
--- [[ 5. CÁC HỖ TRỢ KHÁC ]]
--- ========================================================
-
--- Chọn Team
+-- ==========================================
+-- [[ 5. AUTO CHỌN TEAM, BUSO, NOCLIP ]]
+-- ==========================================
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil then break end
@@ -220,7 +244,6 @@ task.spawn(function()
     end
 end)
 
--- Buso
 task.spawn(function()
     while task.wait(0.5) do
         if _G.AutoBuso and LP.Character and not LP.Character:FindFirstChild("HasBuso") then
@@ -229,7 +252,6 @@ task.spawn(function()
     end
 end)
 
--- NoClip
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
@@ -240,5 +262,4 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
--- Load bảo mật bên ngoài (nếu có)
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

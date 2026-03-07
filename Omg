@@ -44,10 +44,11 @@ task.spawn(function()
             local remote = GetCommF()
             if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
             if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
+            Notify("Chúc bạn một ngày may mắn!")
         end)                
     end
 end)
-Notify("Chúc bạn một ngày may mắn!")
+
 -- ========================================================
 -- [[ 2. HỆ THỐNG CẤT KHO CHẠY NGẦM ]]
 -- ========================================================
@@ -147,7 +148,7 @@ task.spawn(function()
                     TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
                 else
                     GetCommF():InvokeServer(buyCmd)
-                    Notify("Đã mua võ mới!")
+                    Notify("Buy new melee")
                 end
             else
                 _G.StopFarmForMelee = false
@@ -155,7 +156,7 @@ task.spawn(function()
         end)
     end
 end)
-Notify("Buy New Melee")
+
 -- ========================================================
 -- [[ 3. DANH SÁCH QUÁI (DẠNG IF ELSEIF) ]]
 -- ========================================================
@@ -297,14 +298,14 @@ spawn(function()
                 for _, v in pairs(game.Workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
                         LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                        Notify("Đã tìm thấy trái ác quỷ!")
+                        Notify("Collect fruits!")
                     end
                 end
             end)
         end
     end
 end)
-Notify("Collect fruits")
+
 -- [[ 6. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do

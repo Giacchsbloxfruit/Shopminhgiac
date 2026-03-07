@@ -25,7 +25,7 @@ getgenv().Team = "Pirates"
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
 _G.Grabfruit = true 
-_G.StopFarmForMelee = false -- Biến kiểm soát dừng farm khi đi mua võ
+_G.StopFarmForMelee = false 
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -89,7 +89,7 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ MỚI: LOGIC AUTO MUA MELEE NPC ]]
+-- [[ LOGIC AUTO MUA MELEE NPC ]]
 -- ========================================================
 local function GetMeleeData()
     local name, mas = "", 0
@@ -116,10 +116,9 @@ task.spawn(function()
             local targetPos, buyCmd = nil, ""
             local needUnderwater = false
 
-            -- Kiểm tra điều kiện mua
             if myBeli >= 150000 and curName ~= "Black Leg" and curName ~= "Electric" and curName ~= "Water Kung Fu" then
                 targetPos = CFrame.new(1134, 5, 4373); buyCmd = "BuyBlackLeg"
-            elseif curName == "Black Leg" and curMas >= 450 and myBeli >= 300000 then
+            elseif curName == "Black Leg" and curMas >= 450 and myBeli >= 500000 then
                 targetPos = CFrame.new(-5381, 15, -2184); buyCmd = "BuyElectro"
             elseif curName == "Electric" and curMas >= 450 and myBeli >= 750000 then
                 targetPos = CFrame.new(61585, 19, 987); buyCmd = "BuyFishmanKarate"
@@ -128,13 +127,11 @@ task.spawn(function()
 
             if targetPos then
                 _G.StopFarmForMelee = true
-                -- Xử lý Teleport Đảo Cá nếu cần
                 if needUnderwater and LP.Character.HumanoidRootPart.Position.Y > -500 then
                     GetCommF():InvokeServer("requestEntrance", Vector3.new(61163, 11, 1819))
                     task.wait(0.5)
                 end
                 
-                -- Tween tới NPC
                 local dist = (LP.Character.HumanoidRootPart.Position - targetPos.Position).Magnitude
                 if dist > 10 then
                     local char = LP.Character
@@ -152,31 +149,110 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. DANH SÁCH NHIỆM VỤ (SEA 1) ]]
-local QuestList = {
-    {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, NPC = CFrame.new(1060, 16, 1547), Mon = "Bandit", MonPos = CFrame.new(1145, 17, 1634)},
-    {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, NPC = CFrame.new(-1601, 36, 153), Mon = "Monkey", MonPos = CFrame.new(-1623, 22, -188)},
-    {Min = 15, Max = 29, Name = "JungleQuest", Lv = 2, NPC = CFrame.new(-1601, 36, 153), Mon = "Gorilla", MonPos = CFrame.new(-1237, 6, -486)},
-    {Min = 30, Max = 39, Name = "BuggyQuest1", Lv = 1, NPC = CFrame.new(-1140, 4, 3827), Mon = "Pirate", MonPos = CFrame.new(-1213, 4, 3920)},
-    {Min = 40, Max = 59, Name = "BuggyQuest1", Lv = 2, NPC = CFrame.new(-1140, 4, 3827), Mon = "Brute", MonPos = CFrame.new(-1146, 14, 4308)},
-    {Min = 60, Max = 74, Name = "DesertQuest", Lv = 1, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Bandit", MonPos = CFrame.new(985, 16, 4418)},
-    {Min = 75, Max = 89, Name = "DesertQuest", Lv = 2, NPC = CFrame.new(897, 6, 4390), Mon = "Desert Officer", MonPos = CFrame.new(1547, 14, 4382)},
-    {Min = 90, Max = 99, Name = "SnowQuest", Lv = 1, NPC = CFrame.new(1387, 87, -1298), Mon = "Snow Bandit", MonPos = CFrame.new(1356, 106, -1328)},
-    {Min = 100, Max = 119, Name = "SnowQuest", Lv = 2, NPC = CFrame.new(1387, 87, -1298), Mon = "Snowman", MonPos = CFrame.new(1308, 150, -1475)},
-    {Min = 120, Max = 149, Name = "MarineQuest2", Lv = 1, NPC = CFrame.new(-4361, 73, 2991), Mon = "Chief Petty Officer", MonPos = CFrame.new(-4842, 22, 2854)},
-    {Min = 150, Max = 174, Name = "SkyQuest", Lv = 1, NPC = CFrame.new(-1242, 354, -5913), Mon = "Sky Bandit", MonPos = CFrame.new(-1319, 391, -5961)},
-    {Min = 175, Max = 199, Name = "SkyQuest", Lv = 2, NPC = CFrame.new(-1242, 354, -5913), Mon = "Dark Skilled", MonPos = CFrame.new(-1124, 401, -6339)},
-    {Min = 200, Max = 224, Name = "PrisonQuest", Lv = 1, NPC = CFrame.new(530, 1, 477), Mon = "Prisoner", MonPos = CFrame.new(517, 1, 608)},
-    {Min = 225, Max = 249, Name = "PrisonQuest", Lv = 2, NPC = CFrame.new(530, 1, 477), Mon = "Dangerous Prisoner", MonPos = CFrame.new(512, 1, 480)},
-    {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Soldier", MonPos = CFrame.new(-5395, 27, 8510)},
-    {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, NPC = CFrame.new(-5314, 12, 8516), Mon = "Military Spy", MonPos = CFrame.new(-5816, 83, 8438)},
-    {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Warrior", MonPos = CFrame.new(60938, 55, 1515)},
-    {Min = 400, Max = 449, Name = "FishmanQuest", Lv = 2, NPC = CFrame.new(61122, 18, 1565), Mon = "Fishman Commando", MonPos = CFrame.new(61965, 30, 1475)},
-    {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, NPC = CFrame.new(-7861, 5545, -381), Mon = "God's Guard", MonPos = CFrame.new(-7841, 5545, -450)},
-    {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, NPC = CFrame.new(-7861, 5545, -381), Mon = "Shanda", MonPos = CFrame.new(-7680, 5550, -450)},
-    {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Pirate", MonPos = CFrame.new(5570, 4, 3880)},
-    {Min = 650, Max = 700, Name = "FountainQuest", Lv = 2, NPC = CFrame.new(5258, 38, 4048), Mon = "Galley Captain", MonPos = CFrame.new(5660, 4, 4455)},
-}
+-- ========================================================
+-- [[ 3. MỚI: DANH SÁCH QUÁI (DẠNG IF ELSEIF) ]]
+-- ========================================================
+function CheckQuest()
+    local myLv = LP.Data.Level.Value
+    
+    if myLv >= 1 and myLv <= 9 then
+        NameQuest = "BanditQuest1"; LevelQuest = 1; NameMon = "Bandit"
+        CFrameQuest = CFrame.new(1059.37, 15.45, 1550.42)
+        CFrameMon = CFrame.new(1045.96, 27.00, 1560.82)
+    elseif myLv >= 10 and myLv <= 14 then
+        NameQuest = "JungleQuest"; LevelQuest = 1; NameMon = "Monkey"
+        CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30)
+        CFrameMon = CFrame.new(-1623.2, 22, -188)
+    elseif myLv >= 15 and myLv <= 29 then
+        NameQuest = "JungleQuest"; LevelQuest = 2; NameMon = "Gorilla"
+        CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30)
+        CFrameMon = CFrame.new(-1237.6, 6.2, -486.4)
+    elseif myLv >= 30 and myLv <= 39 then
+        NameQuest = "BuggyQuest1"; LevelQuest = 1; NameMon = "Pirate"
+        CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25)
+        CFrameMon = CFrame.new(-1213.4, 4.7, 3920.2)
+    elseif myLv >= 40 and myLv <= 59 then
+        NameQuest = "BuggyQuest1"; LevelQuest = 2; NameMon = "Brute"
+        CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25)
+        CFrameMon = CFrame.new(-1146.1, 14.7, 4308.2)
+    elseif myLv >= 60 and myLv <= 74 then
+        NameQuest = "DesertQuest"; LevelQuest = 1; NameMon = "Desert Bandit"
+        CFrameQuest = CFrame.new(894.49, 5.57, 4392.11)
+        CFrameMon = CFrame.new(985.1, 16.2, 4418.4)
+    elseif myLv >= 75 and myLv <= 89 then
+        NameQuest = "DesertQuest"; LevelQuest = 2; NameMon = "Desert Officer"
+        CFrameQuest = CFrame.new(894.49, 5.57, 4392.11)
+        CFrameMon = CFrame.new(1547.1, 14.7, 4382.2)
+    elseif myLv >= 90 and myLv <= 99 then
+        NameQuest = "SnowQuest"; LevelQuest = 1; NameMon = "Snow Bandit"
+        CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91)
+        CFrameMon = CFrame.new(1356.1, 106.2, -1328.4)
+    elseif myLv >= 100 and myLv <= 119 then
+        NameQuest = "SnowQuest"; LevelQuest = 2; NameMon = "Snowman"
+        CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91)
+        CFrameMon = CFrame.new(1308.1, 150.2, -1475.2)
+    elseif myLv >= 120 and myLv <= 149 then
+        NameQuest = "MarineQuest2"; LevelQuest = 1; NameMon = "Chief Petty Officer"
+        CFrameQuest = CFrame.new(-5039.58, 27.35, 4324.68)
+        CFrameMon = CFrame.new(-4881.23, 22.65, 4273.75)
+    elseif myLv >= 150 and myLv <= 174 then
+        NameQuest = "SkyQuest"; LevelQuest = 1; NameMon = "Sky Bandit"
+        CFrameQuest = CFrame.new(-1241.37, 354.49, -5912.2)
+        CFrameMon = CFrame.new(-1319.4, 391.2, -5961.4)
+    elseif myLv >= 175 and myLv <= 199 then
+        NameQuest = "SkyQuest"; LevelQuest = 2; NameMon = "Dark Skilled"
+        CFrameQuest = CFrame.new(-1241.37, 354.49, -5912.2)
+        CFrameMon = CFrame.new(-1124.1, 401.2, -6339.2)
+    elseif myLv >= 200 and myLv <= 224 then
+        NameQuest = "PrisonQuest"; LevelQuest = 1; NameMon = "Prisoner"
+        CFrameQuest = CFrame.new(530.1, 1.1, 477.1)
+        CFrameMon = CFrame.new(517.2, 1.1, 608.2)
+    elseif myLv >= 225 and myLv <= 249 then
+        NameQuest = "PrisonQuest"; LevelQuest = 2; NameMon = "Dangerous Prisoner"
+        CFrameQuest = CFrame.new(530.1, 1.1, 477.1)
+        CFrameMon = CFrame.new(512.4, 1.1, 480.2)
+    elseif myLv >= 250 and myLv <= 299 then
+        NameQuest = "ColosseumQuest"; LevelQuest = 1; NameMon = "Toga Warrior"
+        CFrameQuest = CFrame.new(-1580.4, 6.4, 2984.1)
+        CFrameMon = CFrame.new(-1800.2, 6.4, 2800.2)
+    elseif myLv >= 300 and myLv <= 324 then
+        NameQuest = "MagmaQuest"; LevelQuest = 1; NameMon = "Military Soldier"
+        CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4)
+        CFrameMon = CFrame.new(-5395.2, 27.2, 8510.4)
+    elseif myLv >= 325 and myLv <= 374 then
+        NameQuest = "MagmaQuest"; LevelQuest = 2; NameMon = "Military Spy"
+        CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4)
+        CFrameMon = CFrame.new(-5816.1, 83.2, 8438.4)
+    elseif myLv >= 375 and myLv <= 399 then
+        NameQuest = "FishmanQuest"; LevelQuest = 1; NameMon = "Fishman Warrior"
+        CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4)
+        CFrameMon = CFrame.new(60938.2, 55.2, 1515.2)
+    elseif myLv >= 400 and myLv <= 449 then
+        NameQuest = "FishmanQuest"; LevelQuest = 2; NameMon = "Fishman Commando"
+        CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4)
+        CFrameMon = CFrame.new(61965.2, 30.2, 1475.2)
+    elseif myLv >= 450 and myLv <= 474 then
+        NameQuest = "SkyExp1Quest"; LevelQuest = 1; NameMon = "God's Guard"
+        CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2)
+        CFrameMon = CFrame.new(-7841.4, 5545.2, -450.2)
+    elseif myLv >= 475 and myLv <= 524 then
+        NameQuest = "SkyExp1Quest"; LevelQuest = 2; NameMon = "Shanda"
+        CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2)
+        CFrameMon = CFrame.new(-7680.4, 5550.2, -450.2)
+    elseif myLv >= 525 and myLv <= 549 then
+        NameQuest = "SkyExp2Quest"; LevelQuest = 1; NameMon = "Royal Soldier"
+        CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2)
+        CFrameMon = CFrame.new(-7759.4, 5606.9, -1862.7)
+    elseif myLv >= 550 and myLv <= 624 then
+        NameQuest = "SkyExp2Quest"; LevelQuest = 2; NameMon = "Royal Squad"
+        CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2)
+        CFrameMon = CFrame.new(-7650.2, 5600.4, -1450.2)
+    else
+        NameQuest = "FountainQuest"; LevelQuest = 2; NameMon = "Galley Captain"
+        CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2)
+        CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
+    end
+end
 
 -- [[ 4. CÁC HÀM HỖ TRỢ FARM ]]
 local function TweenTo(Pos, Speed)
@@ -206,7 +282,7 @@ local function EquipMelee()
     end)
 end
 
--- [[ 5. AUTO TELEPORT FRUITS ]]
+-- [[ 5. AUTO nhặt trái ]]
 spawn(function()
     while wait(0.1) do
         if _G.Grabfruit then
@@ -224,7 +300,7 @@ end)
 -- [[ 6. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
-        if _G.StopFarmForMelee then task.wait(1) continue end -- Kiểm tra nếu đang đi mua võ thì ko farm
+        if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
             local hasFruit = false
             for _, v in pairs(workspace:GetChildren()) do
@@ -232,21 +308,18 @@ task.spawn(function()
             end
             if hasFruit and _G.Grabfruit then return end
             
-            local myLv = LP.Data.Level.Value
-            local q = nil
-            for _, v in pairs(QuestList) do if myLv >= v.Min and myLv <= v.Max then q = v break end end
-            if not q then return end
+            CheckQuest()
             
             if not LP.PlayerGui.Main.Quest.Visible then
-                TweenTo(q.NPC, getgenv().TweenSpeed)
-                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
+                TweenTo(CFrameQuest, getgenv().TweenSpeed)
+                if (LP.Character.HumanoidRootPart.Position - CFrameQuest.Position).Magnitude < 15 then
                     local remote = GetCommF()
-                    if remote then remote:InvokeServer("StartQuest", q.Name, q.Lv) end
+                    if remote then remote:InvokeServer("StartQuest", NameQuest, LevelQuest) end
                 end
             else
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                    if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
                         Enemy = e break
                     end
                 end
@@ -256,7 +329,7 @@ task.spawn(function()
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    TweenTo(q.MonPos, getgenv().TweenSpeed)
+                    TweenTo(CFrameMon, getgenv().TweenSpeed)
                 end
             end
         end)
@@ -296,5 +369,35 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
--- [[ 8. LOADS SCRIPTS ]]
+-- [[ 8. MỚI: TỰ ĐỘNG ĐỔI SERVER SAU 30 PHÚT ]]
+task.spawn(function()
+    local HopTime = 1800 -- 30 phút = 1800 giây
+    while task.wait(1) do
+        HopTime = HopTime - 1
+        if HopTime <= 0 then
+            print("Đang tìm server mới...")
+            local Http = game:GetService("HttpService")
+            local TPS = game:GetService("TeleportService")
+            local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+            
+            local function GetNextServer()
+                local Raw = game:HttpGet(Api)
+                local Decode = Http:JSONDecode(Raw)
+                for _, s in pairs(Decode.data) do
+                    if s.playing < s.maxTokens and s.id ~= game.JobId then
+                        return s.id
+                    end
+                end
+            end
+
+            local ServerId = GetNextServer()
+            if ServerId then
+                TPS:TeleportToPlaceInstance(game.PlaceId, ServerId, LP)
+            end
+            HopTime = 30 -- Reset chờ nếu không tìm thấy ngay
+        end
+    end
+end)
+
+-- [[ 9. LOADS SCRIPTS ]]
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

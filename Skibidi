@@ -23,9 +23,10 @@ local Remote = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 local LastGrabTime = tick() 
 local BoughtChip = false
 local ScriptStartedTime = tick()
+local RaidEndTime = 0 -- Biến từ bản cũ của bạn
 
 -- ==========================================
--- [[ HÀM THÔNG BÁO (HIỆN TRÊN MÀN HÌNH) ]]
+-- [[ HÀM HỖ TRỢ ]]
 -- ==========================================
 local function Notify(text)
     pcall(function()
@@ -94,9 +95,9 @@ local function topos_tween(Pos)
 end
 
 -- ==========================================
--- [[ 1. CHỌN TEAM & KHỞI ĐỘNG ]]
+-- [[ 1. CHỌN TEAM ]]
 -- ==========================================
-Notify("Script đang khởi động... Chờ 10s ổn định")
+Notify("Đang khởi động logic Mua Chip bản cũ...")
 
 task.spawn(function()
     while task.wait(0.5) do
@@ -141,7 +142,6 @@ task.spawn(function()
                     local tool = LP.Backpack:FindFirstChild(fruitData[1]) or Character:FindFirstChild(fruitData[1])
                     if tool then
                         Remote:InvokeServer("StoreFruit", fruitData[2], tool)
-                        Notify("Đã cất: " .. fruitData[1])
                         break
                     end
                 end
@@ -151,7 +151,41 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- [[ 3. AUTO ĐÁNH TRONG RAID ]]
+-- [[ 3. LOGIC MUA CHIP (THAY BẰNG BẢN CŨ CỦA BẠN) ]]
+-- ==========================================
+task.spawn(function()
+    while task.wait(1) do
+        local inRaid = LP.PlayerGui.Main.Timer.Visible or GetCurrentIsland()
+        local hasChip = CheckFull()
+
+        if not inRaid then
+            if RaidEndTime == 0 then RaidEndTime = tick() end
+            -- ĐIỀU KIỆN MUA CHIP GỐC: 10s sau script, 5s sau nhặt, 5s sau raid cũ
+            local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5) and (tick() - RaidEndTime > 5)
+
+            if _G.AutoBuyChip and not hasChip and not BoughtChip and canBuy then
+                Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
+                BoughtChip = true
+                Notify("Đã mua Chip theo logic cũ!")
+            end
+
+            local chipTool = LP.Backpack:FindFirstChild("Special Microchip") or (LP.Character and LP.Character:FindFirstChild("Special Microchip"))
+            if _G.StartRaid and chipTool then
+                topos_tween(CFrame.new(-6438.73, 250.64, -4501.5))
+                if (LP.Character.HumanoidRootPart.Position - Vector3.new(-6438.73, 250.64, -4501.5)).Magnitude < 20 then
+                    local RaidBtn = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
+                    if RaidBtn then fireclickdetector(RaidBtn.ClickDetector) end
+                end
+            end
+        else
+            BoughtChip = false 
+            RaidEndTime = tick()
+        end
+    end
+end)
+
+-- ==========================================
+-- [[ 4. AUTO FARM TRONG RAID ]]
 -- ==========================================
 task.spawn(function()
     while task.wait(0.1) do
@@ -160,22 +194,17 @@ task.spawn(function()
                 local targetIsland = GetCurrentIsland()
                 local targetMob = nil
                 local shortestDist = math.huge
-                
                 for _, v in pairs(workspace.Enemies:GetChildren()) do
                     if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                         if targetIsland then
                             local distToIsland = (v.HumanoidRootPart.Position - targetIsland.Position).Magnitude
                             if distToIsland < 800 then
                                 local distToMe = (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
-                                if distToMe < shortestDist then
-                                    shortestDist = distToMe
-                                    targetMob = v
-                                end
+                                if distToMe < shortestDist then shortestDist = distToMe; targetMob = v end
                             end
                         end
                     end
                 end
-
                 if targetMob then
                     EquipWeapon(_G.SelectWeapon)
                     topos_tween(targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
@@ -190,65 +219,17 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- [[ 4. NHẶT TRÁI & MUA CHIP (NGOÀI RAID) ]]
--- ==========================================
-task.spawn(function()
-    while task.wait(0.5) do
-        if not IsInRaid() then
-            if _G.Grabfruit then
-                for _, v in pairs(workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                        LastGrabTime = tick()
-                    end
-                end
-            end
-            
-            local chip = LP.Backpack:FindFirstChild("Special Microchip") or LP.Character:FindFirstChild("Special Microchip")
-            local canBuy = (tick() - ScriptStartedTime > 10) and (tick() - LastGrabTime > 5)
-            
-            if _G.AutoBuyChip and not CheckFull() and not BoughtChip and canBuy then
-                Remote:InvokeServer("RaidsNpc", "Select", _G.SelectChip)
-                BoughtChip = true
-                Notify("Đã mua Chip Raid: " .. _G.SelectChip)
-            end
-            
-            if _G.StartRaid and chip then
-                local RaidPos = CFrame.new(-6438.73, 250.64, -4501.5)
-                topos_tween(RaidPos)
-                if (LP.Character.HumanoidRootPart.Position - RaidPos.Position).Magnitude < 15 then
-                    local btn = workspace.Map:FindFirstChild("CircleIsland") and workspace.Map.CircleIsland.RaidSummon2.Button.Main
-                    if btn then fireclickdetector(btn.ClickDetector) end
-                end
-            end
-        else
-            BoughtChip = false
-        end
-    end
-end)
-
--- ==========================================
--- [[ 5. AUTO HOP SERVER (CÓ THÔNG BÁO) ]]
+-- [[ 5. AUTO HOP SERVER (VẮNG NGƯỜI) ]]
 -- ==========================================
 task.spawn(function()
     local counter = 0
-    task.wait(10) -- Đợi 10s đầu
-    
+    task.wait(10)
     while task.wait(1) do
         if _G.AutoHop and not IsInRaid() then
-            if CheckFull() then 
-                counter = 0 -- Reset nếu có đồ trong túi
-            else
+            if CheckFull() then counter = 0 else
                 counter = counter + 1
-                
-                -- Thông báo để bạn biết script đang hoạt động
-                if counter == 1 then
-                    print("Giacdz Hub: Đang check túi trống...")
-                elseif counter == 5 then
-                    Notify("Túi trống 5s... Tiếp tục check")
-                elseif counter == 10 then
-                    Notify("Túi trống 10s... Sắp Hop Server")
-                elseif counter >= 15 then
+                if counter == 5 then Notify("Đang check túi trống (5s)...")
+                elseif counter == 15 then
                     Notify("Đang nhảy Server vắng người!")
                     pcall(function()
                         local Api = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
@@ -263,25 +244,36 @@ task.spawn(function()
                     counter = 0
                 end
             end
-        else 
-            counter = 0 
+        else counter = 0 end
+    end
+end)
+
+-- Nhặt trái (Ngoài biển)
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.Grabfruit and not IsInRaid() then
+            for _, v in pairs(workspace:GetChildren()) do
+                if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+                    LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
+                    LastGrabTime = tick()
+                end
+            end
         end
     end
 end)
 
--- Buso & NoClip
-task.spawn(function()
-    while task.wait(0.5) do
-        if _G.AutoBuso and LP.Character and not LP.Character:FindFirstChild("HasBuso") then Remote:InvokeServer("Buso") end
-    end
-end)
-
+-- NoClip & Buso
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
             for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
         end
     end)
+end)
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.AutoBuso and LP.Character and not LP.Character:FindFirstChild("HasBuso") then Remote:InvokeServer("Buso") end
+    end
 end)
 
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

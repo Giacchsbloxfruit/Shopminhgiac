@@ -4,6 +4,43 @@
 local LP = game:GetService("Players").LocalPlayer
 local TS = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
+local function GetCommF()
+    return RS:WaitForChild("Remotes"):WaitForChild("CommF_")
+end
+
+-- ==========================================
+-- [4. CÁC HÀM HỖ TRỢ FARM] (Dán vào đây)
+-- ==========================================
+local function TweenTo(Pos, Speed)
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local dist = (Pos.Position - root.Position).Magnitude
+    if dist < 5 then root.CFrame = Pos return end
+    
+    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    
+    TS:Create(root, TweenInfo.new(dist/Speed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+end
+
+local function EquipMelee()
+    pcall(function()
+        local char = LP.Character
+        -- Tự động bật Haki
+        if not char:FindFirstChild("HasBuso") then 
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("Buso") end
+        end
+        -- Tự động trang bị vũ khí
+        if not char:FindFirstChildOfClass("Tool") then
+            for _, v in pairs(LP.Backpack:GetChildren()) do
+                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
+                    char.Humanoid:EquipTool(v) break
+                end
+            end
+        end
+    end)
+end
 
 _G.AutoFarm = false -- Biến điều khiển từ Menu
 getgenv().TweenSpeed = 250

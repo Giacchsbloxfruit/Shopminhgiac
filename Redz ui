@@ -1,4 +1,4 @@
-getgenv()="Pirates"
+getgenv().Team = "Pirates"
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil then break end

@@ -1,4 +1,123 @@
 -- ==========================================
+-- [PHẦN 1: KHAI BÁO & HÀM HỖ TRỢ]
+-- ==========================================
+local LP = game:GetService("Players").LocalPlayer
+local TS = game:GetService("TweenService")
+local RS = game:GetService("ReplicatedStorage")
+
+_G.AutoFarm = false -- Biến điều khiển từ Menu
+getgenv().TweenSpeed = 250
+
+function TweenTo(Pos)
+    local root = LP.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local dist = (Pos.Position - root.Position).Magnitude
+    if dist < 10 then root.CFrame = Pos return end
+    TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+end
+
+function CheckQuest()
+    local myLv = LP.Data.Level.Value
+     if myLv >= 1 and myLv <= 9 then
+        NameQuest = "BanditQuest1"; LevelQuest = 1; NameMon = "Bandit"
+        CFrameQuest = CFrame.new(1059.37, 15.45, 1550.42)
+        CFrameMon = CFrame.new(1045.96, 27.00, 1560.82)
+    elseif myLv >= 10 and myLv <= 14 then
+        NameQuest = "JungleQuest"; LevelQuest = 1; NameMon = "Monkey"
+        CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30)
+        CFrameMon = CFrame.new(-1623.2, 22, -188)
+    elseif myLv >= 15 and myLv <= 29 then
+        NameQuest = "JungleQuest"; LevelQuest = 2; NameMon = "Gorilla"
+        CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30)
+        CFrameMon = CFrame.new(-1237.6, 6.2, -486.4)
+    elseif myLv >= 30 and myLv <= 39 then
+        NameQuest = "BuggyQuest1"; LevelQuest = 1; NameMon = "Pirate"
+        CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25)
+        CFrameMon = CFrame.new(-1213.4, 4.7, 3920.2)
+    elseif myLv >= 40 and myLv <= 59 then
+        NameQuest = "BuggyQuest1"; LevelQuest = 2; NameMon = "Brute"
+        CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25)
+        CFrameMon = CFrame.new(-1146.1, 14.7, 4308.2)
+    elseif myLv >= 60 and myLv <= 74 then
+        NameQuest = "DesertQuest"; LevelQuest = 1; NameMon = "Desert Bandit"
+        CFrameQuest = CFrame.new(894.49, 5.57, 4392.11)
+        CFrameMon = CFrame.new(985.1, 16.2, 4418.4)
+    elseif myLv >= 75 and myLv <= 89 then
+        NameQuest = "DesertQuest"; LevelQuest = 2; NameMon = "Desert Officer"
+        CFrameQuest = CFrame.new(894.49, 5.57, 4392.11)
+        CFrameMon = CFrame.new(1547.1, 14.7, 4382.2)
+    elseif myLv >= 90 and myLv <= 99 then
+        NameQuest = "SnowQuest"; LevelQuest = 1; NameMon = "Snow Bandit"
+        CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91)
+        CFrameMon = CFrame.new(1356.1, 106.2, -1328.4)
+    elseif myLv >= 100 and myLv <= 119 then
+        NameQuest = "SnowQuest"; LevelQuest = 2; NameMon = "Snowman"
+        CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91)
+        CFrameMon = CFrame.new(1308.1, 150.2, -1475.2)
+    elseif myLv >= 120 and myLv <= 149 then
+        NameQuest = "MarineQuest2"; LevelQuest = 1; NameMon = "Chief Petty Officer"
+        CFrameQuest = CFrame.new(-5039.58, 27.35, 4324.68)
+        CFrameMon = CFrame.new(-4881.23, 22.65, 4273.75)
+    elseif myLv >= 150 and myLv <= 174 then
+        NameQuest = "SkyQuest"; LevelQuest = 1; NameMon = "Sky Bandit"
+        CFrameQuest = CFrame.new(-1241.37, 354.49, -5912.2)
+        CFrameMon = CFrame.new(-1319.4, 391.2, -5961.4)
+    elseif myLv >= 175 and myLv <= 199 then
+        NameQuest = "SkyQuest"; LevelQuest = 2; NameMon = "Dark Skilled"
+        CFrameQuest = CFrame.new(-1241.37, 354.49, -5912.2)
+        CFrameMon = CFrame.new(-1124.1, 401.2, -6339.2)
+    elseif myLv >= 200 and myLv <= 224 then
+        NameQuest = "PrisonQuest"; LevelQuest = 1; NameMon = "Prisoner"
+        CFrameQuest = CFrame.new(530.1, 1.1, 477.1)
+        CFrameMon = CFrame.new(517.2, 1.1, 608.2)
+    elseif myLv >= 225 and myLv <= 249 then
+        NameQuest = "PrisonQuest"; LevelQuest = 2; NameMon = "Dangerous Prisoner"
+        CFrameQuest = CFrame.new(530.1, 1.1, 477.1)
+        CFrameMon = CFrame.new(512.4, 1.1, 480.2)
+    elseif myLv >= 250 and myLv <= 299 then
+        NameQuest = "ColosseumQuest"; LevelQuest = 1; NameMon = "Toga Warrior"
+        CFrameQuest = CFrame.new(-1580.4, 6.4, 2984.1)
+        CFrameMon = CFrame.new(-1800.2, 6.4, 2800.2)
+    elseif myLv >= 300 and myLv <= 324 then
+        NameQuest = "MagmaQuest"; LevelQuest = 1; NameMon = "Military Soldier"
+        CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4)
+        CFrameMon = CFrame.new(-5395.2, 27.2, 8510.4)
+    elseif myLv >= 325 and myLv <= 374 then
+        NameQuest = "MagmaQuest"; LevelQuest = 2; NameMon = "Military Spy"
+        CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4)
+        CFrameMon = CFrame.new(-5816.1, 83.2, 8438.4)
+    elseif myLv >= 375 and myLv <= 399 then
+        NameQuest = "FishmanQuest"; LevelQuest = 1; NameMon = "Fishman Warrior"
+        CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4)
+        CFrameMon = CFrame.new(60938.2, 55.2, 1515.2)
+    elseif myLv >= 400 and myLv <= 449 then
+        NameQuest = "FishmanQuest"; LevelQuest = 2; NameMon = "Fishman Commando"
+        CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4)
+        CFrameMon = CFrame.new(61965.2, 30.2, 1475.2)
+    elseif myLv >= 450 and myLv <= 474 then
+        NameQuest = "SkyExp1Quest"; LevelQuest = 1; NameMon = "God's Guard"
+        CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2)
+        CFrameMon = CFrame.new(-7841.4, 5545.2, -450.2)
+    elseif myLv >= 475 and myLv <= 524 then
+        NameQuest = "SkyExp1Quest"; LevelQuest = 2; NameMon = "Shanda"
+        CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2)
+        CFrameMon = CFrame.new(-7680.4, 5550.2, -450.2)
+    elseif myLv >= 525 and myLv <= 549 then
+        NameQuest = "SkyExp2Quest"; LevelQuest = 1; NameMon = "Royal Soldier"
+        CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2)
+        CFrameMon = CFrame.new(-7759.4, 5606.9, -1862.7)
+    elseif myLv >= 550 and myLv <= 624 then
+        NameQuest = "SkyExp2Quest"; LevelQuest = 2; NameMon = "Royal Squad"
+        CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2)
+        CFrameMon = CFrame.new(-7650.2, 5600.4, -1450.2)
+    else
+        NameQuest = "FountainQuest"; LevelQuest = 2; NameMon = "Galley Captain"
+        CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2)
+        CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
+    end
+end
+
+-- ==========================================
 -- 1. TỰ ĐỘNG CHỌN PHE (PIRATES)
 -- ==========================================
 local LP = game:GetService("Players").LocalPlayer
@@ -119,7 +238,35 @@ v3:AddDropdown({
     Name = "Chọn Vũ Khí",
     Options = {"Melee", "Sword", "Fruit"},
     Default = "Melee",
-    Callback = function(v) _G.SelectWeapon = v end
+    Callback = function(value) _G.SelectWeapon = value end
 })
 
+v3:AddToggle({
+    Name = "Auto Farm Level",
+    Callback = function(value) _G.AutoFarm = value end
+})
+
+-- [PHẦN 3: ĐỘNG CƠ AUTO FARM]
+task.spawn(function()
+    while task.wait() do
+        if _G.AutoFarm then
+            pcall(function()
+                CheckQuest()
+                if not LP.PlayerGui.Main.Quest.Visible then
+                    TweenTo(CFrameQuest)
+                    if (LP.Character.HumanoidRootPart.Position - CFrameQuest.Position).Magnitude < 15 then
+                        RS.Remotes.CommF_:InvokeServer("StartQuest", NameQuest, LevelQuest)
+                    end
+                else
+                    local Enemy = workspace.Enemies:FindFirstChild(NameMon)
+                    if Enemy and Enemy:FindFirstChild("HumanoidRootPart") then
+                        TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+                    else
+                        TweenTo(CFrameMon)
+                    end
+                end
+            end)
+        end
+    end
+end)
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

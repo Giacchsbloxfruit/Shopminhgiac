@@ -1,60 +1,71 @@
--- Khởi tạo Window chính
-local Redz = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
-local Window = Redz:MakeWindow({Title = "Giacdz Hub", SubTitle = "by Giac", SaveFolder = "BloxFruits.lua"})
+-- Khởi tạo Window (v1)
+local v1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
+local Window = v1:MakeWindow({
+    Title = "Giacdz Hub",
+    SubTitle = "by Giac",
+    SaveFolder = "BloxFruits.lua"
+})
 
--- Tạo Nút Bấm Nổi (Toggle Button)
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local MainBtn = Instance.new("ImageButton", ScreenGui)
-MainBtn.Size, MainBtn.Position = UDim2.new(0, 50, 0, 50), UDim2.new(0.15, 0, 0.15, 0)
-MainBtn.Image, MainBtn.BackgroundTransparency = "rbxassetid://123060196429580", 1
+-- Khai báo các Tab từ v2 đến v14
+local v2 = Window:MakeTab({"Thông Tin | Info", "info"})
+local v3 = Window:MakeTab({"Farming", "home"})
+local v4 = Window:MakeTab({"Auto Fishing", "rbxassetid://127664059821666"})
+local v5 = Window:MakeTab({"Quest | Items", "swords"})
+local v6 = Window:MakeTab({"Volcano Dojo", "cake"})
+local v7 = Window:MakeTab({"Sea Event", "waves"})
+local v8 = Window:MakeTab({"Race V4", "crown"})
+local v9 = Window:MakeTab({"Raid Fruits", "cherry"})
+local v10 = Window:MakeTab({"Fruits | Check Stock", "apple"})
+local v11 = Window:MakeTab({"Teleport", "locate"})
+local v12 = Window:MakeTab({"PvP,Player", "user"})
+local v13 = Window:MakeTab({"Shop", "shoppingCart"})
+local v14 = Window:MakeTab({"Settings", "settings"})
 
-local Stroke = Instance.new("UIStroke", MainBtn)
-Stroke.Thickness, Stroke.ApplyStrokeMode = 2, "Border"
-Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0.25, 0)
+--- ==========================================
+--- HƯỚNG DẪN THÊM CHỨC NĂNG VÀO TỪNG BIẾN v
+--- ==========================================
 
--- Hiệu ứng Rainbow & Kéo thả (Draggable)
-task.spawn(function()
-    local Colors = {Color3.new(1,0,0), Color3.new(1,1,0), Color3.new(0,1,0), Color3.new(0,1,1), Color3.new(0,0,1), Color3.new(1,0,1)}
-    local i = 1
-    while task.wait(0.3) do 
-        Stroke.Color = Colors[i]
-        i = i % #Colors + 1 
+-- 1. Thêm vào Tab Farming (v3)
+v3:AddSection({"Auto Farm Level"})
+v3:AddToggle({
+    Name = "Auto Farm Level",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoFarm = Value -- Biến bật tắt farm
     end
-end)
+})
 
--- Logic Kéo thả & Ẩn/Hiện Menu
-local Dragging, DragInput, DragStart, StartPos
-MainBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging, DragStart, StartPos = true, input.Position, MainBtn.Position
+v3:AddDropdown({
+    Name = "Chọn Vũ Khí",
+    Options = {"Melee", "Sword", "Fruit"},
+    Default = "Melee",
+    Callback = function(Value)
+        _G.SelectWeapon = Value
     end
-end)
+})
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local Delta = input.Position - DragStart
-        MainBtn.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+-- 2. Thêm vào Tab Race V4 (v8)
+v8:AddButton({
+    Name = "Teleport to Temple of Time",
+    Callback = function()
+        print("Đang bay tới Đền thờ thời gian...")
     end
-end)
+})
 
-MainBtn.MouseButton1Click:Connect(function()
-    Dragging = false -- Tránh nhầm lẫn giữa kéo và click
-    Window:Minimize(not Window.IsMinimized) -- Giả định hàm Minimize đảo trạng thái
-end)
+-- 3. Thêm vào Tab Teleport (v11)
+v11:AddButton({
+    Name = "Sea 1",
+    Callback = function() print("Teleport Sea 1") end
+})
+v11:AddButton({
+    Name = "Sea 2",
+    Callback = function() print("Teleport Sea 2") end
+})
 
--- Tạo nhanh các Tab bằng Vòng lặp
-local TabsInfo = {
-    {"Thông Tin | Info", "info"}, {"Farming", "home"}, {"Auto Fishing", "rbxassetid://127664059821666"},
-    {"Quest | Items", "swords"}, {"Volcano Dojo", "cake"}, {"Sea Event", "waves"},
-    {"Race V4", "crown"}, {"Raid Fruits", "cherry"}, {"Fruits | Check Stock", "apple"},
-    {"Teleport", "locate"}, {"PvP,Player", "user"}, {"Shop", "shoppingCart"}, {"Settings", "settings"}
-}
-
-for _, info in pairs(TabsInfo) do
-    Window:MakeTab({info[1], info[2]})
-end
-
--- Discord Invite
-Window:MakeTab({"Thông Tin | Info", "info"}):AddDiscordInvite({
-    Name = "TikTok - NEJI", Description = "Link TikTok", Logo = "rbxassetid://123060196429580", Invite = "@tiktokacckhoe1"
+-- 4. Thêm vào Tab Thông Tin (v2)
+v2:AddDiscordInvite({
+    Name = "TikTok - NEJI",
+    Description = "Link TikTok",
+    Logo = "rbxassetid://123060196429580",
+    Invite = "@tiktokacckhoe1"
 })

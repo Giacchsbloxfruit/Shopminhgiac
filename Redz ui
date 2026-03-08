@@ -1,0 +1,60 @@
+-- Khởi tạo Window chính
+local Redz = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
+local Window = Redz:MakeWindow({Title = "Giacdz Hub", SubTitle = "by Giac", SaveFolder = "BloxFruits.lua"})
+
+-- Tạo Nút Bấm Nổi (Toggle Button)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainBtn = Instance.new("ImageButton", ScreenGui)
+MainBtn.Size, MainBtn.Position = UDim2.new(0, 50, 0, 50), UDim2.new(0.15, 0, 0.15, 0)
+MainBtn.Image, MainBtn.BackgroundTransparency = "rbxassetid://123060196429580", 1
+
+local Stroke = Instance.new("UIStroke", MainBtn)
+Stroke.Thickness, Stroke.ApplyStrokeMode = 2, "Border"
+Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0.25, 0)
+
+-- Hiệu ứng Rainbow & Kéo thả (Draggable)
+task.spawn(function()
+    local Colors = {Color3.new(1,0,0), Color3.new(1,1,0), Color3.new(0,1,0), Color3.new(0,1,1), Color3.new(0,0,1), Color3.new(1,0,1)}
+    local i = 1
+    while task.wait(0.3) do 
+        Stroke.Color = Colors[i]
+        i = i % #Colors + 1 
+    end
+end)
+
+-- Logic Kéo thả & Ẩn/Hiện Menu
+local Dragging, DragInput, DragStart, StartPos
+MainBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging, DragStart, StartPos = true, input.Position, MainBtn.Position
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local Delta = input.Position - DragStart
+        MainBtn.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+    end
+end)
+
+MainBtn.MouseButton1Click:Connect(function()
+    Dragging = false -- Tránh nhầm lẫn giữa kéo và click
+    Window:Minimize(not Window.IsMinimized) -- Giả định hàm Minimize đảo trạng thái
+end)
+
+-- Tạo nhanh các Tab bằng Vòng lặp
+local TabsInfo = {
+    {"Thông Tin | Info", "info"}, {"Farming", "home"}, {"Auto Fishing", "rbxassetid://127664059821666"},
+    {"Quest | Items", "swords"}, {"Volcano Dojo", "cake"}, {"Sea Event", "waves"},
+    {"Race V4", "crown"}, {"Raid Fruits", "cherry"}, {"Fruits | Check Stock", "apple"},
+    {"Teleport", "locate"}, {"PvP,Player", "user"}, {"Shop", "shoppingCart"}, {"Settings", "settings"}
+}
+
+for _, info in pairs(TabsInfo) do
+    Window:MakeTab({info[1], info[2]})
+end
+
+-- Discord Invite
+Window:MakeTab({"Thông Tin | Info", "info"}):AddDiscordInvite({
+    Name = "TikTok - NEJI", Description = "Link TikTok", Logo = "rbxassetid://123060196429580", Invite = "@tiktokacckhoe1"
+})

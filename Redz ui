@@ -1,11 +1,11 @@
 -- ==========================================
--- KHAI BÁO BIẾN HỆ THỐNG & TỰ ĐỘNG CHỌN PHE
+-- 1. KHAI BÁO BIẾN & TỰ ĐỘNG CHỌN PHE (PIRATES)
 -- ==========================================
 local LP = game:GetService("Players").LocalPlayer
 local Remote = game:GetService("ReplicatedStorage").Remotes.CommF_
-getgenv().Team = "Pirates" -- Mặc định là Hải tặc
+getgenv().Team = "Pirates"
 
--- Chạy chọn phe ngay lập tức
+-- Logic vào phe ngay lập tức khi chạy script
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil then break end
@@ -15,43 +15,60 @@ task.spawn(function()
     end
 end)
 
--- v1: Khởi tạo Window
+-- ==========================================
+-- 2. KHỞI TẠO WINDOW (v1)
+-- ==========================================
 local v1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
 local Window = v1:MakeWindow({
-    Title = "Giacdz Hub",
+    Title = " Giacdz Hub",
     SubTitle = "by Giac",
     SaveFolder = "BloxFruits.lua"
 })
 
---- ==========================================
---- TẠO NÚT BẤM (LOGO) TẮT/BẬT MENU
---- ==========================================
+-- ==========================================
+-- 3. TẠO LOGO BẬT/TẮT (IMAGE BUTTON)
+-- ==========================================
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "ControlGUI"
+
 local MainBtn = Instance.new("ImageButton", ScreenGui)
-MainBtn.Name = "Giacdz_Control"
-MainBtn.Size, MainBtn.Position = UDim2.new(0, 50, 0, 50), UDim2.new(0.15, 0, 0.15, 0)
-MainBtn.Image = "rbxassetid://123060196429580" 
+MainBtn.Size = UDim2.new(0, 50, 0, 50)
+MainBtn.Position = UDim2.new(0.15, 0, 0.15, 0)
+MainBtn.Image = "rbxassetid://123060196429580"
 MainBtn.BackgroundTransparency = 1
 
-local Stroke = Instance.new("UIStroke", MainBtn)
-Stroke.Thickness, Stroke.ApplyStrokeMode = 2, "Border"
-Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0.25, 0)
+local UICorner = Instance.new("UICorner", MainBtn)
+UICorner.CornerRadius = UDim.new(0.25, 0)
 
--- Hiệu ứng Rainbow cho viền nút
+local Stroke = Instance.new("UIStroke", MainBtn)
+Stroke.Thickness = 2
+Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+-- Hiệu ứng cầu vồng cho viền nút
 task.spawn(function()
-    local Colors = {Color3.new(1,0,0), Color3.new(1,1,0), Color3.new(0,1,0), Color3.new(0,1,1), Color3.new(0,0,1), Color3.new(1,0,1)}
+    local Colors = {
+        Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 127, 0), Color3.fromRGB(255, 255, 0),
+        Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 255), Color3.fromRGB(0, 0, 255),
+        Color3.fromRGB(139, 0, 255)
+    }
     local i = 1
-    while task.wait(0.3) do 
+    while true do
         Stroke.Color = Colors[i]
-        i = i % #Colors + 1 
+        i = i % #Colors + 1
+        task.wait(0.3)
     end
 end)
 
--- Logic Kéo thả nút bấm
-local Dragging, DragStart, StartPos
+-- Logic Kéo thả (Draggable) cho nút bấm
+local Dragging, DragInput, DragStart, StartPos
 MainBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging, DragStart, StartPos = true, input.Position, MainBtn.Position
+        Dragging = true
+        DragStart = input.Position
+        StartPos = MainBtn.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then Dragging = false end
+        end)
     end
 end)
 game:GetService("UserInputService").InputChanged:Connect(function(input)
@@ -60,20 +77,15 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         MainBtn.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
     end
 end)
-MainBtn.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging = false
-    end
-end)
 
--- Click để ẩn/hiện Menu
+-- Click để thu gọn/mở Menu
 MainBtn.MouseButton1Click:Connect(function()
-    v1:Minimize(not v1.IsMinimized) 
+    v1:Minimize(not v1.IsMinimized)
 end)
 
---- ==========================================
---- PHÂN CHIA CÁC TAB (v2 -> v14)
---- ==========================================
+-- ==========================================
+-- 4. PHÂN CHIA CÁC TAB (v2 -> v14)
+-- ==========================================
 local v2 = Window:MakeTab({"Thông Tin | Info", "info"})
 local v3 = Window:MakeTab({"Farming", "home"})
 local v4 = Window:MakeTab({"Auto Fishing", "rbxassetid://127664059821666"})
@@ -88,30 +100,40 @@ local v12 = Window:MakeTab({"PvP,Player", "user"})
 local v13 = Window:MakeTab({"Shop", "shoppingCart"})
 local v14 = Window:MakeTab({"Settings", "settings"})
 
---- ==========================================
---- NỘI DUNG CHI TIẾT CÁC TAB
---- ==========================================
+-- ==========================================
+-- 5. THÊM CHỨC NĂNG VÀO TAB
+-- ==========================================
 
 -- Tab Thông Tin (v2)
 v2:AddDiscordInvite({
-    Name = "TikTok - NEJI",
+    Name = "TikTok - Giacdz",
     Invite = "@tiktokacckhoe1"
 })
 
 -- Tab Farming (v3)
-v3:AddSection({"Auto Farm Level"})
-
+v3:AddSection({"Chọn Phe (Team)"})
 v3:AddDropdown({
-    Name = "Chọn Vũ Khí",
-    Options = {"Melee", "Sword", "Fruit"},
-    Default = "Melee",
-    Callback = function(v) _G.SelectWeapon = v end
+    Name = "Đổi Phe",
+    Options = {"Pirates", "Marines"},
+    Default = "Pirates",
+    Callback = function(Value)
+        getgenv().Team = Value
+        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
+    end
 })
 
+v3:AddSection({"Auto Farm Level"})
 v3:AddToggle({
     Name = "Auto Farm Level",
     Default = false,
     Callback = function(Value)
         _G.AutoFarm = Value
     end
+})
+
+v3:AddDropdown({
+    Name = "Chọn Vũ Khí",
+    Options = {"Melee", "Sword", "Fruit"},
+    Default = "Melee",
+    Callback = function(v) _G.SelectWeapon = v end
 })

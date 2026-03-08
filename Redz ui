@@ -86,15 +86,15 @@ end)
 -- ==========================================
 -- 4. PHÂN CHIA CÁC TAB (v2 -> v14)
 -- ==========================================
-local v2 = Window:MakeTab({"Thông Tin | Info", "info"})
-local v3 = Window:MakeTab({"Farming", "home"})
+local v2 = Window:MakeTab({"Info", "info"})
+local v3 = Window:MakeTab({"Main", "home"})
 local v4 = Window:MakeTab({"Auto Fishing", "rbxassetid://127664059821666"})
 local v5 = Window:MakeTab({"Quest | Items", "swords"})
 local v6 = Window:MakeTab({"Volcano Dojo", "cake"})
 local v7 = Window:MakeTab({"Sea Event", "waves"})
-local v8 = Window:MakeTab({"Race V4", "crown"})
-local v9 = Window:MakeTab({"Raid Fruits", "cherry"})
-local v10 = Window:MakeTab({"Fruits | Check Stock", "apple"})
+local v8 = Window:MakeTab({"Race", "crown"})
+local v9 = Window:MakeTab({"Raid & Dungeon", "cherry"})
+local v10 = Window:MakeTab({"Fruits", "apple"})
 local v11 = Window:MakeTab({"Teleport", "locate"})
 local v12 = Window:MakeTab({"PvP,Player", "user"})
 local v13 = Window:MakeTab({"Shop", "shoppingCart"})
@@ -111,17 +111,6 @@ v2:AddDiscordInvite({
 })
 
 -- Tab Farming (v3)
-v3:AddSection({"Chọn Phe (Team)"})
-v3:AddDropdown({
-    Name = "Đổi Phe",
-    Options = {"Pirates", "Marines"},
-    Default = "Pirates",
-    Callback = function(Value)
-        getgenv().Team = Value
-        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
-    end
-})
-
 v3:AddSection({"Auto Farm Level"})
 v3:AddToggle({
     Name = "Auto Farm Level",

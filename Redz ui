@@ -1,10 +1,18 @@
-getgenv().Team = "Pirates"
+local LP = game.Players.LocalPlayer
+local Remote = game:GetService("ReplicatedStorage").Remotes.CommF_
+
+getgenv().Team = "Pirates" 
+
 task.spawn(function()
     while task.wait(0.5) do
-        if LP.Team ~= nil then break end
-        pcall(function() Remote:InvokeServer("SetTeam", getgenv().Team) end)
+        if LP.Team ~= nil then break end 
+
+        pcall(function() 
+            Remote:InvokeServer("SetTeam", getgenv().Team) 
+        end)
     end
 end)
+
 -- Khởi tạo Window (v1)
 local v1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
 local Window = v1:MakeWindow({
@@ -34,13 +42,6 @@ local v14 = Window:MakeTab({"Settings", "settings"})
 
 -- 1. Thêm vào Tab Farming (v3)
 v3:AddSection({"Auto Farm Level"})
-v3:AddToggle({
-    Name = "Auto Farm Level",
-    Default = false,
-    Callback = function(Value)
-        _G.AutoFarm = Value -- Biến bật tắt farm
-    end
-})
 
 v3:AddDropdown({
     Name = "Chọn Vũ Khí",
@@ -48,6 +49,14 @@ v3:AddDropdown({
     Default = "Melee",
     Callback = function(Value)
         _G.SelectWeapon = Value
+    end
+})
+
+v3:AddToggle({
+    Name = "Auto Farm Level",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoFarm = Value -- Biến bật tắt farm
     end
 })
 

@@ -1,19 +1,21 @@
-local LP = game.Players.LocalPlayer
+-- ==========================================
+-- KHAI BÁO BIẾN HỆ THỐNG & TỰ ĐỘNG CHỌN PHE
+-- ==========================================
+local LP = game:GetService("Players").LocalPlayer
 local Remote = game:GetService("ReplicatedStorage").Remotes.CommF_
+getgenv().Team = "Pirates" -- Mặc định là Hải tặc
 
-getgenv().Team = "Pirates" 
-
+-- Chạy chọn phe ngay lập tức
 task.spawn(function()
     while task.wait(0.5) do
-        if LP.Team ~= nil then break end 
-
+        if LP.Team ~= nil then break end
         pcall(function() 
             Remote:InvokeServer("SetTeam", getgenv().Team) 
         end)
     end
 end)
 
--- Khởi tạo Window (v1)
+-- v1: Khởi tạo Window
 local v1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
 local Window = v1:MakeWindow({
     Title = "Giacdz Hub",
@@ -21,7 +23,57 @@ local Window = v1:MakeWindow({
     SaveFolder = "BloxFruits.lua"
 })
 
--- Khai báo các Tab từ v2 đến v14
+--- ==========================================
+--- TẠO NÚT BẤM (LOGO) TẮT/BẬT MENU
+--- ==========================================
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainBtn = Instance.new("ImageButton", ScreenGui)
+MainBtn.Name = "Giacdz_Control"
+MainBtn.Size, MainBtn.Position = UDim2.new(0, 50, 0, 50), UDim2.new(0.15, 0, 0.15, 0)
+MainBtn.Image = "rbxassetid://123060196429580" 
+MainBtn.BackgroundTransparency = 1
+
+local Stroke = Instance.new("UIStroke", MainBtn)
+Stroke.Thickness, Stroke.ApplyStrokeMode = 2, "Border"
+Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0.25, 0)
+
+-- Hiệu ứng Rainbow cho viền nút
+task.spawn(function()
+    local Colors = {Color3.new(1,0,0), Color3.new(1,1,0), Color3.new(0,1,0), Color3.new(0,1,1), Color3.new(0,0,1), Color3.new(1,0,1)}
+    local i = 1
+    while task.wait(0.3) do 
+        Stroke.Color = Colors[i]
+        i = i % #Colors + 1 
+    end
+end)
+
+-- Logic Kéo thả nút bấm
+local Dragging, DragStart, StartPos
+MainBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging, DragStart, StartPos = true, input.Position, MainBtn.Position
+    end
+end)
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local Delta = input.Position - DragStart
+        MainBtn.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+    end
+end)
+MainBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging = false
+    end
+end)
+
+-- Click để ẩn/hiện Menu
+MainBtn.MouseButton1Click:Connect(function()
+    v1:Minimize(not v1.IsMinimized) 
+end)
+
+--- ==========================================
+--- PHÂN CHIA CÁC TAB (v2 -> v14)
+--- ==========================================
 local v2 = Window:MakeTab({"Thông Tin | Info", "info"})
 local v3 = Window:MakeTab({"Farming", "home"})
 local v4 = Window:MakeTab({"Auto Fishing", "rbxassetid://127664059821666"})
@@ -37,51 +89,29 @@ local v13 = Window:MakeTab({"Shop", "shoppingCart"})
 local v14 = Window:MakeTab({"Settings", "settings"})
 
 --- ==========================================
---- HƯỚNG DẪN THÊM CHỨC NĂNG VÀO TỪNG BIẾN v
+--- NỘI DUNG CHI TIẾT CÁC TAB
 --- ==========================================
 
--- 1. Thêm vào Tab Farming (v3)
+-- Tab Thông Tin (v2)
+v2:AddDiscordInvite({
+    Name = "TikTok - NEJI",
+    Invite = "@tiktokacckhoe1"
+})
+
+-- Tab Farming (v3)
 v3:AddSection({"Auto Farm Level"})
 
 v3:AddDropdown({
     Name = "Chọn Vũ Khí",
     Options = {"Melee", "Sword", "Fruit"},
     Default = "Melee",
-    Callback = function(Value)
-        _G.SelectWeapon = Value
-    end
+    Callback = function(v) _G.SelectWeapon = v end
 })
 
 v3:AddToggle({
     Name = "Auto Farm Level",
     Default = false,
     Callback = function(Value)
-        _G.AutoFarm = Value -- Biến bật tắt farm
+        _G.AutoFarm = Value
     end
-})
-
--- 2. Thêm vào Tab Race V4 (v8)
-v8:AddButton({
-    Name = "Teleport to Temple of Time",
-    Callback = function()
-        print("Đang bay tới Đền thờ thời gian...")
-    end
-})
-
--- 3. Thêm vào Tab Teleport (v11)
-v11:AddButton({
-    Name = "Sea 1",
-    Callback = function() print("Teleport Sea 1") end
-})
-v11:AddButton({
-    Name = "Sea 2",
-    Callback = function() print("Teleport Sea 2") end
-})
-
--- 4. Thêm vào Tab Thông Tin (v2)
-v2:AddDiscordInvite({
-    Name = "TikTok - NEJI",
-    Description = "Link TikTok",
-    Logo = "rbxassetid://123060196429580",
-    Invite = "@tiktokacckhoe1"
 })

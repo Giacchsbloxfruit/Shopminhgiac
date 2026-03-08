@@ -1,11 +1,10 @@
 -- ==========================================
--- 1. KHAI BÁO BIẾN & TỰ ĐỘNG CHỌN PHE (PIRATES)
+-- 1. TỰ ĐỘNG CHỌN PHE (PIRATES)
 -- ==========================================
 local LP = game:GetService("Players").LocalPlayer
 local Remote = game:GetService("ReplicatedStorage").Remotes.CommF_
 getgenv().Team = "Pirates"
 
--- Logic vào phe ngay lập tức khi chạy script
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil then break end
@@ -15,34 +14,44 @@ task.spawn(function()
     end
 end)
 
-local v466 = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))():MakeWindow({
+-- ==========================================
+-- 2. KHỞI TẠO WINDOW (v1)
+-- ==========================================
+local v1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))()
+local v466 = v1:MakeWindow({
     Title = " Giacdz Hub",
-    SubTitle = "by Giac",
+    SubTitle = "by Giac - v1.0.1",
     SaveFolder = "BloxFruits.lua"
 })
+
+-- ==========================================
+-- 3. TẠO LOGO BẬT/TẮT (IMAGE BUTTON)
+-- ==========================================
 local l_ScreenGui_0 = Instance.new("ScreenGui")
 l_ScreenGui_0.Name = "ControlGUI"
 l_ScreenGui_0.Parent = game.CoreGui
+l_ScreenGui_0.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
 local l_ImageButton_0 = Instance.new("ImageButton")
 l_ImageButton_0.Size = UDim2.new(0, 50, 0, 50)
 l_ImageButton_0.Position = UDim2.new(0.15, 0, 0.15, 0)
 l_ImageButton_0.Image = "rbxassetid://123060196429580"
 l_ImageButton_0.BackgroundTransparency = 1
 l_ImageButton_0.Parent = l_ScreenGui_0
+
 local l_UICorner_0 = Instance.new("UICorner")
 l_UICorner_0.CornerRadius = UDim.new(0.25, 0)
 l_UICorner_0.Parent = l_ImageButton_0
+
 local l_UIStroke_0 = Instance.new("UIStroke")
 l_UIStroke_0.Thickness = 2
 l_UIStroke_0.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 l_UIStroke_0.Parent = l_ImageButton_0
+
+-- Hiệu ứng cầu vồng
 local v471 = {
-    Color3.fromRGB(255, 0, 0),
-    Color3.fromRGB(255, 127, 0),
-    Color3.fromRGB(255, 255, 0),
-    Color3.fromRGB(0, 255, 0),
-    Color3.fromRGB(0, 255, 255),
-    Color3.fromRGB(0, 0, 255),
+    Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 127, 0), Color3.fromRGB(255, 255, 0),
+    Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 255), Color3.fromRGB(0, 0, 255),
     Color3.fromRGB(139, 0, 255)
 }
 task.spawn(function()
@@ -53,82 +62,59 @@ task.spawn(function()
         task.wait(0.3)
     end
 end)
-local v473 = true
-local v474 = nil
-local v475 = nil
-local v476 = nil
-local v477 = nil
-local function v480(v478)
-    local v479 = v478.Position - v476
-    l_ImageButton_0.Position = UDim2.new(v477.X.Scale, v477.X.Offset + v479.X, v477.Y.Scale, v477.Y.Offset + v479.Y)
-end
-l_ImageButton_0.InputBegan:Connect(function(v481)
-    if v481.UserInputType == Enum.UserInputType.Touch or v481.UserInputType == Enum.UserInputType.MouseButton1 then
+
+-- Logic Kéo thả (Draggable)
+local v474 = false
+local v476, v477, v475
+l_ImageButton_0.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         v474 = true
-        v476 = v481.Position
+        v476 = input.Position
         v477 = l_ImageButton_0.Position
-        v481.Changed:Connect(function()
-            if v481.UserInputState == Enum.UserInputState.End then
-                v474 = false
-            end
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then v474 = false end
         end)
     end
 end)
-l_ImageButton_0.InputChanged:Connect(function(v482)
-    if v482.UserInputType == Enum.UserInputType.Touch or v482.UserInputType == Enum.UserInputType.MouseMovement then
-        v475 = v482
+l_ImageButton_0.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        v475 = input
     end
 end)
-game:GetService("UserInputService").InputChanged:Connect(function(v483)
-    if v474 and v483 == v475 then
-        v480(v483)
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if v474 and input == v475 then
+        local delta = input.Position - v476
+        l_ImageButton_0.Position = UDim2.new(v477.X.Scale, v477.X.Offset + delta.X, v477.Y.Scale, v477.Y.Offset + delta.Y)
     end
 end)
+
+-- ==========================================
+-- SỬA LỖI CLICK ĐỂ TẮT/MỞ MENU
+-- ==========================================
+local isMinimized = false
 l_ImageButton_0.MouseButton1Click:Connect(function()
-    v473 = not v473
-    if v473 then
-        v466:Minimize(false)
-    else
-        v466:Minimize(true)
-    end
+    isMinimized = not isMinimized
+    v466:Minimize(isMinimized) 
 end)
+
 -- ==========================================
 -- 4. PHÂN CHIA CÁC TAB (v2 -> v14)
 -- ==========================================
-local v2 = Window:MakeTab({"Info", "info"})
-local v3 = Window:MakeTab({"Main", "home"})
-local v4 = Window:MakeTab({"Auto Fishing", "rbxassetid://127664059821666"})
-local v5 = Window:MakeTab({"Quest | Items", "swords"})
-local v6 = Window:MakeTab({"Volcano Dojo", "cake"})
-local v7 = Window:MakeTab({"Sea Event", "waves"})
-local v8 = Window:MakeTab({"Race", "crown"})
-local v9 = Window:MakeTab({"Raid & Dungeon", "cherry"})
-local v10 = Window:MakeTab({"Fruits", "apple"})
-local v11 = Window:MakeTab({"Teleport", "locate"})
-local v12 = Window:MakeTab({"PvP,Player", "user"})
-local v13 = Window:MakeTab({"Shop", "shoppingCart"})
-local v14 = Window:MakeTab({"Settings", "settings"})
+local v2 = v466:MakeTab({"Thông Tin | Info", "info"})
+local v3 = v466:MakeTab({"Farming", "home"})
+local v4 = v466:MakeTab({"Auto Fishing", "rbxassetid://127664059821666"})
+local v5 = v466:MakeTab({"Quest | Items", "swords"})
+local v6 = v466:MakeTab({"Volcano Dojo", "cake"})
+local v7 = v466:MakeTab({"Sea Event", "waves"})
+local v8 = v466:MakeTab({"Race V4", "crown"})
+local v9 = v466:MakeTab({"Raid Fruits", "cherry"})
+local v10 = v466:MakeTab({"Fruits | Check Stock", "apple"})
+local v11 = v466:MakeTab({"Teleport", "locate"})
+local v12 = v466:MakeTab({"PvP,Player", "user"})
+local v13 = v466:MakeTab({"Shop", "shoppingCart"})
+local v14 = v466:MakeTab({"Settings", "settings"})
 
--- ==========================================
--- 5. THÊM CHỨC NĂNG VÀO TAB
--- ==========================================
-
--- Tab Thông Tin (v2)
-v2:AddDiscordInvite({
-    Name = "TikTok - Giacdz",
-    Invite = "@tiktokacckhoe1"
-})
-
--- Tab Farming (v3)
-v3:AddSection({"Auto Farm Level"})
-v3:AddToggle({
-    Name = "Auto Farm Level",
-    Default = false,
-    Callback = function(Value)
-        _G.AutoFarm = Value
-    end
-})
-
+-- Tab Farming (v3) ví dụ
 v3:AddDropdown({
     Name = "Chọn Vũ Khí",
     Options = {"Melee", "Sword", "Fruit"},

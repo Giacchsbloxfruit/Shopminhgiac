@@ -10,6 +10,123 @@ local function Notify(text)
         })
     end)
 end
+-- ========================================================
+-- [[ GIAO DIỆN UI TRẠNG THÁI (TRÊN CÙNG MÀN HÌNH) ]]
+-- ========================================================
+local CoreGui = game:GetService("CoreGui")
+local LP = game.Players.LocalPlayer
+
+-- Xóa UI cũ nếu đã từng chạy script để tránh trùng lặp
+if CoreGui:FindFirstChild("GiacdzHubStatus") then
+    CoreGui.GiacdzHubStatus:Destroy()
+end
+
+-- Tạo ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GiacdzHubStatus"
+ScreenGui.Parent = CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Khung chính (Main Frame)
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.AnchorPoint = Vector2.new(0.5, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0, 15) -- Nằm ở giữa, cách mép trên 15 pixel
+MainFrame.Size = UDim2.new(0, 220, 0, 100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BackgroundTransparency = 0.3 -- Làm mờ nền một chút cho đẹp
+MainFrame.BorderSizePixel = 0
+
+-- Bo góc khung
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- Viền ngoài (Màu vàng)
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Parent = MainFrame
+UIStroke.Color = Color3.fromRGB(255, 255, 0)
+UIStroke.Thickness = 1.5
+
+-- Tên Hub
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "⚡ Giacdz Hub | Kaitun ⚡"
+Title.TextColor3 = Color3.fromRGB(255, 255, 0)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+
+-- Dòng trạng thái (Status)
+local StatusText = Instance.new("TextLabel")
+StatusText.Parent = MainFrame
+StatusText.Position = UDim2.new(0, 15, 0, 35)
+StatusText.Size = UDim2.new(1, -30, 0, 20)
+StatusText.BackgroundTransparency = 1
+StatusText.Text = "Trạng thái: Đang khởi động..."
+StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.Font = Enum.Font.GothamMedium
+StatusText.TextSize = 13
+
+-- Dòng Level
+local LevelText = Instance.new("TextLabel")
+LevelText.Parent = MainFrame
+LevelText.Position = UDim2.new(0, 15, 0, 55)
+LevelText.Size = UDim2.new(1, -30, 0, 20)
+LevelText.BackgroundTransparency = 1
+LevelText.Text = "Level: Đang tải..."
+LevelText.TextColor3 = Color3.fromRGB(85, 255, 255) -- Màu xanh dương nhạt
+LevelText.TextXAlignment = Enum.TextXAlignment.Left
+LevelText.Font = Enum.Font.GothamMedium
+LevelText.TextSize = 13
+
+-- Dòng Beli (Tiền)
+local BeliText = Instance.new("TextLabel")
+BeliText.Parent = MainFrame
+BeliText.Position = UDim2.new(0, 15, 0, 75)
+BeliText.Size = UDim2.new(1, -30, 0, 20)
+BeliText.BackgroundTransparency = 1
+BeliText.Text = "Beli: Đang tải..."
+BeliText.TextColor3 = Color3.fromRGB(85, 255, 127) -- Màu xanh lá
+BeliText.TextXAlignment = Enum.TextXAlignment.Left
+BeliText.Font = Enum.Font.GothamMedium
+BeliText.TextSize = 13
+
+-- ========================================================
+-- [[ VÒNG LẶP CẬP NHẬT THÔNG TIN LÊN UI ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            -- Lấy Level và Beli
+            local myLv = LP.Data.Level.Value
+            local myBeli = LP.Data.Beli.Value
+            
+            -- Format lại Beli cho dễ nhìn (vd: 1500000 -> 1,500,000)
+            local function formatNumber(v)
+                return tostring(v):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
+            end
+
+            LevelText.Text = "Level: " .. formatNumber(myLv)
+            BeliText.Text = "Beli: $" .. formatNumber(myBeli)
+
+            -- Check trạng thái đang làm gì dựa vào các biến _G có sẵn
+            if _G.StopFarmForMelee then
+                StatusText.Text = "Trạng thái: Đang mua Melee..."
+                StatusText.TextColor3 = Color3.fromRGB(255, 170, 0) -- Màu cam
+            elseif LP.PlayerGui.Main.Quest.Visible then
+                StatusText.Text = "Trạng thái: Đang Farm Quái"
+                StatusText.TextColor3 = Color3.fromRGB(0, 255, 127) -- Xanh lá
+            else
+                StatusText.Text = "Trạng thái: Đang nhận Quest..."
+                StatusText.TextColor3 = Color3.fromRGB(255, 255, 255) -- Trắng
+            end
+        end)
+    end
+end)
+
 
 -- Thông báo khi vừa chạy script
 Notify("Welcome to Giacdz kaitun!")

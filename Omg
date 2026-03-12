@@ -1,5 +1,5 @@
 -- ========================================================
--- [[ 0. HÀM THÔNG BÁO ]]
+-- [[ 0. HÀM THÔNG BÁO (LẤY TỪ BẢN RAID) ]]
 -- ========================================================
 local function Notify(text)
     pcall(function()
@@ -10,16 +10,13 @@ local function Notify(text)
         })
     end)
 end
-
 -- ========================================================
--- [[ GIAO DIỆN UI TRẠNG THÁI (NÂNG CẤP) ]]
+-- [[ GIAO DIỆN UI TRẠNG THÁI (TRÊN CÙNG MÀN HÌNH) ]]
 -- ========================================================
 local CoreGui = game:GetService("CoreGui")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local LP = game.Players.LocalPlayer
 
--- Xóa UI cũ nếu đã từng chạy
+-- Xóa UI cũ nếu đã từng chạy script để tránh trùng lặp
 if CoreGui:FindFirstChild("GiacdzHubStatus") then
     CoreGui.GiacdzHubStatus:Destroy()
 end
@@ -29,212 +26,121 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "GiacdzHubStatus"
 ScreenGui.Parent = CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.ResetOnSpawn = false
 
--- ====================
--- TÙY CHỈNH NÚT LOGO BẬT/TẮT UI
--- ====================
-local LogoImageID = "rbxassetid://13506169123" -- Đổi ID ảnh Logo của bạn tại đây
-local LogoTextStr = "Giacdz Hub"              -- Đổi tên hiển thị dưới Logo tại đây
-
-local ToggleBtn = Instance.new("ImageButton")
-ToggleBtn.Name = "ToggleButton"
-ToggleBtn.Parent = ScreenGui
-ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
-ToggleBtn.Position = UDim2.new(0, 20, 0, 100) -- Vị trí mặc định bên góc trái
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-ToggleBtn.Image = LogoImageID
-ToggleBtn.ClipsDescendants = true
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 12)
-ToggleCorner.Parent = ToggleBtn
-
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Parent = ToggleBtn
-ToggleStroke.Color = Color3.fromRGB(255, 255, 255)
-ToggleStroke.Thickness = 2
-
-local ToggleText = Instance.new("TextLabel")
-ToggleText.Parent = ToggleBtn
-ToggleText.Size = UDim2.new(1, 0, 0, 15)
-ToggleText.Position = UDim2.new(0, 0, 1, -15)
-ToggleText.BackgroundTransparency = 0.5
-ToggleText.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleText.Text = LogoTextStr
-ToggleText.Font = Enum.Font.GothamBold
-ToggleText.TextSize = 10
-
--- Tính năng Di chuyển (Drag) cho nút Toggle
-local dragging, dragInput, dragStart, startPos
-ToggleBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = ToggleBtn.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-ToggleBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        ToggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- ====================
--- KHUNG UI CHÍNH
--- ====================
+-- Khung chính (Main Frame)
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
 MainFrame.AnchorPoint = Vector2.new(0.5, 0)
-MainFrame.Position = UDim2.new(0.5, 0, 0, 15)
-MainFrame.Size = UDim2.new(0, 480, 0, 140) -- Khung bự hơn
+MainFrame.Position = UDim2.new(0.5, 0, 0, 15) -- Nằm ở giữa, cách mép trên 15 pixel
+MainFrame.Size = UDim2.new(0, 220, 0, 100)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BackgroundTransparency = 0.15
+MainFrame.BackgroundTransparency = 0.3 -- Làm mờ nền một chút cho đẹp
 MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
 
+-- Bo góc khung
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = MainFrame
 
--- Viền UI Cầu vồng (Rainbow Stroke)
+-- Viền ngoài (Màu vàng)
 local UIStroke = Instance.new("UIStroke")
 UIStroke.Parent = MainFrame
-UIStroke.Thickness = 2.5
-RunService.RenderStepped:Connect(function()
-    UIStroke.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1) -- Đổi màu cầu vồng liên tục
-    ToggleStroke.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-end)
-
--- Logic Bật/Tắt UI khi nhấn Logo (bỏ qua lúc đang drag)
-ToggleBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
+UIStroke.Color = Color3.fromRGB(255, 255, 0)
+UIStroke.Thickness = 1.5
 
 -- Tên Hub
 local Title = Instance.new("TextLabel")
 Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "⚡ GIACDZ HUB | TỰ ĐỘNG CÀY CUỐC ⚡"
+Title.Text = "⚡ Giacdz Hub | Kaitun ⚡"
 Title.TextColor3 = Color3.fromRGB(255, 255, 0)
-Title.TextSize = 18
-Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
 
--- Hàng 1: Trạng thái
+-- Dòng trạng thái (Status)
 local StatusText = Instance.new("TextLabel")
 StatusText.Parent = MainFrame
-StatusText.Position = UDim2.new(0, 15, 0, 40)
-StatusText.Size = UDim2.new(1, -30, 0, 25)
+StatusText.Position = UDim2.new(0, 15, 0, 35)
+StatusText.Size = UDim2.new(1, -30, 0, 20)
 StatusText.BackgroundTransparency = 1
 StatusText.Text = "Trạng thái: Đang khởi động..."
 StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusText.TextXAlignment = Enum.TextXAlignment.Center
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
 StatusText.Font = Enum.Font.GothamMedium
-StatusText.TextSize = 16
+StatusText.TextSize = 13
 
--- Hàng 2: Container chứa Level, Beli, Fragment trên 1 hàng
-local StatsContainer = Instance.new("Frame")
-StatsContainer.Parent = MainFrame
-StatsContainer.Position = UDim2.new(0, 10, 0, 70)
-StatsContainer.Size = UDim2.new(1, -20, 0, 30)
-StatsContainer.BackgroundTransparency = 1
+-- Dòng Level
+local LevelText = Instance.new("TextLabel")
+LevelText.Parent = MainFrame
+LevelText.Position = UDim2.new(0, 15, 0, 55)
+LevelText.Size = UDim2.new(1, -30, 0, 20)
+LevelText.BackgroundTransparency = 1
+LevelText.Text = "Level: Đang tải..."
+LevelText.TextColor3 = Color3.fromRGB(85, 255, 255) -- Màu xanh dương nhạt
+LevelText.TextXAlignment = Enum.TextXAlignment.Left
+LevelText.Font = Enum.Font.GothamMedium
+LevelText.TextSize = 13
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = StatsContainer
-UIListLayout.FillDirection = Enum.FillDirection.Horizontal
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
-UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+-- Dòng Beli (Tiền)
+local BeliText = Instance.new("TextLabel")
+BeliText.Parent = MainFrame
+BeliText.Position = UDim2.new(0, 15, 0, 75)
+BeliText.Size = UDim2.new(1, -30, 0, 20)
+BeliText.BackgroundTransparency = 1
+BeliText.Text = "Beli: Đang tải..."
+BeliText.TextColor3 = Color3.fromRGB(85, 255, 127) -- Màu xanh lá
+BeliText.TextXAlignment = Enum.TextXAlignment.Left
+BeliText.Font = Enum.Font.GothamMedium
+BeliText.TextSize = 13
 
-local function CreateStatText(name, color)
-    local txt = Instance.new("TextLabel")
-    txt.Name = name
-    txt.Size = UDim2.new(0.33, 0, 1, 0)
-    txt.BackgroundTransparency = 1
-    txt.TextColor3 = color
-    txt.Font = Enum.Font.GothamBold
-    txt.TextSize = 15
-    txt.Text = name .. ": --"
-    return txt
-end
-
-local LevelText = CreateStatText("Lv", Color3.fromRGB(85, 255, 255))
-LevelText.Parent = StatsContainer
-local BeliText = CreateStatText("$", Color3.fromRGB(85, 255, 127))
-BeliText.Parent = StatsContainer
-local FragText = CreateStatText("Frag", Color3.fromRGB(255, 85, 255))
-FragText.Parent = StatsContainer
-
--- Hàng 3: Thời gian chạy Script
-local TimeText = Instance.new("TextLabel")
-TimeText.Parent = MainFrame
-TimeText.Position = UDim2.new(0, 15, 0, 105)
-TimeText.Size = UDim2.new(1, -30, 0, 25)
-TimeText.BackgroundTransparency = 1
-TimeText.Text = "Thời gian chạy: 00:00:00"
-TimeText.TextColor3 = Color3.fromRGB(200, 200, 200)
-TimeText.TextXAlignment = Enum.TextXAlignment.Center
-TimeText.Font = Enum.Font.GothamMedium
-TimeText.TextSize = 14
-
--- Vòng lặp cập nhật thông tin UI
-local ScriptStartTime = os.time()
+-- ========================================================
+-- [[ VÒNG LẶP CẬP NHẬT THÔNG TIN LÊN UI ]]
+-- ========================================================
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
+            -- Lấy Level và Beli
             local myLv = LP.Data.Level.Value
             local myBeli = LP.Data.Beli.Value
-            local myFrag = LP.Data.Fragments.Value -- Thêm dữ liệu Fragment
             
+            -- Format lại Beli cho dễ nhìn (vd: 1500000 -> 1,500,000)
             local function formatNumber(v)
                 return tostring(v):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
             end
 
-            LevelText.Text = "Lv: " .. formatNumber(myLv)
-            BeliText.Text = "$: " .. formatNumber(myBeli)
-            FragText.Text = "F: " .. formatNumber(myFrag)
+            LevelText.Text = "Level: " .. formatNumber(myLv)
+            BeliText.Text = "Beli: $" .. formatNumber(myBeli)
 
-            -- Format thời gian
-            local elapsedTime = os.time() - ScriptStartTime
-            local h = math.floor(elapsedTime / 3600)
-            local m = math.floor((elapsedTime % 3600) / 60)
-            local s = elapsedTime % 60
-            TimeText.Text = string.format("🕒 Thời gian chạy: %02d:%02d:%02d", h, m, s)
-
-            -- Trạng thái
+            -- Check trạng thái đang làm gì dựa vào các biến _G có sẵn
             if _G.StopFarmForMelee then
-                StatusText.Text = "Trạng thái: ⚔️ Đang đi mua Melee..."
-                StatusText.TextColor3 = Color3.fromRGB(255, 170, 0)
+                StatusText.Text = "Trạng thái: Đang mua Melee..."
+                StatusText.TextColor3 = Color3.fromRGB(255, 170, 0) -- Màu cam
             elseif LP.PlayerGui.Main.Quest.Visible then
-                StatusText.Text = "Trạng thái: 🔪 Đang đấm Quái"
-                StatusText.TextColor3 = Color3.fromRGB(0, 255, 127)
+                StatusText.Text = "Trạng thái: Đang Farm Quái"
+                StatusText.TextColor3 = Color3.fromRGB(0, 255, 127) -- Xanh lá
             else
-                StatusText.Text = "Trạng thái: ✈️ Đang bay đi nhận Quest..."
-                StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
+                StatusText.Text = "Trạng thái: Đang nhận Quest..."
+                StatusText.TextColor3 = Color3.fromRGB(255, 255, 255) -- Trắng
             end
         end)
     end
 end)
 
--- ========================================================
--- [[ THÔNG BÁO VÀ CHẠY KAITUN ]]
--- ========================================================
+
+-- Thông báo khi vừa chạy script
 Notify("Welcome to Giacdz kaitun!")
 
+-- ========================================================
+-- [[ 1. CONFIGURATION & KAITUN LOGIC ]]
+-- ========================================================
 getgenv().Team = "Pirates" 
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
 _G.Grabfruit = true 
 _G.StopFarmForMelee = false 
 
+local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
 
@@ -260,7 +166,9 @@ task.spawn(function()
     end
 end)
 
--- Hệ thống Cất Quả
+-- ========================================================
+-- [[ 2. HỆ THỐNG CẤT KHO CHẠY NGẦM ]]
+-- ========================================================
 local FruitList = {
     {"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"},
     {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"},
@@ -373,7 +281,10 @@ task.spawn(function()
     end
 end)
 
--- Quest Setup
+
+-- ========================================================
+-- [[ 3. DANH SÁCH QUÁI (DẠNG IF ELSEIF) ]]
+-- ========================================================
 function CheckQuest()
     local myLv = LP.Data.Level.Value
     
@@ -476,7 +387,7 @@ function CheckQuest()
     end
 end
 
--- Hỗ trợ di chuyển
+-- [[ 4. CÁC HÀM HỖ TRỢ FARM ]]
 local function TweenTo(Pos, Speed)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -504,7 +415,7 @@ local function EquipMelee()
     end)
 end
 
--- Tự động nhặt quả
+-- [[ 5. AUTO NHẶT TRÁI ]]
 spawn(function()
     while wait(0.1) do
         if _G.Grabfruit then
@@ -520,7 +431,7 @@ spawn(function()
     end
 end)
 
--- Vòng lặp Farm
+-- [[ 6. VÒNG LẶP FARM CHÍNH ]]
 task.spawn(function()
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
@@ -559,7 +470,7 @@ task.spawn(function()
     end
 end)
 
--- Tăng Stat
+-- [[ 7. AUTO STATS ]]
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
@@ -581,8 +492,8 @@ task.spawn(function()
     end
 end)
 
--- Noclip xuyên tường
-RunService.Stepped:Connect(function()
+-- NOCLIP
+game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
             for _, v in pairs(LP.Character:GetDescendants()) do
@@ -592,11 +503,12 @@ RunService.Stepped:Connect(function()
     end)
 end)
 
--- Tự nhảy Server sau 30 phút
+-- [[ 8. TỰ ĐỘNG ĐỔI SERVER SAU 30 PHÚT ]]
 task.spawn(function()
     local HopTime = 1800 
     while task.wait(1) do
         HopTime = HopTime - 1
+        -- Thông báo đếm ngược lúc sắp đổi server (tùy chọn)
         if HopTime == 10 then Notify("Server hop in 10 seconds ") end
         
         if HopTime <= 0 then
@@ -622,5 +534,5 @@ task.spawn(function()
     end
 end)
 
--- Load thêm module ngoài
+-- [[ 9. LOADS SCRIPTS ]]
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

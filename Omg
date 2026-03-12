@@ -305,7 +305,9 @@ task.spawn(function()
     end
 end)
 
--- Mua Melee
+-- ========================================================
+-- [[ LOGIC AUTO MUA MELEE NPC - ĐÃ FIX TELE CỔNG ]]
+-- ========================================================
 local function GetMeleeData()
     local name, mas = "", 0
     for _, v in pairs(LP.Backpack:GetChildren()) do
@@ -329,33 +331,40 @@ task.spawn(function()
             local myBeli = LP.Data.Beli.Value
             local curName, curMas = GetMeleeData()
             local targetPos, buyCmd = nil, ""
-            local needUnderwater = false
+            local isFishmanKarate = false
 
+            -- Điều kiện mua Melee
             if myBeli >= 150000 and curName ~= "Black Leg" and curName ~= "Electric" and curName ~= "Water Kung Fu" then
                 targetPos = CFrame.new(1134, 5, 4373); buyCmd = "BuyBlackLeg"
             elseif curName == "Black Leg" and curMas >= 450 and myBeli >= 500000 then
                 targetPos = CFrame.new(-5381, 15, -2184); buyCmd = "BuyElectro"
             elseif curName == "Electric" and curMas >= 450 and myBeli >= 750000 then
-                targetPos = CFrame.new(61585, 19, 987); buyCmd = "BuyFishmanKarate"
-                needUnderwater = true
+                targetPos = CFrame.new(61585, 19, 987) -- Tọa độ NPC trong đảo người cá
+                buyCmd = "BuyFishmanKarate"
+                isFishmanKarate = true
             end
 
             if targetPos then
                 _G.StopFarmForMelee = true
-                if needUnderwater and LP.Character.HumanoidRootPart.Position.Y > -500 then
-                    GetCommF():InvokeServer("requestEntrance", Vector3.new(61163, 11, 1819))
-                    task.wait(0.5)
+                
+                -- XỬ LÝ TELEPORT VÀO CỔNG ĐẢO NGƯỜI CÁ
+                if isFishmanKarate and LP.Character.HumanoidRootPart.Position.Y > -500 then
+                    Notify("Đang vào cổng Đảo Người Cá...")
+                    -- Gọi Remote để dịch chuyển vào cổng
+                    local CommF = GetCommF()
+                    if CommF then
+                        CommF:InvokeServer("requestEntrance", Vector3.new(61163, 11, 1819))
+                    end
+                    task.wait(1) -- Chờ load map
                 end
                 
+                -- Sau khi vào cổng (hoặc di chuyển bình thường), bắt đầu Tween tới NPC
                 local dist = (LP.Character.HumanoidRootPart.Position - targetPos.Position).Magnitude
-                if dist > 10 then
-                    local root = LP.Character.HumanoidRootPart
-                    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
-                    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
-                    TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
+                if dist > 15 then
+                    TweenTo(targetPos, getgenv().TweenSpeed)
                 else
                     GetCommF():InvokeServer(buyCmd)
-                    Notify("Buy new melee")
+                    Notify("Đã mua Melee mới thành công!")
                 end
             else
                 _G.StopFarmForMelee = false

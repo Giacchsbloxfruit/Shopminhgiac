@@ -207,19 +207,22 @@ function CheckQuest()
         CFrameQuest = CFrame.new(-5039.58, 27.35, 4324.68); CFrameMon = CFrame.new(-4881.23, 22.65, 4273.75)
     elseif myLv >= 150 and myLv <= 174 then
         NameQuest = "SkyQuest"; LevelQuest = 1; NameMon = "Sky Bandit"
-        CFrameQuest = CFrame.new(-1241.37, 354.49, -5912.2); CFrameMon = CFrame.new(-1319.4, 391.2, -5961.4)
-    elseif myLv >= 175 and myLv <= 199 then
-        NameQuest = "SkyQuest"; LevelQuest = 2; NameMon = "Dark Skilled"
-        CFrameQuest = CFrame.new(-1241.37, 354.49, -5912.2); CFrameMon = CFrame.new(-1124.1, 401.2, -6339.2)
-    elseif myLv >= 200 and myLv <= 224 then
+        CFrameQuest = CFrame.new(-4839.53027, 716.368591, -2619.44165); CFrameMon = CFrame.new(-4953.20703125, 295.74420166015625, -2899.22900390625)
+    elseif myLv >= 175 and myLv <= 189 then
+        NameQuest = "SkyQuest"; LevelQuest = 2; NameMon = "Dark Master"
+        CFrameQuest = CFrame.new(-4839.53027, 716.368591, -2619.44165); CFrameMon = CFrame.new(-5259.8447265625, 391.3976745605469, -2229.035400390625)
+    elseif myLv >= 190 and myLv <= 209 then
         NameQuest = "PrisonQuest"; LevelQuest = 1; NameMon = "Prisoner"
-        CFrameQuest = CFrame.new(530.1, 1.1, 477.1); CFrameMon = CFrame.new(517.2, 1.1, 608.2)
-    elseif myLv >= 225 and myLv <= 249 then
+        CFrameQuest = CFrame.new(5308.93115, 1.65517521, 475.120514, -0.0894274712); CFrameMon = CFrame.new(5098.9736328125, -0.3204058110713959, 474.2373352050781)
+    elseif myLv >= 210 and myLv <= 249 then
         NameQuest = "PrisonQuest"; LevelQuest = 2; NameMon = "Dangerous Prisoner"
-        CFrameQuest = CFrame.new(530.1, 1.1, 477.1); CFrameMon = CFrame.new(512.4, 1.1, 480.2)
-    elseif myLv >= 250 and myLv <= 299 then
+        CFrameQuest = CFrame.new(5308.93115, 1.65517521, 475.120514); CFrameMon = CFrame.new(5654.5634765625, 15.633401870727539, 866.2991943359375)
+    elseif myLv >= 250 and myLv <= 274 then
         NameQuest = "ColosseumQuest"; LevelQuest = 1; NameMon = "Toga Warrior"
-        CFrameQuest = CFrame.new(-1580.4, 6.4, 2984.1); CFrameMon = CFrame.new(-1800.2, 6.4, 2800.2)
+        CFrameQuest = CFrame.new(-1580.04663, 6.35000277, -2986.47534); CFrameMon = CFrame.new(-1820.21484375, 51.68385696411133, -2740.6650390625)
+    elseif myLv >= 275 and myLv <= 299 then
+        NameQuest = "ColosseumQuest"; LevelQuest = 1; NameMon = "Gladiator"
+        CFrameQuest = CFrame.new(-1580.04663, 6.35000277, -2986.47534); CFrameMon = CFrame.new(-1292.838134765625, 56.380882263183594, -3339.031494140625)
     elseif myLv >= 300 and myLv <= 324 then
         NameQuest = "MagmaQuest"; LevelQuest = 1; NameMon = "Military Soldier"
         CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4); CFrameMon = CFrame.new(-5395.2, 27.2, 8510.4)

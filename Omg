@@ -401,5 +401,5 @@ task.spawn(function()
         end
     end
 end)
--Auto attack--
+
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

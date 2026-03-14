@@ -1,96 +1,98 @@
-local v466 = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-NejiDepzai/UIRedzhub/refs/heads/main/UIRedz.lua"))():MakeWindow({
-    Title = " Giacdz Hub",
-    SubTitle = "by Giac",
-    SaveFolder = "BloxFruits.lua"
-})
-local l_ScreenGui_0 = Instance.new("ScreenGui")
-l_ScreenGui_0.Name = "ControlGUI"
-l_ScreenGui_0.Parent = game.CoreGui
-local l_ImageButton_0 = Instance.new("ImageButton")
-l_ImageButton_0.Size = UDim2.new(0, 50, 0, 50)
-l_ImageButton_0.Position = UDim2.new(0.15, 0, 0.15, 0)
-l_ImageButton_0.Image = "rbxassetid://123060196429580"
-l_ImageButton_0.BackgroundTransparency = 1
-l_ImageButton_0.Parent = l_ScreenGui_0
-local l_UICorner_0 = Instance.new("UICorner")
-l_UICorner_0.CornerRadius = UDim.new(0.25, 0)
-l_UICorner_0.Parent = l_ImageButton_0
-local l_UIStroke_0 = Instance.new("UIStroke")
-l_UIStroke_0.Thickness = 2
-l_UIStroke_0.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-l_UIStroke_0.Parent = l_ImageButton_0
-local v471 = {
-    Color3.fromRGB(255, 0, 0),
-    Color3.fromRGB(255, 127, 0),
-    Color3.fromRGB(255, 255, 0),
-    Color3.fromRGB(0, 255, 0),
-    Color3.fromRGB(0, 255, 255),
-    Color3.fromRGB(0, 0, 255),
-    Color3.fromRGB(139, 0, 255)
-}
-task.spawn(function()
-    local v472 = 1
-    while true do
-        l_UIStroke_0.Color = v471[v472]
-        v472 = v472 % #v471 + 1
-        task.wait(0.3)
+-- ========================================================
+-- ⚡ Giacdz Hub | Module Auto Buy Melee (Sea 1) ⚡
+-- ========================================================
+local LP = game.Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local TS = game:GetService("TweenService")
+
+_G.StopFarmForMelee = false 
+getgenv().ReqMasToBuy = 450 -- Đổi thành 0 nếu bạn muốn test bay thẳng đến NPC
+getgenv().TweenSpeed = 200
+
+-- Hàm lấy Remote Event giao tiếp với Server
+local function GetCommF()
+    local found = RS:FindFirstChild("CommF_", true)
+    if not found then
+        for _, v in pairs(RS:GetDescendants()) do
+            if v.Name == "CommF_" then return v end
+        end
     end
-end)
-local v473 = true
-local v474 = nil
-local v475 = nil
-local v476 = nil
-local v477 = nil
-local function v480(v478)
-    local v479 = v478.Position - v476
-    l_ImageButton_0.Position = UDim2.new(v477.X.Scale, v477.X.Offset + v479.X, v477.Y.Scale, v477.Y.Offset + v479.Y)
+    return found
 end
-l_ImageButton_0.InputBegan:Connect(function(v481)
-    if v481.UserInputType == Enum.UserInputType.Touch or v481.UserInputType == Enum.UserInputType.MouseButton1 then
-        v474 = true
-        v476 = v481.Position
-        v477 = l_ImageButton_0.Position
-        v481.Changed:Connect(function()
-            if v481.UserInputState == Enum.UserInputState.End then
-                v474 = false
+
+-- Hàm kiểm tra tên Võ và Mastery hiện tại
+local function GetMeleeData()
+    local name, mas = "", 0
+    -- Tìm trong Balo
+    if LP:FindFirstChild("Backpack") then
+        for _, v in pairs(LP.Backpack:GetChildren()) do
+            if v:IsA("Tool") and v.ToolTip == "Melee" then
+                name = v.Name; if v:FindFirstChild("Level") then mas = v.Level.Value end
+            end
+        end
+    end
+    -- Tìm trên tay nhân vật
+    if LP.Character then
+        for _, v in pairs(LP.Character:GetChildren()) do
+            if v:IsA("Tool") and v.ToolTip == "Melee" then
+                name = v.Name; if v:FindFirstChild("Level") then mas = v.Level.Value end
+            end
+        end
+    end
+    return name, mas
+end
+
+-- Vòng lặp chạy ngầm xử lý Auto Mua
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local myBeli = LP.Data.Beli.Value
+            local curName, curMas = GetMeleeData()
+            local targetPos, buyCmd = nil, ""
+            local isFishman = false
+
+            -- 1. Mua Black Leg (Chân Đen)
+            if (curName == "Combat" or curName == "") and myBeli >= 150000 then
+                targetPos = CFrame.new(1134, 5, 4373)
+                buyCmd = "BuyBlackLeg"
+                
+            -- 2. Mua Electro (Điện)
+            elseif curName == "Black Leg" and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
+                targetPos = CFrame.new(-5381, 15, -2184)
+                buyCmd = "BuyElectro"
+                
+            -- 3. Mua Water Kung Fu (Người Cá)
+            elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
+                targetPos = CFrame.new(61585, 19, 987)
+                buyCmd = "BuyFishmanKarate"
+                isFishman = true
+            end
+
+            -- Nếu đủ điều kiện mua võ mới
+            if targetPos then
+                _G.StopFarmForMelee = true -- Phát tín hiệu dừng các hàm farm quái khác
+                
+                -- Xử lý chui qua cổng nước Đảo Người Cá
+                if isFishman and LP.Character.HumanoidRootPart.Position.Y > -500 then
+                    GetCommF():InvokeServer("requestEntrance", Vector3.new(61163, 11, 1819))
+                    task.wait(1.5)
+                end
+                
+                local root = LP.Character.HumanoidRootPart
+                local dist = (root.Position - targetPos.Position).Magnitude
+                
+                if dist > 15 then
+                    -- Bay đến vị trí NPC
+                    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+                    bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+                    TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
+                else
+                    -- Đã tới nơi -> Mua võ
+                    GetCommF():InvokeServer(buyCmd)
+                end
+            else
+                _G.StopFarmForMelee = false -- Không mua võ -> Tiếp tục farm bình thường
             end
         end)
     end
 end)
-l_ImageButton_0.InputChanged:Connect(function(v482)
-    if v482.UserInputType == Enum.UserInputType.Touch or v482.UserInputType == Enum.UserInputType.MouseMovement then
-        v475 = v482
-    end
-end)
-game:GetService("UserInputService").InputChanged:Connect(function(v483)
-    if v474 and v483 == v475 then
-        v480(v483)
-    end
-end)
-l_ImageButton_0.MouseButton1Click:Connect(function()
-    v473 = not v473
-    if v473 then
-        v466:Minimize(false)
-    else
-        v466:Minimize(true)
-    end
-end)
-local v484 = v466:MakeTab({"Th\195\180ng Tin | Info", "info"})
-local v485 = v466:MakeTab({"Farming", "home"})
-local v486 = v466:MakeTab({"Auto Fishing", "rbxassetid://127664059821666"})
-local v487 = v466:MakeTab({"Quest | Items", "swords"})
-local v488 = v466:MakeTab({"Volcano Dojo", "cake"})
-local v489 = v466:MakeTab({"Sea Event", "waves"})
-local v490 = v466:MakeTab({"Race V4", "crown"})
-local v491 = v466:MakeTab({"Raid Fruits", "cherry"})
-local v492 = v466:MakeTab({"Fruits | Check Stock", "apple"})
-local v493 = v466:MakeTab({"Teleport", "locate"})
-local v494 = v466:MakeTab({"PvP,Player", "user"})
-local v495 = v466:MakeTab({"Shop", "shoppingCart"})
-local v496 = v466:MakeTab({"Settings", "settings"})
-v484:AddDiscordInvite({
-    Name = "TikTok - NEJI",
-    Description = "Link TikTok",
-    Logo = "rbxassetid://123060196429580",
-    Invite = "@tiktokacckhoe1"
-})

@@ -11,7 +11,7 @@ local function Notify(text)
     end)
 end
 
-Notify("Auto Team + FPS Boost + Highlight Loaded!")
+Notify("Auto Quest (Old Logic) + FPS Boost Loaded!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
@@ -19,7 +19,7 @@ Notify("Auto Team + FPS Boost + Highlight Loaded!")
 getgenv().Team = "Pirates" -- "Pirates" hoặc "Marines"
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
-getgenv().ReqMasToBuy = 450
+getgenv().ReqMasToBuy = 401
 _G.Grabfruit = true 
 _G.StopFarmForMelee = false 
 
@@ -37,7 +37,7 @@ local function GetCommF()
     return found
 end
 
--- [ PHẦN CHỌN TEAM - ĐÃ QUAY TRỞ LẠI ]
+-- [ PHẦN CHỌN TEAM ]
 task.spawn(function()
     while task.wait(0.5) do
         if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
@@ -49,13 +49,13 @@ task.spawn(function()
     end
 end)
 
--- Bỏ :Wait() để chống kẹt luồng
+-- Hàm di chuyển mượt mà (Tween)
 local function TweenTo(targetPos)
     local char = LP.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
     local root = char.HumanoidRootPart
     local dist = (root.Position - targetPos.Position).Magnitude
-    if dist > 10 then
+    if dist > 15 then -- Nới lỏng khoảng cách nhận diện lên 15 studs
         local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
         bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
         TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
@@ -65,300 +65,193 @@ local function TweenTo(targetPos)
 end
 
 -- ========================================================
--- [[ ⚡ MODULE FIX LAG (FPS BOOST) ]]
+-- [[ ⚡ MODULE FIX LAG & HIGHLIGHT ]]
 -- ========================================================
 task.spawn(function()
     settings().Rendering.QualityLevel = "Level01"
     for _, v in pairs(game:GetDescendants()) do
         pcall(function()
-            if v:IsA("Part") or v:IsA("Union") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
-                v.Material = "Plastic"
-                v.Reflectance = 0
+            if v:IsA("Part") or v:IsA("Union") or v:IsA("MeshPart") then
+                v.Material = "Plastic"; v.Reflectance = 0
             elseif v:IsA("Decal") or v:IsA("Texture") then
                 v.Transparency = 1
             elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
                 v.Lifetime = NumberRange.new(0)
-            elseif v:IsA("Explosion") then
-                v.BlastPressure = 1
-                v.BlastRadius = 1
-            elseif v:IsA("Fire") or v:IsA("SpotLight") or v:IsA("Smoke") or v:IsA("Sparkles") then
-                v.Enabled = false
             end
         end)
     end
 end)
 
--- ========================================================
--- [[ ✨ MODULE HIGHLIGHT (MÀU CAM NHẠT) ]]
--- ========================================================
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
             local char = LP.Character
             if char then
-                local hl = char:FindFirstChild("GiacdzHighlight")
-                if not hl then
-                    hl = Instance.new("Highlight")
-                    hl.Name = "GiacdzHighlight"
-                    hl.Parent = char
-                end
-                hl.Enabled = true
-                hl.FillColor = Color3.fromRGB(255, 200, 150)
-                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                hl.FillTransparency = 0.5
-                hl.OutlineTransparency = 0.2
+                local hl = char:FindFirstChild("GiacdzHighlight") or Instance.new("Highlight", char)
+                hl.Name = "GiacdzHighlight"; hl.FillColor = Color3.fromRGB(255, 200, 150)
+                hl.FillTransparency = 0.5; hl.OutlineTransparency = 0.2
             end
         end)
     end
 end)
 
 -- ========================================================
--- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
+-- [[ 2. AUTO STATS & CẤT TRÁI CÂY ]]
 -- ========================================================
-local FruitList = {
-    {"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"},
-    {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"},
-    {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"},
-    {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"},
-    {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"},
-    {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"},
-    {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"},
-    {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"},
-    {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"},
-    {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"},
-    {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"},
-    {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"},
-    {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"},
-    {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"},
-    {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"},
-    {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"},
-    {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"},
-    {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"},
-    {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"},
-    {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"},
-    {"Dragon Fruit", "Dragon-Dragon"}
-}
+-- [Logic cất kho trái cây giữ nguyên từ bản ổn định nhất]
+local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
 
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
-            local Character = LP.Character
-            local CommF = GetCommF()
-            if CommF and Character then
-                for _, fruitData in ipairs(FruitList) do
-                    local fruitTool = LP.Backpack:FindFirstChild(fruitData[1]) or Character:FindFirstChild(fruitData[1])
-                    if fruitTool then
-                        CommF:InvokeServer("StoreFruit", fruitData[2], fruitTool)
-                        break 
-                    end
-                end
+            for _, fruit in ipairs(FruitList) do
+                local f = LP.Backpack:FindFirstChild(fruit[1]) or LP.Character:FindFirstChild(fruit[1])
+                if f then GetCommF():InvokeServer("StoreFruit", fruit[2], f); break end
             end
         end)
     end
 end)
 
 -- ========================================================
--- [[ 3. MODULE AUTO BUY MELEE (NEW COORDS) ]]
+-- [[ 3. QUY TRÌNH FARM CHÍNH (SỬ DỤNG LOGIC CODE CŨ) ]]
 -- ========================================================
-local function GetMeleeData()
-    local name, mas = "None", 0
-    local sources = {LP.Backpack, LP.Character}
-    for _, source in pairs(sources) do
-        if source then
-            for _, v in pairs(source:GetChildren()) do
-                if v:IsA("Tool") and v.ToolTip == "Melee" then
-                    name = v.Name; if v:FindFirstChild("Level") then mas = v.Level.Value end
-                end
-            end
-        end
-    end
-    return name, mas
-end
-
-task.spawn(function()
-    while task.wait(1) do
-        pcall(function()
-            -- Lớp khiên bảo vệ nếu nhân vật đang chết để tránh kẹt
-            if not LP.Character or not LP.Character:FindFirstChild("Humanoid") or LP.Character.Humanoid.Health <= 0 then
-                _G.StopFarmForMelee = false return
-            end
-
-            local myBeli = LP.Data.Beli.Value
-            local curName, curMas = GetMeleeData()
-            local targetPos, buyCmd = nil, ""
-            local needsGate = false
-
-            local COORD_LEG = CFrame.new(-985.49, 14.04, 3991.39)
-            local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
-            local COORD_GATE = CFrame.new(4023.69, 29.7, -1835.62)
-            local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
-
-            if (curName == "Combat" or curName == "None") and myBeli >= 150000 then
-                targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
-            elseif curName == "Black Leg" and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
-                targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
-            elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
-                targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
-                needsGate = true
-            end
-
-            if targetPos then
-                _G.StopFarmForMelee = true
-                if needsGate and LP.Character.HumanoidRootPart.Position.Y > -500 then
-                    if TweenTo(COORD_GATE) then
-                        GetCommF():InvokeServer("requestEntrance", Vector3.new(61163, 11, 1819))
-                        task.wait(1)
-                    end
-                else
-                    if TweenTo(targetPos) then
-                        GetCommF():InvokeServer(buyCmd)
-                    end
-                end
-            else
-                _G.StopFarmForMelee = false
-            end
-        end)
-    end
-end)
-
--- ========================================================
--- [[ 4. QUY TRÌNH FARM CHÍNH ]]
--- ========================================================
--- Khởi tạo biến chống nil ngầm
-_G.NameQuest = ""; _G.LevelQuest = 1; _G.NameMon = ""
-_G.CFrameQuest = CFrame.new(0,0,0); _G.CFrameMon = CFrame.new(0,0,0)
+-- Khởi tạo biến Global để logic cũ nhận diện được
+NameQuest = ""; LevelQuest = 1; NameMon = ""
+CFrameQuest = CFrame.new(0,0,0); CFrameMon = CFrame.new(0,0,0)
 
 function CheckQuest()
     local myLv = LP.Data.Level.Value
     if myLv >= 1 and myLv <= 9 then
-        _G.NameQuest = "BanditQuest1"; _G.LevelQuest = 1; _G.NameMon = "Bandit"
-        _G.CFrameQuest = CFrame.new(1059.37, 15.45, 1550.42); _G.CFrameMon = CFrame.new(1045.96, 27.00, 1560.82)
+        NameQuest = "BanditQuest1"; LevelQuest = 1; NameMon = "Bandit"
+        CFrameQuest = CFrame.new(1059.37, 15.45, 1550.42); CFrameMon = CFrame.new(1045.96, 27.00, 1560.82)
     elseif myLv >= 10 and myLv <= 14 then
-        _G.NameQuest = "JungleQuest"; _G.LevelQuest = 1; _G.NameMon = "Monkey"
-        _G.CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30); _G.CFrameMon = CFrame.new(-1623.2, 22, -188)
+        NameQuest = "JungleQuest"; LevelQuest = 1; NameMon = "Monkey"
+        CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30); CFrameMon = CFrame.new(-1623.2, 22, -188)
     elseif myLv >= 15 and myLv <= 29 then
-        _G.NameQuest = "JungleQuest"; _G.LevelQuest = 2; _G.NameMon = "Gorilla"
-        _G.CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30); _G.CFrameMon = CFrame.new(-1237.6, 6.2, -486.4)
+        NameQuest = "JungleQuest"; LevelQuest = 2; NameMon = "Gorilla"
+        CFrameQuest = CFrame.new(-1598.09, 35.55, 153.30); CFrameMon = CFrame.new(-1237.6, 6.2, -486.4)
     elseif myLv >= 30 and myLv <= 39 then
-        _G.NameQuest = "BuggyQuest1"; _G.LevelQuest = 1; _G.NameMon = "Pirate"
-        _G.CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25); _G.CFrameMon = CFrame.new(-1213.4, 4.7, 3920.2)
+        NameQuest = "BuggyQuest1"; LevelQuest = 1; NameMon = "Pirate"
+        CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25); CFrameMon = CFrame.new(-1213.4, 4.7, 3920.2)
     elseif myLv >= 40 and myLv <= 59 then
-        _G.NameQuest = "BuggyQuest1"; _G.LevelQuest = 2; _G.NameMon = "Brute"
-        _G.CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25); _G.CFrameMon = CFrame.new(-1146.1, 14.7, 4308.2)
+        NameQuest = "BuggyQuest1"; LevelQuest = 2; NameMon = "Brute"
+        CFrameQuest = CFrame.new(-1141.07, 4.10, 3827.25); CFrameMon = CFrame.new(-1146.1, 14.7, 4308.2)
     elseif myLv >= 60 and myLv <= 74 then
-        _G.NameQuest = "DesertQuest"; _G.LevelQuest = 1; _G.NameMon = "Desert Bandit"
-        _G.CFrameQuest = CFrame.new(894.49, 5.57, 4392.11); _G.CFrameMon = CFrame.new(985.1, 16.2, 4418.4)
+        NameQuest = "DesertQuest"; LevelQuest = 1; NameMon = "Desert Bandit"
+        CFrameQuest = CFrame.new(894.49, 5.57, 4392.11); CFrameMon = CFrame.new(985.1, 16.2, 4418.4)
     elseif myLv >= 75 and myLv <= 89 then
-        _G.NameQuest = "DesertQuest"; _G.LevelQuest = 2; _G.NameMon = "Desert Officer"
-        _G.CFrameQuest = CFrame.new(894.49, 5.57, 4392.11); _G.CFrameMon = CFrame.new(1547.1, 14.7, 4382.2)
+        NameQuest = "DesertQuest"; LevelQuest = 2; NameMon = "Desert Officer"
+        CFrameQuest = CFrame.new(894.49, 5.57, 4392.11); CFrameMon = CFrame.new(1547.1, 14.7, 4382.2)
     elseif myLv >= 90 and myLv <= 99 then
-        _G.NameQuest = "SnowQuest"; _G.LevelQuest = 1; _G.NameMon = "Snow Bandit"
-        _G.CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91); _G.CFrameMon = CFrame.new(1356.1, 106.2, -1328.4)
+        NameQuest = "SnowQuest"; LevelQuest = 1; NameMon = "Snow Bandit"
+        CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91); CFrameMon = CFrame.new(1356.1, 106.2, -1328.4)
     elseif myLv >= 100 and myLv <= 119 then
-        _G.NameQuest = "SnowQuest"; _G.LevelQuest = 2; _G.NameMon = "Snowman"
-        _G.CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91); _G.CFrameMon = CFrame.new(1308.1, 150.2, -1475.2)
+        NameQuest = "SnowQuest"; LevelQuest = 2; NameMon = "Snowman"
+        CFrameQuest = CFrame.new(1389.74, 87.27, -1298.91); CFrameMon = CFrame.new(1308.1, 150.2, -1475.2)
     elseif myLv >= 120 and myLv <= 149 then
-        _G.NameQuest = "MarineQuest2"; _G.LevelQuest = 1; _G.NameMon = "Chief Petty Officer"
-        _G.CFrameQuest = CFrame.new(-5039.58, 27.35, 4324.68); _G.CFrameMon = CFrame.new(-4881.23, 22.65, 4273.75)
+        NameQuest = "MarineQuest2"; LevelQuest = 1; NameMon = "Chief Petty Officer"
+        CFrameQuest = CFrame.new(-5039.58, 27.35, 4324.68); CFrameMon = CFrame.new(-4881.23, 22.65, 4273.75)
     elseif myLv >= 150 and myLv <= 174 then
-        _G.NameQuest = "SkyQuest"; _G.LevelQuest = 1; _G.NameMon = "Sky Bandit"
-        _G.CFrameQuest = CFrame.new(-4839.53, 716.36, -2619.44); _G.CFrameMon = CFrame.new(-4953.20, 295.74, -2899.22)
+        NameQuest = "SkyQuest"; LevelQuest = 1; NameMon = "Sky Bandit"
+        CFrameQuest = CFrame.new(-4839.53, 716.36, -2619.44); CFrameMon = CFrame.new(-4953.20, 295.74, -2899.22)
     elseif myLv >= 175 and myLv <= 189 then
-        _G.NameQuest = "SkyQuest"; _G.LevelQuest = 2; _G.NameMon = "Dark Master"
-        _G.CFrameQuest = CFrame.new(-4839.53, 716.36, -2619.44); _G.CFrameMon = CFrame.new(-5259.84, 391.39, -2229.03)
+        NameQuest = "SkyQuest"; LevelQuest = 2; NameMon = "Dark Master"
+        CFrameQuest = CFrame.new(-4839.53, 716.36, -2619.44); CFrameMon = CFrame.new(-5259.84, 391.39, -2229.03)
     elseif myLv >= 190 and myLv <= 209 then
-        _G.NameQuest = "PrisonQuest"; _G.LevelQuest = 1; _G.NameMon = "Prisoner"
-        _G.CFrameQuest = CFrame.new(5308.93, 1.65, 475.12); _G.CFrameMon = CFrame.new(5098.97, -0.32, 474.23)
+        NameQuest = "PrisonQuest"; LevelQuest = 1; NameMon = "Prisoner"
+        CFrameQuest = CFrame.new(5308.93, 1.65, 475.12); CFrameMon = CFrame.new(5098.97, -0.32, 474.23)
     elseif myLv >= 210 and myLv <= 249 then
-        _G.NameQuest = "PrisonQuest"; _G.LevelQuest = 2; _G.NameMon = "Dangerous Prisoner"
-        _G.CFrameQuest = CFrame.new(5308.93, 1.65, 475.12); _G.CFrameMon = CFrame.new(5654.56, 15.63, 866.29)
+        NameQuest = "PrisonQuest"; LevelQuest = 2; NameMon = "Dangerous Prisoner"
+        CFrameQuest = CFrame.new(5308.93, 1.65, 475.12); CFrameMon = CFrame.new(5654.56, 15.63, 866.29)
     elseif myLv >= 250 and myLv <= 274 then
-        _G.NameQuest = "ColosseumQuest"; _G.LevelQuest = 1; _G.NameMon = "Toga Warrior"
-        _G.CFrameQuest = CFrame.new(-1580.04, 6.35, -2986.47); _G.CFrameMon = CFrame.new(-1820.21, 51.68, -2740.66)
+        NameQuest = "ColosseumQuest"; LevelQuest = 1; NameMon = "Toga Warrior"
+        CFrameQuest = CFrame.new(-1580.04, 6.35, -2986.47); CFrameMon = CFrame.new(-1820.21, 51.68, -2740.66)
     elseif myLv >= 275 and myLv <= 299 then
-        _G.NameQuest = "ColosseumQuest"; _G.LevelQuest = 1; _G.NameMon = "Gladiator"
-        _G.CFrameQuest = CFrame.new(-1580.04, 6.35, -2986.47); _G.CFrameMon = CFrame.new(-1292.83, 56.38, -3339.03)
+        NameQuest = "ColosseumQuest"; LevelQuest = 1; NameMon = "Gladiator"
+        CFrameQuest = CFrame.new(-1580.04, 6.35, -2986.47); CFrameMon = CFrame.new(-1292.83, 56.38, -3339.03)
     elseif myLv >= 300 and myLv <= 324 then
-        _G.NameQuest = "MagmaQuest"; _G.LevelQuest = 1; _G.NameMon = "Military Soldier"
-        _G.CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4); _G.CFrameMon = CFrame.new(-5395.2, 27.2, 8510.4)
+        NameQuest = "MagmaQuest"; LevelQuest = 1; NameMon = "Military Soldier"
+        CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4); CFrameMon = CFrame.new(-5395.2, 27.2, 8510.4)
     elseif myLv >= 325 and myLv <= 374 then
-        _G.NameQuest = "MagmaQuest"; _G.LevelQuest = 2; _G.NameMon = "Military Spy"
-        _G.CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4); _G.CFrameMon = CFrame.new(-5816.1, 83.2, 8438.4)
+        NameQuest = "MagmaQuest"; LevelQuest = 2; NameMon = "Military Spy"
+        CFrameQuest = CFrame.new(-5314.1, 12.2, 8516.4); CFrameMon = CFrame.new(-5816.1, 83.2, 8438.4)
     elseif myLv >= 375 and myLv <= 399 then
-        _G.NameQuest = "FishmanQuest"; _G.LevelQuest = 1; _G.NameMon = "Fishman Warrior"
-        _G.CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4); _G.CFrameMon = CFrame.new(60938.2, 55.2, 1515.2)
+        NameQuest = "FishmanQuest"; LevelQuest = 1; NameMon = "Fishman Warrior"
+        CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4); CFrameMon = CFrame.new(60938.2, 55.2, 1515.2)
     elseif myLv >= 400 and myLv <= 449 then
-        _G.NameQuest = "FishmanQuest"; _G.LevelQuest = 2; _G.NameMon = "Fishman Commando"
-        _G.CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4); _G.CFrameMon = CFrame.new(61965.2, 30.2, 1475.2)
+        NameQuest = "FishmanQuest"; LevelQuest = 2; NameMon = "Fishman Commando"
+        CFrameQuest = CFrame.new(61122.1, 18.2, 1565.4); CFrameMon = CFrame.new(61965.2, 30.2, 1475.2)
     elseif myLv >= 450 and myLv <= 474 then
-        _G.NameQuest = "SkyExp1Quest"; _G.LevelQuest = 1; _G.NameMon = "God's Guard"
-        _G.CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2); _G.CFrameMon = CFrame.new(-7841.4, 5545.2, -450.2)
+        NameQuest = "SkyExp1Quest"; LevelQuest = 1; NameMon = "God's Guard"
+        CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2); CFrameMon = CFrame.new(-7841.4, 5545.2, -450.2)
     elseif myLv >= 475 and myLv <= 524 then
-        _G.NameQuest = "SkyExp1Quest"; _G.LevelQuest = 2; _G.NameMon = "Shanda"
-        _G.CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2); _G.CFrameMon = CFrame.new(-7680.4, 5550.2, -450.2)
+        NameQuest = "SkyExp1Quest"; LevelQuest = 2; NameMon = "Shanda"
+        CFrameQuest = CFrame.new(-7861.2, 5545.2, -381.2); CFrameMon = CFrame.new(-7680.4, 5550.2, -450.2)
     elseif myLv >= 525 and myLv <= 549 then
-        _G.NameQuest = "SkyExp2Quest"; _G.LevelQuest = 1; _G.NameMon = "Royal Soldier"
-        _G.CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2); _G.CFrameMon = CFrame.new(-7759.4, 5606.9, -1862.7)
+        NameQuest = "SkyExp2Quest"; LevelQuest = 1; NameMon = "Royal Soldier"
+        CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2); CFrameMon = CFrame.new(-7759.4, 5606.9, -1862.7)
     elseif myLv >= 550 and myLv <= 624 then
-        _G.NameQuest = "SkyExp2Quest"; _G.LevelQuest = 2; _G.NameMon = "Royal Squad"
-        _G.CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2); _G.CFrameMon = CFrame.new(-7650.2, 5600.4, -1450.2)
+        NameQuest = "SkyExp2Quest"; LevelQuest = 2; NameMon = "Royal Squad"
+        CFrameQuest = CFrame.new(-7903.1, 5635.4, -1412.2); CFrameMon = CFrame.new(-7650.2, 5600.4, -1450.2)
     else
-        _G.NameQuest = "FountainQuest"; _G.LevelQuest = 2; _G.NameMon = "Galley Captain"
-        _G.CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2); _G.CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
+        NameQuest = "FountainQuest"; LevelQuest = 2; NameMon = "Galley Captain"
+        CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2); CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
     end
 end
 
 local function EquipMelee()
     pcall(function()
         local char = LP.Character
-        if not char:FindFirstChild("HasBuso") then 
-            GetCommF():InvokeServer("Buso")
-        end
+        if not char:FindFirstChild("HasBuso") then GetCommF():InvokeServer("Buso") end
         if not char:FindFirstChildOfClass("Tool") then
             for _, v in pairs(LP.Backpack:GetChildren()) do
                 if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step") then
-                    char.Humanoid:EquipTool(v) break
+                    char.Humanoid:EquipTool(v); break
                 end
             end
         end
     end)
 end
 
+-- Vòng lặp Farm chính (Dùng Logic Của Code Cũ)
 task.spawn(function()
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
+            -- Ưu tiên nhặt trái ác quỷ
             if _G.Grabfruit then
                 for _, v in pairs(workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                        return 
+                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame; return 
                     end
                 end
             end
             
             CheckQuest()
+
+            -- LOGIC KIỂM TRA NHIỆM VỤ TỪ CODE CŨ
             if not LP.PlayerGui.Main.Quest.Visible then
-                TweenTo(_G.CFrameQuest)
-                if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-                    if (LP.Character.HumanoidRootPart.Position - _G.CFrameQuest.Position).Magnitude < 15 then
-                        GetCommF():InvokeServer("StartQuest", _G.NameQuest, _G.LevelQuest)
-                    end
+                TweenTo(CFrameQuest)
+                if (LP.Character.HumanoidRootPart.Position - CFrameQuest.Position).Magnitude < 15 then
+                    GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
+                    task.wait(0.5) -- Thêm chút nghỉ để server nhận Quest
                 end
             else
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if (string.find(e.Name, _G.NameMon) or e.Name == _G.NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                        Enemy = e break
+                    if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                        Enemy = e; break
                     end
                 end
+                
                 if Enemy then
                     EquipMelee()
+                    -- Bay lên đầu quái để né skill (Logic cũ: y + 25)
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    TweenTo(_G.CFrameMon)
+                    TweenTo(CFrameMon) -- Nếu chưa có quái thì bay ra điểm spawn quái
                 end
             end
         end)
@@ -417,6 +310,14 @@ task.spawn(function()
             HopTime = 30 
         end
     end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+    pcall(function()
+        if LP.Character then
+            for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+        end
+    end)
 end)
 
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

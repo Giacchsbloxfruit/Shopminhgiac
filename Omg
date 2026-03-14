@@ -11,12 +11,12 @@ local function Notify(text)
     end)
 end
 
-Notify("FPS Boost & Highlight Activated!")
+Notify("Auto Team + FPS Boost + Highlight Loaded!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
 -- ========================================================
-getgenv().Team = "Pirates" 
+getgenv().Team = "Pirates" -- "Pirates" hoặc "Marines"
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
 getgenv().ReqMasToBuy = 450
@@ -36,6 +36,18 @@ local function GetCommF()
     end
     return found
 end
+
+-- [ PHẦN CHỌN TEAM - ĐÃ QUAY TRỞ LẠI ]
+task.spawn(function()
+    while task.wait(0.5) do
+        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
+        pcall(function()
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
+            if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
+        end)                
+    end
+end)
 
 local function TweenTo(targetPos)
     local char = LP.Character or LP.CharacterAdded:Wait()
@@ -89,7 +101,7 @@ task.spawn(function()
                     hl.Parent = char
                 end
                 hl.Enabled = true
-                hl.FillColor = Color3.fromRGB(255, 200, 150) -- Cam nhạt (Light Orange)
+                hl.FillColor = Color3.fromRGB(255, 200, 150) -- Màu cam nhạt chuẩn bài
                 hl.OutlineColor = Color3.fromRGB(255, 255, 255)
                 hl.FillTransparency = 0.5
                 hl.OutlineTransparency = 0.2
@@ -193,7 +205,6 @@ task.spawn(function()
                 else
                     if TweenTo(targetPos) then
                         GetCommF():InvokeServer(buyCmd)
-                        Notify("Bought new Melee Style!")
                     end
                 end
             else
@@ -204,7 +215,7 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 4. DANH SÁCH QUÁI & FARM ]]
+-- [[ 4. QUY TRÌNH FARM CHÍNH ]]
 -- ========================================================
 function CheckQuest()
     local myLv = LP.Data.Level.Value
@@ -282,17 +293,15 @@ function CheckQuest()
         CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2); CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
     end
 end
-
 local function EquipMelee()
     pcall(function()
         local char = LP.Character
         if not char:FindFirstChild("HasBuso") then 
-            local remote = GetCommF()
-            if remote then remote:InvokeServer("Buso") end
+            GetCommF():InvokeServer("Buso")
         end
         if not char:FindFirstChildOfClass("Tool") then
             for _, v in pairs(LP.Backpack:GetChildren()) do
-                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
+                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step") then
                     char.Humanoid:EquipTool(v) break
                 end
             end
@@ -317,8 +326,7 @@ task.spawn(function()
             if not LP.PlayerGui.Main.Quest.Visible then
                 TweenTo(CFrameQuest)
                 if (LP.Character.HumanoidRootPart.Position - CFrameQuest.Position).Magnitude < 15 then
-                    local remote = GetCommF()
-                    if remote then remote:InvokeServer("StartQuest", NameQuest, LevelQuest) end
+                    GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
                 end
             else
                 local Enemy = nil
@@ -341,7 +349,7 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 5. AUTO STATS & NOCLIP ]]
+-- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
@@ -364,21 +372,18 @@ task.spawn(function()
     end
 end)
 
+-- NOCLIP VĨNH VIỄN
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
-            for _, v in pairs(LP.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
-            end
+            for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
         end
     end)
 end)
 
--- ========================================================
--- [[ 6. SERVER HOP ]]
--- ========================================================
+-- SERVER HOP
 task.spawn(function()
-    local HopTime = 1800 
+    local HopTime = 1700 
     while task.wait(1) do
         HopTime = HopTime - 1
         if HopTime <= 0 then
@@ -396,6 +401,5 @@ task.spawn(function()
         end
     end
 end)
-
--- [[ 7. LOADS EXTERNAL ]]
+-Auto attack--
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

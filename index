@@ -1,31 +1,95 @@
--- [[ Giacdz Hub | Tool lấy tọa độ XYZ ]]
+-- ========================================================
+-- ⚡ Giacdz Hub | Real-time XYZ Display ⚡
+-- ========================================================
+
 local LP = game.Players.LocalPlayer
-local Root = LP.Character.HumanoidRootPart
-local Pos = Root.Position
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
--- Làm tròn số cho đẹp (không bị lẻ quá nhiều số thập phân)
-local X = math.floor(Pos.X * 100) / 100
-local Y = math.floor(Pos.Y * 100) / 100
-local Z = math.floor(Pos.Z * 100) / 100
-
--- Tạo chuỗi tọa độ định dạng CFrame
-local FormatCFrame = "CFrame.new(" .. X .. ", " .. Y .. ", " .. Z .. ")"
-
--- In ra màn hình console (Nhấn F9 để xem)
-print("--------------------------------------")
-print("Vị trí hiện tại của bạn:")
-print("X: " .. X .. " | Y: " .. Y .. " | Z: " .. Z)
-print("Định dạng Script: " .. FormatCFrame)
-print("--------------------------------------")
-
--- Tự động Copy vào Clipboard (Chỉ hoạt động trên các Executor xịn như Fluxus, Delta, Wave, v.v.)
-if setclipboard then
-    setclipboard(FormatCFrame)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "⚡ Giacdz Hub ⚡",
-        Text = "Đã copy tọa độ vào Clipboard!",
-        Duration = 3
-    })
-else
-    warn("Executor của bạn không hỗ trợ lệnh Copy!")
+-- Xóa UI cũ nếu đã tồn tại
+if CoreGui:FindFirstChild("Giacdz_Coords") then
+    CoreGui.Giacdz_Coords:Destroy()
 end
+
+-- Tạo ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Giacdz_Coords"
+ScreenGui.Parent = CoreGui
+
+-- Khung chính
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 200, 0, 110)
+MainFrame.Position = UDim2.new(0, 50, 0.5, -55) -- Vị trí bên trái màn hình
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundTransparency = 0.2
+MainFrame.Active = true
+MainFrame.Draggable = true -- Bạn có thể dùng chuột kéo UI đi chỗ khác
+
+local UICorner = Instance.new("UICorner", MainFrame)
+local UIStroke = Instance.new("UIStroke", MainFrame)
+UIStroke.Color = Color3.fromRGB(255, 255, 0)
+UIStroke.Thickness = 2
+
+-- Tiêu đề
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.Text = "📍 TỌA ĐỘ XYZ"
+Title.TextColor3 = Color3.fromRGB(255, 255, 0)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.BackgroundTransparency = 1
+
+-- Text hiển thị tọa độ
+local CoordsText = Instance.new("TextLabel", MainFrame)
+CoordsText.Position = UDim2.new(0, 10, 0, 30)
+CoordsText.Size = UDim2.new(1, -20, 0, 45)
+CoordsText.BackgroundTransparency = 1
+CoordsText.Text = "X: 0\nY: 0\nZ: 0"
+CoordsText.TextColor3 = Color3.fromRGB(255, 255, 255)
+CoordsText.Font = Enum.Font.Code
+CoordsText.TextSize = 14
+CoordsText.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Nút Copy
+local CopyBtn = Instance.new("TextButton", MainFrame)
+CopyBtn.Position = UDim2.new(0.1, 0, 0, 78)
+CopyBtn.Size = UDim2.new(0.8, 0, 0, 22)
+CopyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+CopyBtn.Text = "COPY CFRAME"
+CopyBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
+CopyBtn.Font = Enum.Font.GothamBold
+CopyBtn.TextSize = 12
+
+local BtnCorner = Instance.new("UICorner", CopyBtn)
+
+-- Cập nhật tọa độ mỗi Frame
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        local Root = LP.Character.HumanoidRootPart
+        local Pos = Root.Position
+        local X = math.floor(Pos.X * 100) / 100
+        local Y = math.floor(Pos.Y * 100) / 100
+        local Z = math.floor(Pos.Z * 100) / 100
+        
+        CoordsText.Text = "X: " .. X .. "\nY: " .. Y .. "\nZ: " .. Z
+    end)
+end)
+
+-- Xử lý nút Copy
+CopyBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        local Root = LP.Character.HumanoidRootPart
+        local Pos = Root.Position
+        local X = math.floor(Pos.X * 100) / 100
+        local Y = math.floor(Pos.Y * 100) / 100
+        local Z = math.floor(Pos.Z * 100) / 100
+        
+        local text = "CFrame.new("..X..", "..Y..", "..Z..")"
+        setclipboard(text)
+        
+        CopyBtn.Text = "ĐÃ COPY!"
+        task.wait(1)
+        CopyBtn.Text = "COPY CFRAME"
+    end)
+end)

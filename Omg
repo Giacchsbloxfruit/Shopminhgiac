@@ -252,58 +252,70 @@ local QuestList = {
     {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, Mon = "Galley Pirate", NPC = CFrame.new(5258.1, 38.2, 4048.2), MonPos = CFrame.new(5570.4, 4.4, 3880.2)},
 }
 
-local function EquipMelee()
-    pcall(function()
-        local char = LP.Character
-        if not char:FindFirstChild("HasBuso") then GetCommF():InvokeServer("Buso") end
-        if not char:FindFirstChildOfClass("Tool") then
-            for _, v in pairs(LP.Backpack:GetChildren()) do
-                if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
-                    char.Humanoid:EquipTool(v); break
-                end
-            end
+-- [[ ĐIỀU CHỈNH LẠI HÀM KIỂM TRA QUEST ĐỂ NHẬN NHIỆM VỤ CHÍNH XÁC ]]
+local function IsQuestActive(qName)
+    local mainGui = LP.PlayerGui:FindFirstChild("Main")
+    if mainGui and mainGui:FindFirstChild("Quest") then
+        local questFrame = mainGui.Quest
+        -- Kiểm tra xem bảng nhiệm vụ có hiển thị tên quest đang làm không
+        if questFrame.Visible and questFrame:FindFirstChild("Container") then
+            -- Tùy vào phiên bản game, bạn có thể cần kiểm tra Text của label
+            return true 
         end
-    end)
+    end
+    return false
 end
 
+-- [[ VÒNG LẶP FARM ĐÃ FIX LOGIC NHẬN QUEST ]]
 task.spawn(function()
-    while task.wait() do
+    while task.wait(0.5) do
         pcall(function()
             local myLv = LP.Data.Level.Value
             local q = nil
+            -- Tìm quest phù hợp với level
             for _, v in pairs(QuestList) do
                 if myLv >= v.Min and myLv <= v.Max then q = v break end
             end
             if not q then return end
 
-            local QuestGui = LP.PlayerGui.Main.Quest
-            if not QuestGui.Visible then
-                TweenTo(q.NPC)
-                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
+            -- Kiểm tra xem đã có quest chưa (thông qua việc check biến trong Data)
+            local hasQuest = LP.Data:FindFirstChild("Quest") and LP.Data.Quest.Value ~= ""
+
+            if not hasQuest then
+                -- Nếu chưa có quest, bay đến NPC
+                TweenTo(CFrame.new(q.NPC.Position))
+                local dist = (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude
+                if dist < 20 then
+                    -- Gọi server nhận quest
                     Remote:InvokeServer("StartQuest", q.Name, q.Lv)
+                    task.wait(0.5)
                 end
             else
+                -- Nếu đã có quest, kiểm tra quái
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
+                    -- So sánh tên quái
                     if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                        Enemy = e break
+                        Enemy = e 
+                        break
                     end
                 end
 
                 if Enemy then
-                    -- LUÔN KIỂM TRA VŨ KHÍ & HAKI KHI ĐÁNH QUÁI
-                    EquipMelee() 
-                    
-                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    CheckWeapon() 
+                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
+                    -- Tấn công
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    TweenTo(q.MonPos) 
+                    -- Không thấy quái thì bay đến vị trí quái spawm
+                    TweenTo(CFrame.new(q.MonPos.Position)) 
                 end
             end
         end)
     end
 end)
+
 -- ========================================================
 -- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================

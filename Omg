@@ -252,23 +252,6 @@ local QuestList = {
     {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, Mon = "Galley Pirate", NPC = CFrame.new(5258.1, 38.2, 4048.2), MonPos = CFrame.new(5570.4, 4.4, 3880.2)},
 }
 
-local function CheckQuest()
-    local myLv = LP.Data.Level.Value
-    for _, v in pairs(QuestList) do
-        if myLv >= v.Min and myLv <= v.Max then
-            NameQuest = v.Name
-            LevelQuest = v.Lv
-            NameMon = v.Mon
-            CFrameQuest = v.NPC
-            CFrameMon = v.MonPos
-            return
-        end
-    end
-    -- Mặc định nếu quá lv cao nhất
-    NameQuest = "FountainQuest"; LevelQuest = 2; NameMon = "Galley Captain"
-    CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2); CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
-end
-
 local function EquipMelee()
     pcall(function()
         local char = LP.Character
@@ -285,50 +268,42 @@ end
 
 task.spawn(function()
     while task.wait() do
-        if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
-            if _G.Grabfruit then
-                for _, v in pairs(workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame; return 
-                    end
-                end
+            local myLv = LP.Data.Level.Value
+            local q = nil
+            for _, v in pairs(QuestList) do
+                if myLv >= v.Min and myLv <= v.Max then q = v break end
             end
-            
-            CheckQuest()
-            local questGui = LP.PlayerGui.Main.Quest
-            
-            if not questGui.Visible or not string.find(questGui.Container.QuestTitle.Title.Text, NameMon) then
-                if questGui.Visible then
-                    GetCommF():InvokeServer("AbandonQuest") 
-                end
-                
-                if TweenTo(CFrameQuest) then
-                    task.wait(0.2)
-                    GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
-                    task.wait(0.3)
+            if not q then return end
+
+            local QuestGui = LP.PlayerGui.Main.Quest
+            if not QuestGui.Visible then
+                TweenTo(q.NPC)
+                if (LP.Character.HumanoidRootPart.Position - q.NPC.Position).Magnitude < 15 then
+                    Remote:InvokeServer("StartQuest", q.Name, q.Lv)
                 end
             else
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                        Enemy = e; break
+                    if (string.find(e.Name, q.Mon) or e.Name == q.Mon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                        Enemy = e break
                     end
                 end
-                
+
                 if Enemy then
-                    EquipMelee()
+                    -- LUÔN KIỂM TRA VŨ KHÍ & HAKI KHI ĐÁNH QUÁI
+                    EquipMelee() 
+                    
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    TweenTo(CFrameMon)
+                    TweenTo(q.MonPos) 
                 end
             end
         end)
     end
 end)
-
 -- ========================================================
 -- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================

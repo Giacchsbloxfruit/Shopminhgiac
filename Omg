@@ -11,7 +11,7 @@ local function Notify(text)
     end)
 end
 
-Notify("Auto Melee 400 Mas + Fix Quest Loaded!")
+Notify("Auto Melee 400 Mas + Fix Quest + Anti AFK Loaded!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
@@ -20,6 +20,7 @@ getgenv().Team = "Pirates"
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
 getgenv().ReqMasToBuy = 400 
+getgenv().AntiAFK = true -- Thêm tuỳ chọn bật tắt Anti AFK
 _G.Grabfruit = true 
 _G.StopFarmForMelee = false 
 
@@ -36,6 +37,18 @@ local function GetCommF()
     end
     return found
 end
+
+-- ========================================================
+-- [[ 🛡️ MODULE ANTI AFK ]]
+-- ========================================================
+local VirtualUser = game:GetService("VirtualUser")
+LP.Idled:Connect(function()
+    if getgenv().AntiAFK then
+        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    end
+end)
 
 -- [ PHẦN CHỌN TEAM ]
 task.spawn(function()
@@ -108,10 +121,8 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY & 3. AUTO BUY MELEE ]]
+-- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
 -- ========================================================
--- (Phần này mình gộp lại giữ nguyên y hệt code cũ của bạn, không đổi 1 chữ)
-
 local FruitList = {
     {"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"},
     {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"},
@@ -153,6 +164,9 @@ task.spawn(function()
     end
 end)
 
+-- ========================================================
+-- [[ 3. MODULE AUTO BUY MELEE ]]
+-- ========================================================
 local function GetMeleeData()
     local name, mas = "", 0
     local sources = {LP.Backpack, LP.Character}
@@ -208,12 +222,11 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 4. QUY TRÌNH FARM CHÍNH (ĐÃ FIX LỖI _G. VÀ AUTO QUEST) ]]
+-- [[ 4. QUY TRÌNH FARM CHÍNH ]]
 -- ========================================================
 function CheckQuest()
     local myLv = LP.Data.Level.Value
     
-    -- XÓA TOÀN BỘ _G. Ở CÁC BIẾN ĐỂ ĐỒNG BỘ HOÀN TOÀN
     if myLv >= 190 and myLv <= 209 then
         NameQuest = "PrisonQuest"; LevelQuest = 1; NameMon = "Prisoner"
         CFrameQuest = CFrame.new(5308.93, 1.65, 475.12); CFrameMon = CFrame.new(5411, 13, 507)
@@ -322,13 +335,11 @@ task.spawn(function()
             local questGui = LP.PlayerGui.Main.Quest
             local currentQuestName = questGui.Container.QuestTitle.Title.Text
             
-            -- LOGIC NHẬN QUEST MỚI ĐẢM BẢO 100% ĂN
             if not questGui.Visible or not string.find(currentQuestName, NameMon) then
                 if questGui.Visible then
                     GetCommF():InvokeServer("AbandonQuest") 
                 end
                 
-                -- Đứng cách NPC 3 studs để tránh bị Overlap hitbox
                 local npcPos = CFrameQuest * CFrame.new(0, 0, 3) 
                 if TweenTo(npcPos) then
                     task.wait(0.2)

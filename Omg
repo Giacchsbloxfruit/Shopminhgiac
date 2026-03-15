@@ -264,7 +264,7 @@ local function CheckQuest()
             return
         end
     end
-    -- Mặc định nếu quá lv cao nhất
+    -- Default Fountain
     NameQuest = "FountainQuest"; LevelQuest = 2; NameMon = "Galley Captain"
     CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2); CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
 end
@@ -283,6 +283,15 @@ local function EquipMelee()
     end)
 end
 
+-- ========================================================
+-- [[ 4. HÀM KIỂM TRA QUEST ĐANG CHẠY (SỬA ĐỔI DUY NHẤT) ]]
+-- ========================================================
+local function IsQuestActive()
+    local questGui = LP.PlayerGui.Main.Quest
+    -- Kiểm tra xem GUI có hiện và nội dung có khớp với quái hiện tại không
+    return questGui.Visible and string.find(questGui.Container.QuestTitle.Title.Text, NameMon)
+end
+
 task.spawn(function()
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
@@ -296,19 +305,22 @@ task.spawn(function()
             end
             
             CheckQuest()
-            local questGui = LP.PlayerGui.Main.Quest
             
-            if not questGui.Visible or not string.find(questGui.Container.QuestTitle.Title.Text, NameMon) then
-                if questGui.Visible then
+            -- [[ LOGIC NHẬN QUEST ĐÃ ĐƯỢC FIX ]]
+            if not IsQuestActive() then
+                -- Nếu đang có Quest sai thì bỏ
+                if LP.PlayerGui.Main.Quest.Visible then
                     GetCommF():InvokeServer("AbandonQuest") 
                 end
                 
+                -- Di chuyển nhận Quest mới
                 if TweenTo(CFrameQuest) then
-                    task.wait(0.2)
-                    GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
                     task.wait(0.3)
+                    GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
+                    task.wait(0.2)
                 end
             else
+                -- [[ LOGIC FARM QUÁI GIỮ NGUYÊN ]]
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
                     if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then

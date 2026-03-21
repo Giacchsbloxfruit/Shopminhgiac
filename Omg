@@ -1,5 +1,5 @@
 -- ========================================================
--- [[ 0. HÀM THÔNG BÁO ]]
+-- [[ 0. HÀM THÔNG BÁO & INIT ]]
 -- ========================================================
 local function Notify(text)
     pcall(function()
@@ -11,7 +11,7 @@ local function Notify(text)
     end)
 end
 
-Notify("Auto Melee 400 Mas + Fix Quest + Anti AFK Loaded!")
+Notify("Auto Melee + Fix Quest + Fishman Teleport + Hover Fixed!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
@@ -62,20 +62,67 @@ task.spawn(function()
     end
 end)
 
--- [ SỬA TWEEN: TỰ ĐỘNG XÓA ANTI-FALL KHI ĐẾN GẦN ]
+-- ========================================================
+-- [[ 🚁 MODULE TWEEN VÀ CỐ ĐỊNH NHÂN VẬT (HOVER FIX) ]]
+-- ========================================================
 local function TweenTo(targetPos)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
     local dist = (root.Position - targetPos.Position).Magnitude
-    if dist > 12 then 
-        local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
-        bv.Name = "AntiFall"; bv.MaxForce = Vector3.new(1e9, 1e9, 1e9); bv.Velocity = Vector3.zero
+    
+    -- GIỮ LẠI ANTIFALL ĐỂ KHÔNG BỊ RƠI
+    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+    bv.Name = "AntiFall"
+    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bv.Velocity = Vector3.zero
+
+    if dist > 15 then 
         TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
         return false
     else
-        if root:FindFirstChild("AntiFall") then root.AntiFall:Destroy() end
+        -- FIX CỐ ĐỊNH: Khoá cứng CFrame của người chơi vào mục tiêu
+        root.CFrame = targetPos
         return true
     end
+end
+
+-- ========================================================
+-- [[ 🌀 CỔNG DỊCH CHUYỂN ĐẢO CÁ (TELEPORT LOGIC) ]]
+-- ========================================================
+local GATE_ENTER_CFRAME = CFrame.new(3864.68, 6.73, -1926.21)
+local GATE_ENTER_POS = Vector3.new(61163, 11, 1819)
+local GATE_EXIT_CFRAME = CFrame.new(61163, 11, 1819)
+local GATE_EXIT_POS = Vector3.new(3864.68, 6.73, -1926.21)
+
+local function CheckTeleport(targetCFrame)
+    local char = LP.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    local myPos = char.HumanoidRootPart.Position
+    local destPos = targetCFrame.Position
+
+    -- ĐANG Ở ĐẢO THƯỜNG MÀ MỤC TIÊU Ở ĐẢO CÁ (Tọa độ X đảo cá > 50000)
+    if destPos.X > 50000 and myPos.X < 50000 then
+        if (myPos - GATE_ENTER_CFRAME.Position).Magnitude > 15 then
+            TweenTo(GATE_ENTER_CFRAME)
+        else
+            GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
+            task.wait(1)
+        end
+        return true
+    end
+    
+    -- ĐANG Ở ĐẢO CÁ MÀ MỤC TIÊU Ở ĐẢO THƯỜNG
+    if destPos.X < 50000 and myPos.X > 50000 then
+        if (myPos - GATE_EXIT_CFRAME.Position).Magnitude > 15 then
+            TweenTo(GATE_EXIT_CFRAME)
+        else
+            GetCommF():InvokeServer("requestEntrance", GATE_EXIT_POS)
+            task.wait(1)
+        end
+        return true
+    end
+    
+    return false
 end
 
 -- ========================================================
@@ -192,7 +239,6 @@ task.spawn(function()
 
             local COORD_LEG = CFrame.new(-985.49, 14.04, 3991.39)
             local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
-            local COORD_GATE = CFrame.new(4023.69, 29.7, -1835.62)
             local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
 
             if (curName == "Combat" or curName == "") and myBeli >= 150000 then
@@ -206,9 +252,10 @@ task.spawn(function()
 
             if targetPos then
                 _G.StopFarmForMelee = true
-                if needsGate and LP.Character.HumanoidRootPart.Position.Y > -500 then
-                    if TweenTo(COORD_GATE) then
-                        GetCommF():InvokeServer("requestEntrance", Vector3.new(61163, 11, 1819))
+                -- Đã thêm Logic Check cổng dịch chuyển khi đi mua Water Kung Fu
+                if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
+                    if TweenTo(GATE_ENTER_CFRAME) then
+                        GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
                         task.wait(1)
                     end
                 else
@@ -284,12 +331,19 @@ local function EquipMelee()
 end
 
 -- ========================================================
--- [[ 4. HÀM KIỂM TRA QUEST ĐANG CHẠY (SỬA ĐỔI DUY NHẤT) ]]
+-- [[ 4. HÀM KIỂM TRA QUEST ĐANG CHẠY CẢI TIẾN LỖI NIL ]]
 -- ========================================================
 local function IsQuestActive()
-    local questGui = LP.PlayerGui.Main.Quest
-    -- Kiểm tra xem GUI có hiện và nội dung có khớp với quái hiện tại không
-    return questGui.Visible and string.find(questGui.Container.QuestTitle.Title.Text, NameMon)
+    local main = LP.PlayerGui:FindFirstChild("Main")
+    if not main then return false end
+    local questGui = main:FindFirstChild("Quest")
+    if questGui and questGui.Visible then
+        local title = questGui:FindFirstChild("Container") and questGui.Container:FindFirstChild("QuestTitle") and questGui.Container.QuestTitle:FindFirstChild("Title")
+        if title and string.find(title.Text, NameMon) then
+            return true
+        end
+    end
+    return false
 end
 
 task.spawn(function()
@@ -306,12 +360,16 @@ task.spawn(function()
             
             CheckQuest()
             
-            -- [[ LOGIC NHẬN QUEST ĐÃ ĐƯỢC FIX ]]
+            -- [[ LOGIC NHẬN QUEST & DỊCH CHUYỂN ]]
             if not IsQuestActive() then
                 -- Nếu đang có Quest sai thì bỏ
-                if LP.PlayerGui.Main.Quest.Visible then
+                local questGui = LP.PlayerGui.Main:FindFirstChild("Quest")
+                if questGui and questGui.Visible then
                     GetCommF():InvokeServer("AbandonQuest") 
                 end
+                
+                -- Kiểm tra Portal trước khi đi đến NPC nhận Quest
+                if CheckTeleport(CFrameQuest) then return end
                 
                 -- Di chuyển nhận Quest mới
                 if TweenTo(CFrameQuest) then
@@ -320,7 +378,7 @@ task.spawn(function()
                     task.wait(0.2)
                 end
             else
-                -- [[ LOGIC FARM QUÁI GIỮ NGUYÊN ]]
+                -- [[ LOGIC FARM QUÁI & DỊCH CHUYỂN ]]
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
                     if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
@@ -329,11 +387,17 @@ task.spawn(function()
                 end
                 
                 if Enemy then
+                    -- Kiểm tra Portal trước khi bay đến chỗ Quái
+                    if CheckTeleport(Enemy.HumanoidRootPart.CFrame) then return end
+
                     EquipMelee()
+                    -- LƯU Ý KHOẢNG CÁCH Y=20 ĐẾN 25 ĐỂ TỐI ƯU GOM VÀ HIT
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
+                    -- Không thấy quái thì ra bãi Spawn (Cũng Check Portal luôn)
+                    if CheckTeleport(CFrameMon) then return end
                     TweenTo(CFrameMon)
                 end
             end

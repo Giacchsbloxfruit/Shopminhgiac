@@ -259,6 +259,7 @@ task.spawn(function()
 
             if targetPos then
                 _G.StopFarmForMelee = true
+                -- Đã thêm Logic Check cổng dịch chuyển khi đi mua Water Kung Fu
                 if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
                     if TweenTo(GATE_ENTER_CFRAME) then
                         GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
@@ -273,7 +274,6 @@ task.spawn(function()
         end)
     end
 end)
-
 -- ========================================================
 -- [[ BẢNG NHIỆM VỤ (MIN - MAX) ]]
 -- ========================================================

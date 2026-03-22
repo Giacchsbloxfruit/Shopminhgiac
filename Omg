@@ -195,7 +195,7 @@ local FruitList = {
 }
 
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(5) do
         pcall(function()
             local Character = LP.Character
             local CommF = GetCommF()

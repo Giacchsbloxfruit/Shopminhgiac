@@ -1,4 +1,3 @@
-
 -- ========================================================
 -- [[ 0. HÀM THÔNG BÁO & INIT ]]
 -- ========================================================
@@ -12,7 +11,7 @@ local function Notify(text)
     end)
 end
 
-Notify("Auto Melee + Fix Quest + Fishman Teleport + Hover Fixed!")
+Notify("Auto Melee + Tele Fishman + Fix Hover + Fix Grab Fruit!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
@@ -127,7 +126,7 @@ local function CheckTeleport(targetCFrame)
 end
 
 -- ========================================================
--- [[ ⚡ MODULE FIX LAG & HIGHLIGHT ]]
+-- [[ ⚡ MODULE FIX LAG & HIGHLIGHT (ĐÃ THÊM 7 MÀU) ]]
 -- ========================================================
 task.spawn(function()
     settings().Rendering.QualityLevel = "Level01"
@@ -149,7 +148,8 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(0.5) do
+    -- Đổi thành task.wait() để vòng lặp chạy nhanh hơn, giúp đổi màu mượt mà
+    while task.wait() do
         pcall(function()
             local char = LP.Character
             if char then
@@ -158,16 +158,22 @@ task.spawn(function()
                     hl = Instance.new("Highlight", char)
                     hl.Name = "GiacdzHighlight"
                 end
+                
+                -- Tạo biến hue (sắc độ) chạy từ 0 đến 1 dựa trên thời gian
+                -- Số 3 ở đây nghĩa là mất 3 giây để chạy hết 1 vòng 7 màu. Bạn có thể tăng/giảm số này để chỉnh tốc độ đổi màu.
+                local hue = tick() % 3 / 3 
+                
                 hl.Enabled = true
-                hl.FillColor = Color3.fromRGB(255, 200, 150) 
-                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                -- Đổi cả màu nền và viền thành 7 màu
+                hl.FillColor = Color3.fromHSV(hue, 1, 1) 
+                hl.OutlineColor = Color3.fromHSV(hue, 1, 1) 
+                
                 hl.FillTransparency = 0.5
                 hl.OutlineTransparency = 0.2
             end
         end)
     end
 end)
-
 -- ========================================================
 -- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
 -- ========================================================
@@ -268,7 +274,6 @@ task.spawn(function()
         end)
     end
 end)
-
 -- ========================================================
 -- [[ BẢNG NHIỆM VỤ (MIN - MAX) ]]
 -- ========================================================
@@ -313,16 +318,25 @@ local function CheckQuest()
             return
         end
     end
-    -- Default Fountain
     NameQuest = "FountainQuest"; LevelQuest = 2; NameMon = "Galley Captain"
-    CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2); CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
+    CFrameQuest = CFrame.new(5258, 39, 4052); CFrameMon = CFrame.new(5985, 70, 4790)
 end
 
+-- ĐÃ FIX: CHỈ LẤY MELEE RA KHI CHƯA TRANG BỊ ĐÚNG MELEE
 local function EquipMelee()
     pcall(function()
         local char = LP.Character
         if not char:FindFirstChild("HasBuso") then GetCommF():InvokeServer("Buso") end
-        if not char:FindFirstChildOfClass("Tool") then
+        
+        -- Kiểm tra tool hiện tại đang cầm
+        local currentTool = char:FindFirstChildOfClass("Tool")
+        local isMeleeEquipped = false
+        if currentTool and (currentTool.ToolTip == "Melee" or currentTool.Name == "Combat" or currentTool.Name == "Dark Step" or currentTool.Name == "Electric" or currentTool.Name == "Water Kung Fu") then
+            isMeleeEquipped = true
+        end
+        
+        -- Nếu chưa cầm đúng loại võ thuật, sẽ duyệt qua Balo để cầm
+        if not isMeleeEquipped then
             for _, v in pairs(LP.Backpack:GetChildren()) do
                 if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
                     char.Humanoid:EquipTool(v); break
@@ -332,9 +346,6 @@ local function EquipMelee()
     end)
 end
 
--- ========================================================
--- [[ 4. HÀM KIỂM TRA QUEST ĐANG CHẠY CẢI TIẾN LỖI NIL ]]
--- ========================================================
 local function IsQuestActive()
     local main = LP.PlayerGui:FindFirstChild("Main")
     if not main then return false end
@@ -348,15 +359,34 @@ local function IsQuestActive()
     return false
 end
 
+-- ========================================================
+-- [[ VÒNG LẶP CHÍNH (FIX GRAB FRUIT) ]]
+-- ========================================================
 task.spawn(function()
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
+            
+            -- [[ LOGIC NHẶT TRÁI ÁC QUỶ (FIX DELAY 2 GIÂY & DỪNG FARM) ]]
             if _G.Grabfruit then
+                local targetFruit = nil
                 for _, v in pairs(workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame; return 
+                        targetFruit = v
+                        break
                     end
+                end
+                
+                if targetFruit then
+                    -- Đợi 2s giữa các lần tele để lấy trái ác quỷ
+                    if not _G.FruitTeleportTime or tick() - _G.FruitTeleportTime >= 2 then
+                        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+                            LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
+                            _G.FruitTeleportTime = tick()
+                        end
+                    end
+                    -- Nếu thấy trái, return ngay lập tức để không chạy code farm đánh quái
+                    return 
                 end
             end
             
@@ -364,16 +394,13 @@ task.spawn(function()
             
             -- [[ LOGIC NHẬN QUEST & DỊCH CHUYỂN ]]
             if not IsQuestActive() then
-                -- Nếu đang có Quest sai thì bỏ
                 local questGui = LP.PlayerGui.Main:FindFirstChild("Quest")
                 if questGui and questGui.Visible then
                     GetCommF():InvokeServer("AbandonQuest") 
                 end
                 
-                -- Kiểm tra Portal trước khi đi đến NPC nhận Quest
                 if CheckTeleport(CFrameQuest) then return end
                 
-                -- Di chuyển nhận Quest mới
                 if TweenTo(CFrameQuest) then
                     task.wait(0.3)
                     GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
@@ -389,16 +416,13 @@ task.spawn(function()
                 end
                 
                 if Enemy then
-                    -- Kiểm tra Portal trước khi bay đến chỗ Quái
                     if CheckTeleport(Enemy.HumanoidRootPart.CFrame) then return end
 
                     EquipMelee()
-                    -- LƯU Ý KHOẢNG CÁCH Y=20 ĐẾN 25 ĐỂ TỐI ƯU GOM VÀ HIT
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    -- Không thấy quái thì ra bãi Spawn (Cũng Check Portal luôn)
                     if CheckTeleport(CFrameMon) then return end
                     TweenTo(CFrameMon)
                 end

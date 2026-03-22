@@ -319,7 +319,7 @@ local function CheckQuest()
         end
     end
     NameQuest = "FountainQuest"; LevelQuest = 2; NameMon = "Galley Captain"
-    CFrameQuest = CFrame.new(5258.1, 38.2, 4048.2); CFrameMon = CFrame.new(5660.4, 4.4, 4455.2)
+    CFrameQuest = CFrame.new(5258, 39, 4052); CFrameMon = CFrame.new(5985, 70, 4790)
 end
 
 -- ĐÃ FIX: CHỈ LẤY MELEE RA KHI CHƯA TRANG BỊ ĐÚNG MELEE

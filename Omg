@@ -1,4 +1,31 @@
 -- ========================================================
+-- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA (GỬI BỞI GIACDZ) ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(3) do
+        local lp = game:GetService("Players").LocalPlayer
+        if lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("Level") then
+            local myLevel = lp.Data.Level.Value
+            if myLevel >= 700 then
+                -- 1. Tắt các biến điều khiển của Sea 1 để tránh xung đột
+                _G.StopFarmForMelee = true -- Dừng farm quái Sea 1
+                _G.Grabfruit = false       -- Dừng nhặt trái để tập trung làm quest Sea 2
+                getgenv().AntiAFK = false  -- Tắt tạm để load script mới
+                
+                print("--- Đã đạt Level 700! Đang khởi động Auto Sea 2 ---")
+                
+                -- 2. Load Script Auto Sea 2 của bạn
+                pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/Sea%202"))()
+                end)
+                
+                break -- Thoát vòng lặp kiểm tra
+            end
+        end
+    end
+end)
+
+-- ========================================================
 -- [[ 0. HÀM THÔNG BÁO & INIT ]]
 -- ========================================================
 local function Notify(text)
@@ -148,7 +175,6 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    -- Đổi thành task.wait() để vòng lặp chạy nhanh hơn, giúp đổi màu mượt mà
     while task.wait() do
         pcall(function()
             local char = LP.Character
@@ -158,16 +184,10 @@ task.spawn(function()
                     hl = Instance.new("Highlight", char)
                     hl.Name = "GiacdzHighlight"
                 end
-                
-                -- Tạo biến hue (sắc độ) chạy từ 0 đến 1 dựa trên thời gian
-                -- Số 3 ở đây nghĩa là mất 3 giây để chạy hết 1 vòng 7 màu. Bạn có thể tăng/giảm số này để chỉnh tốc độ đổi màu.
                 local hue = tick() % 3 / 3 
-                
                 hl.Enabled = true
-                -- Đổi cả màu nền và viền thành 7 màu
                 hl.FillColor = Color3.fromHSV(hue, 1, 1) 
                 hl.OutlineColor = Color3.fromHSV(hue, 1, 1) 
-                
                 hl.FillTransparency = 0.5
                 hl.OutlineTransparency = 0.2
             end
@@ -259,7 +279,6 @@ task.spawn(function()
 
             if targetPos then
                 _G.StopFarmForMelee = true
-                -- Đã thêm Logic Check cổng dịch chuyển khi đi mua Water Kung Fu
                 if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
                     if TweenTo(GATE_ENTER_CFRAME) then
                         GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
@@ -322,20 +341,15 @@ local function CheckQuest()
     CFrameQuest = CFrame.new(5258, 39, 4052); CFrameMon = CFrame.new(5985, 70, 4790)
 end
 
--- ĐÃ FIX: CHỈ LẤY MELEE RA KHI CHƯA TRANG BỊ ĐÚNG MELEE
 local function EquipMelee()
     pcall(function()
         local char = LP.Character
         if not char:FindFirstChild("HasBuso") then GetCommF():InvokeServer("Buso") end
-        
-        -- Kiểm tra tool hiện tại đang cầm
         local currentTool = char:FindFirstChildOfClass("Tool")
         local isMeleeEquipped = false
         if currentTool and (currentTool.ToolTip == "Melee" or currentTool.Name == "Combat" or currentTool.Name == "Dark Step" or currentTool.Name == "Electric" or currentTool.Name == "Water Kung Fu") then
             isMeleeEquipped = true
         end
-        
-        -- Nếu chưa cầm đúng loại võ thuật, sẽ duyệt qua Balo để cầm
         if not isMeleeEquipped then
             for _, v in pairs(LP.Backpack:GetChildren()) do
                 if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
@@ -366,8 +380,6 @@ task.spawn(function()
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
-            
-            -- [[ LOGIC NHẶT TRÁI ÁC QUỶ (FIX DELAY 2 GIÂY & DỪNG FARM) ]]
             if _G.Grabfruit then
                 local targetFruit = nil
                 for _, v in pairs(workspace:GetChildren()) do
@@ -376,48 +388,37 @@ task.spawn(function()
                         break
                     end
                 end
-                
                 if targetFruit then
-                    -- Đợi 2s giữa các lần tele để lấy trái ác quỷ
                     if not _G.FruitTeleportTime or tick() - _G.FruitTeleportTime >= 2 then
                         if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
                             LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
                             _G.FruitTeleportTime = tick()
                         end
                     end
-                    -- Nếu thấy trái, return ngay lập tức để không chạy code farm đánh quái
                     return 
                 end
             end
-            
             CheckQuest()
-            
-            -- [[ LOGIC NHẬN QUEST & DỊCH CHUYỂN ]]
             if not IsQuestActive() then
                 local questGui = LP.PlayerGui.Main:FindFirstChild("Quest")
                 if questGui and questGui.Visible then
                     GetCommF():InvokeServer("AbandonQuest") 
                 end
-                
                 if CheckTeleport(CFrameQuest) then return end
-                
                 if TweenTo(CFrameQuest) then
                     task.wait(0.3)
                     GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
                     task.wait(0.2)
                 end
             else
-                -- [[ LOGIC FARM QUÁI & DỊCH CHUYỂN ]]
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
                     if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
                         Enemy = e; break
                     end
                 end
-                
                 if Enemy then
                     if CheckTeleport(Enemy.HumanoidRootPart.CFrame) then return end
-
                     EquipMelee()
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
@@ -455,7 +456,6 @@ task.spawn(function()
     end
 end)
 
--- NOCLIP VĨNH VIỄN
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
@@ -464,7 +464,6 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
--- SERVER HOP
 task.spawn(function()
     local HopTime = 1700 
     while task.wait(1) do

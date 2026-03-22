@@ -322,7 +322,7 @@ local QuestList = {
     {Min = 525, Max = 549, Name = "SkyExp2Quest", Lv = 2, Mon = "Royal Soldier", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new( -7894, 5640, -1629)},
     {Min = 550, Max = 624, Name = "SkyExp2Quest", Lv = 1, Mon = "Royal Squad", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new(-7727, 5650, -1410)},
     {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, Mon = "Galley Pirate", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5391, 70, 4023)},
-    {Min = 650, Max = 714, Name = "FountainQuest", Lv = 2, Mon = "Galley Captain", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5985, 70, 4790)},
+    {Min = 650, Max = 701, Name = "FountainQuest", Lv = 2, Mon = "Galley Captain", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5985, 70, 4790)},
 }
 
 local function CheckQuest()

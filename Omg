@@ -312,7 +312,7 @@ local QuestList = {
     {Min = 190, Max = 209, Name = "PrisonerQuest", Lv = 1, Mon = "Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5411, 13, 507)},
     {Min = 210, Max = 249, Name = "PrisonerQuest", Lv = 2, Mon = "Dangerous Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5654, 15, 866)},
     {Min = 250, Max = 274, Name = "ColosseumQuest", Lv = 1, Mon = "Toga Warrior", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1820, 51, -2741)},
-    {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 1, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1268, 30, -2996)},
+    {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 2, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1268, 30, -2996)},
     {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, Mon = "Military Soldier", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5395.2, 27.2, 8510.4)},
     {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, Mon = "Military Spy", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5816.1, 83.2, 8438.4)},
     {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, Mon = "Fishman Warrior", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(60938.2, 55.2, 1515.2)},
@@ -464,22 +464,36 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
+-- ========================================================
+-- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
+-- ========================================================
 task.spawn(function()
-    local HopTime = 1700 
+    local HopTime = 1700 -- Đợi 1700 giây trước khi tự động Hop
     while task.wait(1) do
         HopTime = HopTime - 1
         if HopTime <= 0 then
-            local Http = game:GetService("HttpService")
-            local TPS = game:GetService("TeleportService")
-            local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-            local Raw = game:HttpGet(Api)
-            local Decode = Http:JSONDecode(Raw)
-            for _, s in pairs(Decode.data) do
-                if s.playing < s.maxTokens and s.id ~= game.JobId then
-                    TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP) break
+            pcall(function()
+                local Http = game:GetService("HttpService")
+                local TPS = game:GetService("TeleportService")
+                -- Lấy danh sách server (ưu tiên server ít người nhất)
+                local Api = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+                local Raw = game:HttpGet(Api)
+                local Decode = Http:JSONDecode(Raw)
+
+                if Decode and Decode.data then
+                    for _, s in pairs(Decode.data) do
+                        -- Kiểm tra server hợp lệ: khác server hiện tại và còn chỗ trống
+                        if type(s) == "table" and s.id ~= game.JobId and s.playing ~= nil and s.maxPlayers ~= nil then
+                            if s.playing < s.maxPlayers - 1 then
+                                TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                task.wait(5) -- Đợi 5 giây để game load teleport
+                                break
+                            end
+                        end
+                    end
                 end
-            end
-            HopTime = 30 
+            end)
+            HopTime = 30 -- Nếu hop thất bại (hoặc api lỗi), đợi 30 giây rồi thử lại
         end
     end
 end)

@@ -298,6 +298,7 @@ task.spawn(function()
         end)
     end
 end)
+
 -- ========================================================
 -- [[ BẢNG NHIỆM VỤ (MIN - MAX) ]]
 -- ========================================================
@@ -379,7 +380,7 @@ local function IsQuestActive()
 end
 
 -- ========================================================
--- [[ VÒNG LẶP CHÍNH: GOM TỐI ĐA 3 CON + GRAB FRUIT ]]
+-- [[ VÒNG LẶP CHÍNH (ĐÃ FIX GRAB FRUIT: TELE 3 LẦN RỒI TWEEN) ]]
 -- ========================================================
 task.spawn(function()
     local targetFruitCache = nil
@@ -389,81 +390,75 @@ task.spawn(function()
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
-            -- [ 🍓 LÔGIC GRAB FRUIT: TELE 3 LẦN + TWEEN ]
+            -- LÔGIC GRAB FRUIT MỚI
             if _G.Grabfruit then
                 local targetFruit = nil
                 for _, v in pairs(workspace:GetChildren()) do
                     if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        targetFruit = v; break
+                        targetFruit = v
+                        break
                     end
                 end
+                
                 if targetFruit then
+                    -- Nếu phát hiện trái mới, reset biến đếm
                     if targetFruit ~= targetFruitCache then
-                        targetFruitCache = targetFruit; fruitTeleAttempts = 0; lastFruitTeleTime = 0
+                        targetFruitCache = targetFruit
+                        fruitTeleAttempts = 0
+                        lastFruitTeleTime = 0
                     end
+
+                    -- Thực hiện Teleport 3 lần, mỗi lần cách nhau 2s
                     if fruitTeleAttempts < 3 then
                         if tick() - lastFruitTeleTime >= 2 then
                             if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
                                 LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
-                                fruitTeleAttempts = fruitTeleAttempts + 1; lastFruitTeleTime = tick()
+                                fruitTeleAttempts = fruitTeleAttempts + 1
+                                lastFruitTeleTime = tick()
                             end
                         end
                     else
+                        -- Đã tele 3 lần mà không ăn được -> Dùng hàm bay tới
                         if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
                             TweenTo(targetFruit.Handle.CFrame)
                         end
                     end
+                    -- Thấy trái là Dừng Farm quái
                     return 
                 else
-                    targetFruitCache = nil; fruitTeleAttempts = 0
+                    -- Nếu không tìm thấy trái (chưa có hoặc đã biến mất), reset để tiếp tục đi farm
+                    targetFruitCache = nil
+                    fruitTeleAttempts = 0
                 end
             end
             
-            -- [ ⚔️ LÔGIC FARM: GIỚI HẠN GOM 3 CON ]
+            -- LÔGIC FARM BÌNH THƯỜNG
             CheckQuest()
             if not IsQuestActive() then
+                local questGui = LP.PlayerGui.Main:FindFirstChild("Quest")
+                if questGui and questGui.Visible then
+                    GetCommF():InvokeServer("AbandonQuest") 
+                end
                 if CheckTeleport(CFrameQuest) then return end
                 if TweenTo(CFrameQuest) then
                     task.wait(0.3)
                     GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
+                    task.wait(0.2)
                 end
             else
-                local TargetEnemy = nil
-                local MobCount = 0 -- Biến đếm số lượng quái đang gom
-                
-                -- Tìm con quái chính
+                local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 and e:FindFirstChild("HumanoidRootPart") then
-                        TargetEnemy = e
-                        break 
+                    if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                        Enemy = e; break
                     end
                 end
-
-                if TargetEnemy then
-                    if CheckTeleport(TargetEnemy.HumanoidRootPart.CFrame) then return end
+                if Enemy then
+                    if CheckTeleport(Enemy.HumanoidRootPart.CFrame) then return end
                     EquipMelee()
-                    
-                    -- Bay lên trên con quái chính
-                    TweenTo(TargetEnemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
-                    
-                    -- HÀM GOM QUÁI GIỚI HẠN (MAX 3)
-                    for _, v in pairs(workspace.Enemies:GetChildren()) do
-                        if v.Name == TargetEnemy.Name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            if MobCount < 3 then -- Chỉ xử lý tối đa 3 con
-                                v.HumanoidRootPart.CanCollide = false
-                                v.HumanoidRootPart.CFrame = TargetEnemy.HumanoidRootPart.CFrame
-                                MobCount = MobCount + 1
-                            else
-                                break -- Đủ 3 con rồi thì dừng quét các con khác
-                            end
-                        end
-                    end
-
-                    -- Đánh quái
+                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                    RS.Modules.Net["RE/RegisterHit"]:FireServer(TargetEnemy.PrimaryPart, {{TargetEnemy, TargetEnemy.PrimaryPart}})
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
-                    -- Hết quái thì bay về điểm chờ
                     if CheckTeleport(CFrameMon) then return end
                     TweenTo(CFrameMon)
                 end

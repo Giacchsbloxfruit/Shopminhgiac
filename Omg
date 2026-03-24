@@ -374,12 +374,17 @@ local function IsQuestActive()
 end
 
 -- ========================================================
--- [[ VÒNG LẶP CHÍNH (FIX GRAB FRUIT) ]]
+-- [[ VÒNG LẶP CHÍNH (ĐÃ FIX GRAB FRUIT: TELE 3 LẦN RỒI TWEEN) ]]
 -- ========================================================
 task.spawn(function()
+    local targetFruitCache = nil
+    local fruitTeleAttempts = 0
+    local lastFruitTeleTime = 0
+
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
+            -- LÔGIC GRAB FRUIT MỚI
             if _G.Grabfruit then
                 local targetFruit = nil
                 for _, v in pairs(workspace:GetChildren()) do
@@ -388,16 +393,40 @@ task.spawn(function()
                         break
                     end
                 end
+                
                 if targetFruit then
-                    if not _G.FruitTeleportTime or tick() - _G.FruitTeleportTime >= 2 then
+                    -- Nếu phát hiện trái mới, reset biến đếm
+                    if targetFruit ~= targetFruitCache then
+                        targetFruitCache = targetFruit
+                        fruitTeleAttempts = 0
+                        lastFruitTeleTime = 0
+                    end
+
+                    -- Thực hiện Teleport 3 lần, mỗi lần cách nhau 2s
+                    if fruitTeleAttempts < 3 then
+                        if tick() - lastFruitTeleTime >= 2 then
+                            if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+                                LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
+                                fruitTeleAttempts = fruitTeleAttempts + 1
+                                lastFruitTeleTime = tick()
+                            end
+                        end
+                    else
+                        -- Đã tele 3 lần mà không ăn được -> Dùng hàm bay tới
                         if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-                            LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
-                            _G.FruitTeleportTime = tick()
+                            TweenTo(targetFruit.Handle.CFrame)
                         end
                     end
+                    -- Thấy trái là Dừng Farm quái
                     return 
+                else
+                    -- Nếu không tìm thấy trái (chưa có hoặc đã biến mất), reset để tiếp tục đi farm
+                    targetFruitCache = nil
+                    fruitTeleAttempts = 0
                 end
             end
+            
+            -- LÔGIC FARM BÌNH THƯỜNG
             CheckQuest()
             if not IsQuestActive() then
                 local questGui = LP.PlayerGui.Main:FindFirstChild("Quest")
@@ -493,7 +522,7 @@ task.spawn(function()
                     end
                 end
             end)
-            HopTime = 30 -- Nếu hop thất bại (hoặc api lỗi), đợi 30 giây rồi thử lại
+            HopTime = 30
         end
     end
 end)

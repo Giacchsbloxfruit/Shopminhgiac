@@ -239,16 +239,18 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 3. MODULE AUTO BUY MELEE ]]
+-- [[ 3. MODULE AUTO BUY MELEE (FIXED BY GIACDZ) ]]
 -- ========================================================
 local function GetMeleeData()
-    local name, mas = "", 0
+    local name, mas = "None", 0
     local sources = {LP.Backpack, LP.Character}
     for _, source in pairs(sources) do
         if source then
             for _, v in pairs(source:GetChildren()) do
                 if v:IsA("Tool") and v.ToolTip == "Melee" then
-                    name = v.Name; if v:FindFirstChild("Level") then mas = v.Level.Value end
+                    name = v.Name
+                    if v:FindFirstChild("Level") then mas = v.Level.Value end
+                    return name, mas -- Ưu tiên lấy Melee đang có
                 end
             end
         end
@@ -257,7 +259,7 @@ local function GetMeleeData()
 end
 
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(2) do -- Tăng thời gian check lên 2s để game load kịp
         pcall(function()
             local myBeli = LP.Data.Beli.Value
             local curName, curMas = GetMeleeData()
@@ -268,10 +270,13 @@ task.spawn(function()
             local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
             local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
 
-            if (curName == "Combat" or curName == "") and myBeli >= 150000 then
+            -- FIX: Chỉ mua Black Leg nếu đang dùng Combat thật sự
+            if curName == "Combat" and myBeli >= 150000 then
                 targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
-            elseif curName == "Black Leg" and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
+            -- Chuyển sang Electric nếu đã có Black Leg/Dark Step và đủ Mastery
+            elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
                 targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
+            -- Chuyển sang Karate Cá nếu đã có Electric và đủ Mastery
             elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
                 targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
                 needsGate = true

@@ -1,6 +1,8 @@
 -- ========================================================
--- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA (GỬI BỞI GIACDZ) ]]
+-- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA (FIXED CONFLICT) ]]
 -- ========================================================
+_G.GoingToSea2 = false -- Biến khóa toàn bộ script Sea 1 khi lên lv 700
+
 task.spawn(function()
     while task.wait(3) do
         local lp = game:GetService("Players").LocalPlayer
@@ -8,9 +10,10 @@ task.spawn(function()
             local myLevel = lp.Data.Level.Value
             if myLevel >= 700 then
                 -- 1. Tắt các biến điều khiển của Sea 1 để tránh xung đột
-                _G.StopFarmForMelee = true -- Dừng farm quái Sea 1
-                _G.Grabfruit = false       -- Dừng nhặt trái để tập trung làm quest Sea 2
-                getgenv().AntiAFK = false  -- Tắt tạm để load script mới
+                _G.GoingToSea2 = true      -- KHÓA HOÀN TOÀN SEA 1
+                _G.StopFarmForMelee = true 
+                _G.Grabfruit = false       
+                getgenv().AntiAFK = false  
                 
                 print("--- Đã đạt Level 700! Đang khởi động Auto Sea 2 ---")
                 
@@ -38,7 +41,7 @@ local function Notify(text)
     end)
 end
 
-Notify("Auto Melee + Tele Fishman + Fix Hover + Fix Grab Fruit!")
+Notify("Fix Lỗi Kẹt Chuyển Sea 2 + All Features!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
@@ -80,6 +83,7 @@ end)
 -- [ PHẦN CHỌN TEAM ]
 task.spawn(function()
     while task.wait(0.5) do
+        if _G.GoingToSea2 then continue end
         if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
         pcall(function()
             local remote = GetCommF()
@@ -97,7 +101,6 @@ local function TweenTo(targetPos)
     local root = char:WaitForChild("HumanoidRootPart")
     local dist = (root.Position - targetPos.Position).Magnitude
     
-    -- GIỮ LẠI ANTIFALL ĐỂ KHÔNG BỊ RƠI
     local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
     bv.Name = "AntiFall"
     bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
@@ -107,7 +110,6 @@ local function TweenTo(targetPos)
         TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
         return false
     else
-        -- FIX CỐ ĐỊNH: Khoá cứng CFrame của người chơi vào mục tiêu
         root.CFrame = targetPos
         return true
     end
@@ -127,7 +129,6 @@ local function CheckTeleport(targetCFrame)
     local myPos = char.HumanoidRootPart.Position
     local destPos = targetCFrame.Position
 
-    -- ĐANG Ở ĐẢO THƯỜNG MÀ MỤC TIÊU Ở ĐẢO CÁ (Tọa độ X đảo cá > 50000)
     if destPos.X > 50000 and myPos.X < 50000 then
         if (myPos - GATE_ENTER_CFRAME.Position).Magnitude > 15 then
             TweenTo(GATE_ENTER_CFRAME)
@@ -138,7 +139,6 @@ local function CheckTeleport(targetCFrame)
         return true
     end
     
-    -- ĐANG Ở ĐẢO CÁ MÀ MỤC TIÊU Ở ĐẢO THƯỜNG
     if destPos.X < 50000 and myPos.X > 50000 then
         if (myPos - GATE_EXIT_CFRAME.Position).Magnitude > 15 then
             TweenTo(GATE_EXIT_CFRAME)
@@ -176,6 +176,7 @@ end)
 
 task.spawn(function()
     while task.wait() do
+        if _G.GoingToSea2 then continue end
         pcall(function()
             local char = LP.Character
             if char then
@@ -223,6 +224,7 @@ local FruitList = {
 
 task.spawn(function()
     while task.wait(5) do
+        if _G.GoingToSea2 then continue end
         pcall(function()
             local Character = LP.Character
             local CommF = GetCommF()
@@ -250,7 +252,7 @@ local function GetMeleeData()
                 if v:IsA("Tool") and v.ToolTip == "Melee" then
                     name = v.Name
                     if v:FindFirstChild("Level") then mas = v.Level.Value end
-                    return name, mas -- Ưu tiên lấy Melee đang có
+                    return name, mas 
                 end
             end
         end
@@ -259,7 +261,9 @@ local function GetMeleeData()
 end
 
 task.spawn(function()
-    while task.wait(2) do -- Tăng thời gian check lên 2s để game load kịp
+    while task.wait(2) do 
+        if _G.GoingToSea2 then continue end -- NẾU ĐANG QUA SEA 2 THÌ DỪNG MUA MELEE LẠI
+        
         pcall(function()
             local myBeli = LP.Data.Beli.Value
             local curName, curMas = GetMeleeData()
@@ -270,13 +274,10 @@ task.spawn(function()
             local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
             local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
 
-            -- FIX: Chỉ mua Black Leg nếu đang dùng Combat thật sự
             if curName == "Combat" and myBeli >= 150000 then
                 targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
-            -- Chuyển sang Electric nếu đã có Black Leg/Dark Step và đủ Mastery
             elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
                 targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
-            -- Chuyển sang Karate Cá nếu đã có Electric và đủ Mastery
             elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
                 targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
                 needsGate = true
@@ -293,7 +294,7 @@ task.spawn(function()
                     if TweenTo(targetPos) then GetCommF():InvokeServer(buyCmd) end
                 end
             else
-                _G.StopFarmForMelee = false
+                _G.StopFarmForMelee = false -- Đây là dòng gây ra lỗi lúc trước, giờ đã được chặn bởi _G.GoingToSea2
             end
         end)
     end
@@ -388,7 +389,9 @@ task.spawn(function()
     local lastFruitTeleTime = 0
 
     while task.wait() do
+        if _G.GoingToSea2 then task.wait(1) continue end -- NẾU ĐANG CHUYỂN SEA THÌ DỪNG FARM NGAY LẬP TỨC
         if _G.StopFarmForMelee then task.wait(1) continue end 
+        
         pcall(function()
             -- LÔGIC GRAB FRUIT MỚI
             if _G.Grabfruit then
@@ -401,14 +404,12 @@ task.spawn(function()
                 end
                 
                 if targetFruit then
-                    -- Nếu phát hiện trái mới, reset biến đếm
                     if targetFruit ~= targetFruitCache then
                         targetFruitCache = targetFruit
                         fruitTeleAttempts = 0
                         lastFruitTeleTime = 0
                     end
 
-                    -- Thực hiện Teleport 3 lần, mỗi lần cách nhau 2s
                     if fruitTeleAttempts < 3 then
                         if tick() - lastFruitTeleTime >= 2 then
                             if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
@@ -418,15 +419,12 @@ task.spawn(function()
                             end
                         end
                     else
-                        -- Đã tele 3 lần mà không ăn được -> Dùng hàm bay tới
                         if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
                             TweenTo(targetFruit.Handle.CFrame)
                         end
                     end
-                    -- Thấy trái là Dừng Farm quái
                     return 
                 else
-                    -- Nếu không tìm thấy trái (chưa có hoặc đã biến mất), reset để tiếp tục đi farm
                     targetFruitCache = nil
                     fruitTeleAttempts = 0
                 end
@@ -473,6 +471,7 @@ end)
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
+        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
         pcall(function()
             local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
             local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
@@ -503,25 +502,24 @@ end)
 -- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
 -- ========================================================
 task.spawn(function()
-    local HopTime = 1700 -- Đợi 1700 giây trước khi tự động Hop
+    local HopTime = 1700 
     while task.wait(1) do
+        if _G.GoingToSea2 then continue end -- Dừng server hop khi đang qua sea
         HopTime = HopTime - 1
         if HopTime <= 0 then
             pcall(function()
                 local Http = game:GetService("HttpService")
                 local TPS = game:GetService("TeleportService")
-                -- Lấy danh sách server (ưu tiên server ít người nhất)
                 local Api = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
                 local Raw = game:HttpGet(Api)
                 local Decode = Http:JSONDecode(Raw)
 
                 if Decode and Decode.data then
                     for _, s in pairs(Decode.data) do
-                        -- Kiểm tra server hợp lệ: khác server hiện tại và còn chỗ trống
                         if type(s) == "table" and s.id ~= game.JobId and s.playing ~= nil and s.maxPlayers ~= nil then
                             if s.playing < s.maxPlayers - 1 then
                                 TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
-                                task.wait(5) -- Đợi 5 giây để game load teleport
+                                task.wait(5) 
                                 break
                             end
                         end
@@ -533,4 +531,5 @@ task.spawn(function()
     end
 end)
 
+-- (Giữ nguyên dòng load script phụ của bạn)
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

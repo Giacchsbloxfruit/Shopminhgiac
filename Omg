@@ -92,6 +92,24 @@ task.spawn(function()
         end)                
     end
 end)
+-- ========================================================
+-- [[ ⚡ SCRIPT AUTO BUSO HAKI (ARMAMENT) - BLOX FRUITS ]]
+-- ========================================================
+
+local player = game.Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local Remote = RS:FindFirstChild("CommF_", true) or (RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("CommF_"))
+
+task.spawn(function()
+    while task.wait(3) do -- Kiểm tra trạng thái mỗi 3 giây
+        pcall(function()
+            -- Chỉ bật nếu nhân vật chưa có Haki (tránh việc bật/tắt liên tục)
+            if not player.Character:FindFirstChild("HasBuso") then
+                Remote:InvokeServer("Buso")
+            end
+        end)
+    end
+end)
 
 -- ========================================================
 -- [[ 🚁 MODULE TWEEN VÀ CỐ ĐỊNH NHÂN VẬT (HOVER FIX) ]]

@@ -1,4 +1,31 @@
 -- ========================================================
+-- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA (GỬI BỞI GIACDZ) ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(3) do
+        local lp = game:GetService("Players").LocalPlayer
+        if lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("Level") then
+            local myLevel = lp.Data.Level.Value
+            if myLevel >= 700 then
+                -- 1. Tắt các biến điều khiển của Sea 1 để tránh xung đột
+                _G.StopFarmForMelee = true -- Dừng farm quái Sea 1
+                _G.Grabfruit = false       -- Dừng nhặt trái để tập trung làm quest Sea 2
+                getgenv().AntiAFK = false  -- Tắt tạm để load script mới
+                
+                print("--- Đã đạt Level 700! Đang khởi động Auto Sea 2 ---")
+                
+                -- 2. Load Script Auto Sea 2 của bạn
+                pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/Sea%202"))()
+                end)
+                
+                break -- Thoát vòng lặp kiểm tra
+            end
+        end
+    end
+end)
+
+-- ========================================================
 -- [[ 0. HÀM THÔNG BÁO & INIT ]]
 -- ========================================================
 local function Notify(text)
@@ -148,7 +175,6 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    -- Đổi thành task.wait() để vòng lặp chạy nhanh hơn, giúp đổi màu mượt mà
     while task.wait() do
         pcall(function()
             local char = LP.Character
@@ -158,16 +184,10 @@ task.spawn(function()
                     hl = Instance.new("Highlight", char)
                     hl.Name = "GiacdzHighlight"
                 end
-                
-                -- Tạo biến hue (sắc độ) chạy từ 0 đến 1 dựa trên thời gian
-                -- Số 3 ở đây nghĩa là mất 3 giây để chạy hết 1 vòng 7 màu. Bạn có thể tăng/giảm số này để chỉnh tốc độ đổi màu.
                 local hue = tick() % 3 / 3 
-                
                 hl.Enabled = true
-                -- Đổi cả màu nền và viền thành 7 màu
                 hl.FillColor = Color3.fromHSV(hue, 1, 1) 
                 hl.OutlineColor = Color3.fromHSV(hue, 1, 1) 
-                
                 hl.FillTransparency = 0.5
                 hl.OutlineTransparency = 0.2
             end
@@ -219,16 +239,18 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 3. MODULE AUTO BUY MELEE ]]
+-- [[ 3. MODULE AUTO BUY MELEE (FIXED BY GIACDZ) ]]
 -- ========================================================
 local function GetMeleeData()
-    local name, mas = "", 0
+    local name, mas = "None", 0
     local sources = {LP.Backpack, LP.Character}
     for _, source in pairs(sources) do
         if source then
             for _, v in pairs(source:GetChildren()) do
                 if v:IsA("Tool") and v.ToolTip == "Melee" then
-                    name = v.Name; if v:FindFirstChild("Level") then mas = v.Level.Value end
+                    name = v.Name
+                    if v:FindFirstChild("Level") then mas = v.Level.Value end
+                    return name, mas -- Ưu tiên lấy Melee đang có
                 end
             end
         end
@@ -237,7 +259,7 @@ local function GetMeleeData()
 end
 
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(2) do -- Tăng thời gian check lên 2s để game load kịp
         pcall(function()
             local myBeli = LP.Data.Beli.Value
             local curName, curMas = GetMeleeData()
@@ -248,10 +270,13 @@ task.spawn(function()
             local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
             local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
 
-            if (curName == "Combat" or curName == "") and myBeli >= 150000 then
+            -- FIX: Chỉ mua Black Leg nếu đang dùng Combat thật sự
+            if curName == "Combat" and myBeli >= 150000 then
                 targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
-            elseif curName == "Black Leg" and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
+            -- Chuyển sang Electric nếu đã có Black Leg/Dark Step và đủ Mastery
+            elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
                 targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
+            -- Chuyển sang Karate Cá nếu đã có Electric và đủ Mastery
             elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
                 targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
                 needsGate = true
@@ -259,7 +284,6 @@ task.spawn(function()
 
             if targetPos then
                 _G.StopFarmForMelee = true
-                -- Đã thêm Logic Check cổng dịch chuyển khi đi mua Water Kung Fu
                 if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
                     if TweenTo(GATE_ENTER_CFRAME) then
                         GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
@@ -274,6 +298,7 @@ task.spawn(function()
         end)
     end
 end)
+
 -- ========================================================
 -- [[ BẢNG NHIỆM VỤ (MIN - MAX) ]]
 -- ========================================================
@@ -293,17 +318,17 @@ local QuestList = {
     {Min = 190, Max = 209, Name = "PrisonerQuest", Lv = 1, Mon = "Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5411, 13, 507)},
     {Min = 210, Max = 249, Name = "PrisonerQuest", Lv = 2, Mon = "Dangerous Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5654, 15, 866)},
     {Min = 250, Max = 274, Name = "ColosseumQuest", Lv = 1, Mon = "Toga Warrior", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1820, 51, -2741)},
-    {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 1, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1268, 30, -2996)},
+    {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 2, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1268, 30, -2996)},
     {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, Mon = "Military Soldier", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5395.2, 27.2, 8510.4)},
     {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, Mon = "Military Spy", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5816.1, 83.2, 8438.4)},
     {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, Mon = "Fishman Warrior", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(60938.2, 55.2, 1515.2)},
     {Min = 400, Max = 449, Name = "FishmanQuest", Lv = 2, Mon = "Fishman Commando", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(61965.2, 30.2, 1475.2)},
     {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, Mon = "God's Guard", NPC = CFrame.new(-4720, 846, -1951), MonPos = CFrame.new(-4720, 846, -1951)},
     {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, Mon = "Shanda", NPC = CFrame.new(-7861, 5545, -381), MonPos = CFrame.new(-7741, 5580, -395)},
-    {Min = 525, Max = 549, Name = "SkyExp2Quest", Lv = 2, Mon = "Royal Soldier", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new( -7894, 5640, -1629)},
-    {Min = 550, Max = 624, Name = "SkyExp2Quest", Lv = 1, Mon = "Royal Squad", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new(-7727, 5650, -1410)},
+    {Min = 525, Max = 549, Name = "SkyExp2Quest", Lv = 1, Mon = "Royal Squad", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new(-7727, 5650, -1410)},
+    {Min = 550, Max = 624, Name = "SkyExp2Quest", Lv = 2, Mon = "Royal Soldier", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new(-7894, 5640, -1629)},
     {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, Mon = "Galley Pirate", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5391, 70, 4023)},
-    {Min = 650, Max = 714, Name = "FountainQuest", Lv = 2, Mon = "Galley Captain", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5985, 70, 4790)},
+    {Min = 650, Max = 701, Name = "FountainQuest", Lv = 2, Mon = "Galley Captain", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5985, 70, 4790)},
 }
 
 local function CheckQuest()
@@ -322,20 +347,15 @@ local function CheckQuest()
     CFrameQuest = CFrame.new(5258, 39, 4052); CFrameMon = CFrame.new(5985, 70, 4790)
 end
 
--- ĐÃ FIX: CHỈ LẤY MELEE RA KHI CHƯA TRANG BỊ ĐÚNG MELEE
 local function EquipMelee()
     pcall(function()
         local char = LP.Character
         if not char:FindFirstChild("HasBuso") then GetCommF():InvokeServer("Buso") end
-        
-        -- Kiểm tra tool hiện tại đang cầm
         local currentTool = char:FindFirstChildOfClass("Tool")
         local isMeleeEquipped = false
         if currentTool and (currentTool.ToolTip == "Melee" or currentTool.Name == "Combat" or currentTool.Name == "Dark Step" or currentTool.Name == "Electric" or currentTool.Name == "Water Kung Fu") then
             isMeleeEquipped = true
         end
-        
-        -- Nếu chưa cầm đúng loại võ thuật, sẽ duyệt qua Balo để cầm
         if not isMeleeEquipped then
             for _, v in pairs(LP.Backpack:GetChildren()) do
                 if v:IsA("Tool") and (v.ToolTip == "Melee" or v.Name == "Combat" or v.Name == "Dark Step" or v.Name == "Electric" or v.Name == "Water Kung Fu") then
@@ -360,14 +380,17 @@ local function IsQuestActive()
 end
 
 -- ========================================================
--- [[ VÒNG LẶP CHÍNH (FIX GRAB FRUIT) ]]
+-- [[ VÒNG LẶP CHÍNH (ĐÃ FIX GRAB FRUIT: TELE 3 LẦN RỒI TWEEN) ]]
 -- ========================================================
 task.spawn(function()
+    local targetFruitCache = nil
+    local fruitTeleAttempts = 0
+    local lastFruitTeleTime = 0
+
     while task.wait() do
         if _G.StopFarmForMelee then task.wait(1) continue end 
         pcall(function()
-            
-            -- [[ LOGIC NHẶT TRÁI ÁC QUỶ (FIX DELAY 2 GIÂY & DỪNG FARM) ]]
+            -- LÔGIC GRAB FRUIT MỚI
             if _G.Grabfruit then
                 local targetFruit = nil
                 for _, v in pairs(workspace:GetChildren()) do
@@ -378,46 +401,59 @@ task.spawn(function()
                 end
                 
                 if targetFruit then
-                    -- Đợi 2s giữa các lần tele để lấy trái ác quỷ
-                    if not _G.FruitTeleportTime or tick() - _G.FruitTeleportTime >= 2 then
+                    -- Nếu phát hiện trái mới, reset biến đếm
+                    if targetFruit ~= targetFruitCache then
+                        targetFruitCache = targetFruit
+                        fruitTeleAttempts = 0
+                        lastFruitTeleTime = 0
+                    end
+
+                    -- Thực hiện Teleport 3 lần, mỗi lần cách nhau 2s
+                    if fruitTeleAttempts < 3 then
+                        if tick() - lastFruitTeleTime >= 2 then
+                            if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+                                LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
+                                fruitTeleAttempts = fruitTeleAttempts + 1
+                                lastFruitTeleTime = tick()
+                            end
+                        end
+                    else
+                        -- Đã tele 3 lần mà không ăn được -> Dùng hàm bay tới
                         if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-                            LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
-                            _G.FruitTeleportTime = tick()
+                            TweenTo(targetFruit.Handle.CFrame)
                         end
                     end
-                    -- Nếu thấy trái, return ngay lập tức để không chạy code farm đánh quái
+                    -- Thấy trái là Dừng Farm quái
                     return 
+                else
+                    -- Nếu không tìm thấy trái (chưa có hoặc đã biến mất), reset để tiếp tục đi farm
+                    targetFruitCache = nil
+                    fruitTeleAttempts = 0
                 end
             end
             
+            -- LÔGIC FARM BÌNH THƯỜNG
             CheckQuest()
-            
-            -- [[ LOGIC NHẬN QUEST & DỊCH CHUYỂN ]]
             if not IsQuestActive() then
                 local questGui = LP.PlayerGui.Main:FindFirstChild("Quest")
                 if questGui and questGui.Visible then
                     GetCommF():InvokeServer("AbandonQuest") 
                 end
-                
                 if CheckTeleport(CFrameQuest) then return end
-                
                 if TweenTo(CFrameQuest) then
                     task.wait(0.3)
                     GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
                     task.wait(0.2)
                 end
             else
-                -- [[ LOGIC FARM QUÁI & DỊCH CHUYỂN ]]
                 local Enemy = nil
                 for _, e in pairs(workspace.Enemies:GetChildren()) do
                     if (string.find(e.Name, NameMon) or e.Name == NameMon) and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
                         Enemy = e; break
                     end
                 end
-                
                 if Enemy then
                     if CheckTeleport(Enemy.HumanoidRootPart.CFrame) then return end
-
                     EquipMelee()
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
@@ -455,7 +491,6 @@ task.spawn(function()
     end
 end)
 
--- NOCLIP VĨNH VIỄN
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
@@ -464,23 +499,36 @@ game:GetService("RunService").Stepped:Connect(function()
     end)
 end)
 
--- SERVER HOP
+-- ========================================================
+-- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
+-- ========================================================
 task.spawn(function()
-    local HopTime = 1700 
+    local HopTime = 1700 -- Đợi 1700 giây trước khi tự động Hop
     while task.wait(1) do
         HopTime = HopTime - 1
         if HopTime <= 0 then
-            local Http = game:GetService("HttpService")
-            local TPS = game:GetService("TeleportService")
-            local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-            local Raw = game:HttpGet(Api)
-            local Decode = Http:JSONDecode(Raw)
-            for _, s in pairs(Decode.data) do
-                if s.playing < s.maxTokens and s.id ~= game.JobId then
-                    TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP) break
+            pcall(function()
+                local Http = game:GetService("HttpService")
+                local TPS = game:GetService("TeleportService")
+                -- Lấy danh sách server (ưu tiên server ít người nhất)
+                local Api = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+                local Raw = game:HttpGet(Api)
+                local Decode = Http:JSONDecode(Raw)
+
+                if Decode and Decode.data then
+                    for _, s in pairs(Decode.data) do
+                        -- Kiểm tra server hợp lệ: khác server hiện tại và còn chỗ trống
+                        if type(s) == "table" and s.id ~= game.JobId and s.playing ~= nil and s.maxPlayers ~= nil then
+                            if s.playing < s.maxPlayers - 1 then
+                                TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                task.wait(5) -- Đợi 5 giây để game load teleport
+                                break
+                            end
+                        end
+                    end
                 end
-            end
-            HopTime = 30 
+            end)
+            HopTime = 30
         end
     end
 end)

@@ -378,15 +378,25 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 5. AUTO STATS & SERVER HOP ]]
+-- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================
 task.spawn(function()
-    while task.wait(1) do
-        if _G.GoingToSea2 then continue end
+    local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
+    while task.wait(0.7) do
+        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
         pcall(function()
-            local P = LP.Data:FindFirstChild("StatsPoints") or LP.Data:FindFirstChild("Points")
+            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
+            local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
             if P and P.Value > 0 then
-                GetCommF():InvokeServer("AddPoint", "Melee", 1)
+                local mVal = 0; for _, n in pairs(S.M) do if Data:FindFirstChild(n) then mVal = Data[n].Value break end end
+                local remote = GetCommF()
+                if remote then
+                    if mVal < getgenv().MaxStat then
+                        for _, n in pairs(S.M) do remote:InvokeServer("AddPoint", n, 1) end
+                    else
+                        for _, n in pairs(S.D) do remote:InvokeServer("AddPoint", n, 1) end
+                    end
+                end
             end
         end)
     end
@@ -398,6 +408,39 @@ game:GetService("RunService").Stepped:Connect(function()
             for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
         end
     end)
+end)
+
+-- ========================================================
+-- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
+-- ========================================================
+task.spawn(function()
+    local HopTime = 1700 
+    while task.wait(1) do
+        if _G.GoingToSea2 then continue end -- Dừng server hop khi đang qua sea
+        HopTime = HopTime - 1
+        if HopTime <= 0 then
+            pcall(function()
+                local Http = game:GetService("HttpService")
+                local TPS = game:GetService("TeleportService")
+                local Api = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+                local Raw = game:HttpGet(Api)
+                local Decode = Http:JSONDecode(Raw)
+
+                if Decode and Decode.data then
+                    for _, s in pairs(Decode.data) do
+                        if type(s) == "table" and s.id ~= game.JobId and s.playing ~= nil and s.maxPlayers ~= nil then
+                            if s.playing < s.maxPlayers - 1 then
+                                TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                task.wait(5) 
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+            HopTime = 30
+        end
+    end
 end)
 
 loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

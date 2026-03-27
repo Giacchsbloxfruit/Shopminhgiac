@@ -471,10 +471,90 @@ task.spawn(function()
                 if Enemy then
                     if CheckTeleport(Enemy.HumanoidRootPart.CFrame) then return end
                     EquipMelee()
+      -- ========================================================
+-- [[ ⚡ VÒNG LẶP CHÍNH (ĐÃ CẬP NHẬT CHECK QUÁI DIỆN RỘNG) ]]
+-- ========================================================
+task.spawn(function()
+    local targetFruitCache = nil
+    local fruitTeleAttempts = 0
+    local lastFruitTeleTime = 0
+
+    while task.wait() do
+        if _G.GoingToSea2 then task.wait(1) continue end 
+        if _G.StopFarmForMelee then task.wait(1) continue end 
+        
+        pcall(function()
+            -- 1. LÔGIC GRAB FRUIT (Giữ nguyên)
+            if _G.Grabfruit then
+                local targetFruit = nil
+                for _, v in pairs(workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+                        targetFruit = v; break
+                    end
+                end
+                if targetFruit then
+                    -- (Logic Tele/Tween trái cây giữ nguyên của bạn)
+                    if targetFruit ~= targetFruitCache then
+                        targetFruitCache = targetFruit; fruitTeleAttempts = 0; lastFruitTeleTime = 0
+                    end
+                    if fruitTeleAttempts < 3 then
+                        if tick() - lastFruitTeleTime >= 2 then
+                            LP.Character.HumanoidRootPart.CFrame = targetFruit.Handle.CFrame
+                            fruitTeleAttempts = fruitTeleAttempts + 1; lastFruitTeleTime = tick()
+                        end
+                    else
+                        TweenTo(targetFruit.Handle.CFrame)
+                    end
+                    return 
+                end
+            end
+            
+            -- 2. LÔGIC FARM CHÍNH (FIX CHECK QUÁI)
+            CheckQuest()
+            if not IsQuestActive() then
+                -- Nhận Quest (Giữ nguyên)
+                if CheckTeleport(CFrameQuest) then return end
+                if TweenTo(CFrameQuest) then
+                    task.wait(0.3)
+                    GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest)
+                end
+            else
+                -- TÌM QUÁI TRONG PHẠM VI RỘNG
+                local Enemy = nil
+                local MaxDistance = 2000 -- Tăng diện tích quét quái lên 2000 units
+                
+                -- Ưu tiên tìm trong workspace.Enemies trước
+                for _, e in pairs(workspace.Enemies:GetChildren()) do
+                    if e.Name == NameMon and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                        Enemy = e; break
+                    end
+                end
+                
+                -- Nếu không thấy trong Enemies, quét rộng ra workspace (Phòng trường hợp quái chưa vào folder)
+                if not Enemy then
+                    for _, e in pairs(workspace:GetChildren()) do
+                        if e.Name == NameMon and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                            local dist = (LP.Character.HumanoidRootPart.Position - e.HumanoidRootPart.Position).Magnitude
+                            if dist < MaxDistance then
+                                Enemy = e; break
+                            end
+                        end
+                    end
+                end
+
+                if Enemy then
+                    -- ĐÃ TÌM THẤY QUÁI ĐÚNG TÊN
+                    if CheckTeleport(Enemy.HumanoidRootPart.CFrame) then return end
+                    EquipMelee()
+                    
+                    -- Tween đến vị trí farm (Đứng trên đầu quái 25 units để né skill)
                     TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    
+                    -- Tấn công
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
                 else
+                    -- KHÔNG THẤY QUÁI -> DI CHUYỂN ĐẾN ĐIỂM SPAWN
                     if CheckTeleport(CFrameMon) then return end
                     TweenTo(CFrameMon)
                 end
@@ -482,7 +562,6 @@ task.spawn(function()
         end)
     end
 end)
-
 -- ========================================================
 -- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================

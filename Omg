@@ -344,16 +344,20 @@ end
 -- [[ VÒNG LẶP CHÍNH ]]
 -- ========================================================
 task.spawn(function()
-    while task.wait() do
-        if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
-        pcall(function()
-            if _G.Grabfruit then
-                local fruit = nil
-                for _, v in pairs(workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then fruit = v; break end
+    while task.wait(1) do
+        local inRaid = LP.PlayerGui.Main.Timer.Visible
+        if _G.Grabfruit then
+            pcall(function()
+                for _, v in pairs(game.Workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
+                        LastGrabTime = tick()
+                    end
                 end
-                if fruit then TweenTo(fruit.Handle.CFrame); return end
-            end
+            end)
+        end
+    end
+end)
             
             CheckQuest()
             if not IsQuestActive() then

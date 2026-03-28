@@ -1,0 +1,314 @@
+-- ========================================================
+-- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA 3 ]]
+-- ========================================================
+_G.GoingToSea3 = false 
+
+task.spawn(function()
+    while task.wait(3) do
+        local lp = game:GetService("Players").LocalPlayer
+        if lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("Level") then
+            local myLevel = lp.Data.Level.Value
+            if myLevel >= 1500 then
+                _G.GoingToSea3 = true      
+                _G.StopFarmForMelee = true 
+                _G.Grabfruit = false       
+                getgenv().AntiAFK = false  
+                print("--- Đã đạt Level 1500! Đang khởi động Auto Sea 3 ---")
+                pcall(function()
+                    -- Chèn link Loadstring Sea 3 của bạn vào đây sau này
+                    -- loadstring(game:HttpGet("YOUR_SEA_3_LINK"))()
+                end)
+                break 
+            end
+        end
+    end
+end)
+
+-- ========================================================
+-- [[ 0. HÀM THÔNG BÁO ]]
+-- ========================================================
+local function Notify(text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Giacdz Hub - Sea 2",
+            Text = text,
+            Duration = 3
+        })
+    end)
+end
+
+Notify("Đã Load Hub Kaitun Sea 2 Thành Công!")
+
+-- ========================================================
+-- [[ 1. CONFIGURATION & CORE ]]
+-- ========================================================
+getgenv().Team = "Pirates" 
+getgenv().TweenSpeed = 200      
+getgenv().MaxStat = 2800        
+getgenv().AntiAFK = true
+_G.Grabfruit = true 
+_G.StopFarmForMelee = false 
+
+local LP = game.Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local TS = game:GetService("TweenService")
+
+local function GetCommF()
+    local found = RS:FindFirstChild("CommF_", true)
+    if not found then
+        for _, v in pairs(RS:GetDescendants()) do
+            if v.Name == "CommF_" then return v end
+        end
+    end
+    return found
+end
+
+-- ========================================================
+-- [[ 🛡️ MODULE ANTI AFK & AUTO TEAM ]]
+-- ========================================================
+local VirtualUser = game:GetService("VirtualUser")
+LP.Idled:Connect(function()
+    if getgenv().AntiAFK then
+        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.GoingToSea3 then continue end
+        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
+        pcall(function()
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
+            if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
+        end)                
+    end
+end)
+
+-- ========================================================
+-- [[ ⚡ AUTO HAKI & TWEENING ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(3) do
+        pcall(function()
+            if LP.Character and not LP.Character:FindFirstChild("HasBuso") then
+                local remote = GetCommF()
+                if remote then remote:InvokeServer("Buso") end
+            end
+        end)
+    end
+end)
+
+local function TweenTo(targetPos)
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local dist = (root.Position - targetPos.Position).Magnitude
+    
+    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+    bv.Name = "AntiFall"
+    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bv.Velocity = Vector3.zero
+
+    if dist > 15 then 
+        TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
+        return false
+    else
+        root.CFrame = targetPos
+        return true
+    end
+end
+
+-- ========================================================
+-- [[ ⚡ MODULE FIX LAG & HIGHLIGHT ]]
+-- ========================================================
+task.spawn(function()
+    settings().Rendering.QualityLevel = "Level01"
+    for _, v in pairs(game:GetDescendants()) do
+        pcall(function()
+            if v:IsA("Part") or v:IsA("Union") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
+                v.Material = "Plastic"; v.Reflectance = 0
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v.Transparency = 1
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                v.Lifetime = NumberRange.new(0)
+            end
+        end)
+    end
+end)
+
+task.spawn(function()
+    while task.wait() do
+        if _G.GoingToSea3 then continue end
+        pcall(function()
+            local char = LP.Character
+            if char then
+                local hl = char:FindFirstChild("GiacdzHighlight") or Instance.new("Highlight", char)
+                hl.Name = "GiacdzHighlight"
+                local hue = tick() % 3 / 3 
+                hl.FillColor = Color3.fromHSV(hue, 1, 1) 
+                hl.OutlineColor = Color3.fromHSV(hue, 1, 1) 
+                hl.FillTransparency = 0.5
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 2. BẢNG NHIỆM VỤ SEA 2 (DRESSROSA -> ZOU -> ETC) ]]
+-- ========================================================
+local QuestList = {
+    -- Đảo Đầu Tiên (Kingdom of Rose)
+    {Min = 700, Max = 724, Name = "Area1Quest", Lv = 1, Mon = "Raider", NPC = CFrame.new(-425.4, 73.0, 1836.2), MonPos = CFrame.new(-745.0, 72.0, 2392.0)},
+    {Min = 725, Max = 749, Name = "Area1Quest", Lv = 2, Mon = "Mercenary", NPC = CFrame.new(-425.4, 73.0, 1836.2), MonPos = CFrame.new(-868.0, 85.0, 1604.0)},
+    {Min = 750, Max = 774, Name = "Area2Quest", Lv = 1, Mon = "Swan Pirate", NPC = CFrame.new(634.0, 73.1, 918.6), MonPos = CFrame.new(878.0, 120.0, 1226.0)},
+    {Min = 775, Max = 799, Name = "Area2Quest", Lv = 2, Mon = "Factory Staff", NPC = CFrame.new(634.0, 73.1, 918.6), MonPos = CFrame.new(295.0, 73.0, -56.0)},
+    
+    -- Green Zone
+    {Min = 800, Max = 874, Name = "MarineQuest3", Lv = 1, Mon = "Marine Captain", NPC = CFrame.new(-3184.0, 73.0, -4151.0), MonPos = CFrame.new(-2798.0, 73.0, -3384.0)},
+    
+    -- Graveyard
+    {Min = 950, Max = 974, Name = "ZombieQuest", Lv = 1, Mon = "Zombie", NPC = CFrame.new(-5493.0, 48.0, -793.0), MonPos = CFrame.new(-5722.0, 52.0, -740.0)},
+    {Min = 975, Max = 999, Name = "ZombieQuest", Lv = 2, Mon = "Vampire", NPC = CFrame.new(-5493.0, 48.0, -793.0), MonPos = CFrame.new(-6051.0, 6.0, -1320.0)},
+    
+    -- Bạn hãy copy CFrame và Mobs của các đảo (Snow Mountain, Hot and Cold, Cursed Ship...) và thả tiếp vào đây theo cấu trúc trên nhé!
+}
+
+local NameQuest, LevelQuest, NameMon, CFrameQuest, CFrameMon = "", 1, "", nil, nil
+
+function CheckQuest()
+    local myLv = LP.Data.Level.Value
+    for _, v in pairs(QuestList) do
+        if myLv >= v.Min and myLv <= v.Max then
+            NameQuest, LevelQuest, NameMon, CFrameQuest, CFrameMon = v.Name, v.Lv, v.Mon, v.NPC, v.MonPos
+            return
+        end
+    end
+    -- Fallback nếu Max Level
+    if myLv >= 1475 then
+        NameQuest, LevelQuest, NameMon = "ForgottenQuest", 2, "Water Fighter"
+        CFrameQuest = CFrame.new(-3054.4, 239.5, -10142.8)
+        CFrameMon = CFrame.new(-3335.5, 239.5, -10549.5)
+    end
+end
+
+function EquipMelee()
+    pcall(function()
+        for _, v in pairs(LP.Backpack:GetChildren()) do
+            if v.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(v); break end
+        end
+    end)
+end
+
+function IsQuestActive()
+    local qGui = LP.PlayerGui.Main:FindFirstChild("Quest")
+    return qGui and qGui.Visible and string.find(qGui.Container.QuestTitle.Title.Text, NameMon)
+end
+
+-- ========================================================
+-- [[ 3. VÒNG LẶP FARM CHÍNH ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait() do
+        if _G.GoingToSea3 or _G.StopFarmForMelee then task.wait(1); continue end
+        pcall(function()
+            if _G.Grabfruit then
+                local fruit = nil
+                for _, v in pairs(workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then fruit = v; break end
+                end
+                if fruit then TweenTo(fruit.Handle.CFrame); return end
+            end
+            
+            CheckQuest()
+            if not CFrameQuest then return end -- Đề phòng chưa load Quest
+            
+            if not IsQuestActive() then
+                if TweenTo(CFrameQuest) then GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest) end
+            else
+                local Enemy = nil
+                for _, e in pairs(workspace.Enemies:GetChildren()) do
+                    if e.Name == NameMon and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then 
+                        Enemy = e; break 
+                    end
+                end
+                
+                if Enemy then
+                    EquipMelee()
+                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                else
+                    TweenTo(CFrameMon)
+                end
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 4. AUTO STATS & MISC ]]
+-- ========================================================
+task.spawn(function()
+    local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
+    while task.wait(0.7) do
+        if _G.GoingToSea3 then continue end 
+        pcall(function()
+            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
+            local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
+            if P and P.Value > 0 then
+                local mVal = 0; for _, n in pairs(S.M) do if Data:FindFirstChild(n) then mVal = Data[n].Value break end end
+                local remote = GetCommF()
+                if remote then
+                    if mVal < getgenv().MaxStat then
+                        for _, n in pairs(S.M) do remote:InvokeServer("AddPoint", n, 1) end
+                    else
+                        for _, n in pairs(S.D) do remote:InvokeServer("AddPoint", n, 1) end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+    pcall(function()
+        if LP.Character then
+            for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+        end
+    end)
+end)
+
+-- ========================================================
+-- [[ 5. MODULE SERVER HOP ]]
+-- ========================================================
+task.spawn(function()
+    local HopTime = 1700 
+    while task.wait(1) do
+        if _G.GoingToSea3 then continue end 
+        HopTime = HopTime - 1
+        if HopTime <= 0 then
+            pcall(function()
+                local Http = game:GetService("HttpService")
+                local TPS = game:GetService("TeleportService")
+                local Api = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+                local Raw = game:HttpGet(Api)
+                local Decode = Http:JSONDecode(Raw)
+
+                if Decode and Decode.data then
+                    for _, s in pairs(Decode.data) do
+                        if type(s) == "table" and s.id ~= game.JobId and s.playing ~= nil and s.maxPlayers ~= nil then
+                            if s.playing < s.maxPlayers - 1 then
+                                TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                task.wait(5) 
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+            HopTime = 30
+        end
+    end
+end)

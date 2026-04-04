@@ -77,7 +77,7 @@ Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes!")
 -- [[ 1. CONFIGURATION & CORE ]]
 -- ========================================================
 getgenv().Team = "Pirates" 
-getgenv().TweenSpeed = 200      
+getgenv().TweenSpeed = 250      
 getgenv().MaxStat = 2800        
 getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
@@ -120,6 +120,25 @@ task.spawn(function()
             if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
             if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
         end)                
+    end
+end)
+
+-- ========================================================
+-- [[ 🚀 AUTO TELEPORT SEA 2 KHI LEVEL >= 700 ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(2) do
+        pcall(function()
+            if LP and LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level") then
+                if LP.Data.Level.Value >= 700 then
+                    local Remote = GetCommF()
+                    if Remote then
+                        pcall(function() Remote:InvokeServer("TravelDressrosa") end)
+                        pcall(function() Remote:InvokeServer("TravelMain") end)
+                    end
+                end
+            end
+        end)
     end
 end)
 
@@ -234,11 +253,10 @@ end)
 -- ========================================================
 -- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
 -- ========================================================
--- (Giữ nguyên bảng FruitList cũ của bạn)
 local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
 
 task.spawn(function()
-    while task.wait(5) do
+    while task.wait(3) do
         if _G.GoingToSea2 then continue end
         pcall(function()
             for _, fruitData in ipairs(FruitList) do
@@ -286,7 +304,6 @@ end)
 -- ========================================================
 -- [[ 4. BẢNG NHIỆM VỤ & FARM LOGIC ]]
 -- ========================================================
--- (Giữ nguyên phần QuestList và các hàm hỗ trợ của bạn)
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, Mon = "Bandit", NPC = CFrame.new(1059.37, 15.45, 1550.42), MonPos = CFrame.new(1045.96, 27.00, 1560.82)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, Mon = "Monkey", NPC = CFrame.new(-1598.09, 35.55, 153.30), MonPos = CFrame.new(-1623.2, 22, -188)},

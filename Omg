@@ -71,18 +71,19 @@ task.spawn(function()
     end
 end)
 
-Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes!")
+Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes + Auto Random Fruit!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
 -- ========================================================
 getgenv().Team = "Pirates" 
-getgenv().TweenSpeed = 250      
+getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
 getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
 _G.Grabfruit = true 
 _G.StopFarmForMelee = false 
+_G.RandomAuto = true -- Mặc định bật Auto Random Fruit
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -97,6 +98,22 @@ local function GetCommF()
     end
     return found
 end
+
+-- ========================================================
+-- [[ 🍓 MODULE AUTO RANDOM FRUIT ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(5) do -- Kiểm tra mỗi 5 giây để tránh lag
+        if _G.RandomAuto and not _G.GoingToSea2 then
+            pcall(function()
+                local remote = GetCommF()
+                if remote then
+                    remote:InvokeServer("Cousin", "Buy")
+                end
+            end)
+        end
+    end
+end)
 
 -- ========================================================
 -- [[ 🛡️ MODULE ANTI AFK ]]
@@ -179,7 +196,7 @@ local function TweenTo(targetPos)
 end
 
 -- ========================================================
--- [[ 🌀 CỔNG DỊCH CHUYỂN ĐẢO CÁ (TELEPORT LOGIC) ]]
+-- [[ 🌀 CỔNG DỊCH CHUYỂT ĐẢO CÁ (TELEPORT LOGIC) ]]
 -- ========================================================
 local GATE_ENTER_CFRAME = CFrame.new(3864.68, 6.73, -1926.21)
 local GATE_ENTER_POS = Vector3.new(61163, 11, 1819)
@@ -256,7 +273,7 @@ end)
 local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
 
 task.spawn(function()
-    while task.wait(3) do
+    while task.wait(5) do
         if _G.GoingToSea2 then continue end
         pcall(function()
             for _, fruitData in ipairs(FruitList) do

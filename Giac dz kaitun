@@ -1,8 +1,18 @@
 local id = game.PlaceId
+
 if id == 2753915549 then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Omg"))()
+    -- Kaitun Sea 1
+    loadstring(game:HttpGet("LINK_KAITUN_SEA_1_CUA_BAN"))()
+
 elseif id == 4442272183 then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/kaitun%20sea%202"))()
+    -- Kaitun Sea 2
+    loadstring(game:HttpGet("LINK_KAITUN_SEA_2_CUA_BAN"))()
+
 elseif id == 7449423635 then
-    loadstring(game:HttpGet("Link_Sea_3"))()
+    -- Kaitun Sea 3
+    loadstring(game:HttpGet("LINK_KAITUN_SEA_3_CUA_BAN"))()
+
+else
+    -- Nếu không ở 3 Sea trên (ví dụ ở Menu)
+    warn("Khong tim thay Sea hop le!")
 end

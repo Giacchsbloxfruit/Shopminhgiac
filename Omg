@@ -47,7 +47,7 @@ local CodeList = {
     "SECRET_ADMIN","SUB2GAMERROBOT_RESET1","SUB2OFFICIALNOOBIE","AXIORE","BIGNEWS","BLUXXY",
     "CHANDLER","ENYU_IS_PRO","FUDD10","FUDD10_V2","KITTGAMING","MAGICBUS","STARCODEHEO",
     "STRAWHATMAINE","SUB2CAPTAINMAUI","SUB2DAIGROCK","SUB2FER999","SUB2NOOBMASTER123",
-    "SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE"
+    "SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE","1LOSTADMIN","EASTEREXP","LIGHTNINGABUSE"
 }
 
 task.spawn(function()
@@ -285,34 +285,61 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 3. AUTO BUY MELEE ]]
+-- [[ 3. MODULE AUTO BUY MELEE (FIXED BY GIACDZ) ]]
 -- ========================================================
+local function GetMeleeData()
+    local name, mas = "None", 0
+    local sources = {LP.Backpack, LP.Character}
+    for _, source in pairs(sources) do
+        if source then
+            for _, v in pairs(source:GetChildren()) do
+                if v:IsA("Tool") and v.ToolTip == "Melee" then
+                    name = v.Name
+                    if v:FindFirstChild("Level") then mas = v.Level.Value end
+                    return name, mas -- Ưu tiên lấy Melee đang có
+                end
+            end
+        end
+    end
+    return name, mas
+end
+
 task.spawn(function()
-    while task.wait(2) do 
-        if _G.GoingToSea2 then continue end
+    while task.wait(2) do -- Tăng thời gian check lên 2s để game load kịp
         pcall(function()
             local myBeli = LP.Data.Beli.Value
             local curName, curMas = GetMeleeData()
             local targetPos, buyCmd = nil, ""
             local needsGate = false
 
+            local COORD_LEG = CFrame.new(-985.49, 14.04, 3991.39)
+            local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
+            local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
+
+            -- FIX: Chỉ mua Black Leg nếu đang dùng Combat thật sự
             if curName == "Combat" and myBeli >= 150000 then
-                targetPos = CFrame.new(-985.49, 14.04, 3991.39); buyCmd = "BuyBlackLeg"
+                targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
+            -- Chuyển sang Electric nếu đã có Black Leg/Dark Step và đủ Mastery
             elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
-                targetPos = CFrame.new(-5384.67, 14.12, -2148.18); buyCmd = "BuyElectro"
+                targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
+            -- Chuyển sang Karate Cá nếu đã có Electric và đủ Mastery
             elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
-                targetPos = CFrame.new(61585.51, 19.15, 985.55); buyCmd = "BuyFishmanKarate"; needsGate = true
+                targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
+                needsGate = true
             end
 
             if targetPos then
                 _G.StopFarmForMelee = true
                 if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
-                    if TweenTo(GATE_ENTER_CFRAME) then GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS) end
+                    if TweenTo(GATE_ENTER_CFRAME) then
+                        GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
+                        task.wait(1)
+                    end
                 else
                     if TweenTo(targetPos) then GetCommF():InvokeServer(buyCmd) end
                 end
             else
-                _G.StopFarmForMelee = false 
+                _G.StopFarmForMelee = false
             end
         end)
     end

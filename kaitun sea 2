@@ -1,22 +1,21 @@
 -- ========================================================
--- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA 3 ]]
+-- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA (FIXED CONFLICT) ]]
 -- ========================================================
-_G.GoingToSea3 = false 
+_G.GoingToSea2 = false 
 
 task.spawn(function()
     while task.wait(3) do
         local lp = game:GetService("Players").LocalPlayer
         if lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("Level") then
             local myLevel = lp.Data.Level.Value
-            if myLevel >= 1500 then
-                _G.GoingToSea3 = true      
+            if myLevel >= 700 then
+                _G.GoingToSea2 = true      
                 _G.StopFarmForMelee = true 
                 _G.Grabfruit = false       
                 getgenv().AntiAFK = false  
-                print("--- Đã đạt Level 1500! Đang khởi động Auto Sea 3 ---")
+                print("--- Đã đạt Level 700! Đang khởi động Auto Sea 2 ---")
                 pcall(function()
-                    -- Chèn link Loadstring Sea 3 của bạn vào đây sau này
-                    -- loadstring(game:HttpGet("YOUR_SEA_3_LINK"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/Sea%202"))()
                 end)
                 break 
             end
@@ -25,19 +24,54 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 0. HÀM THÔNG BÁO ]]
+-- [[ 0. HÀM THÔNG BÁO & AUTO REDEEM CODES ]]
 -- ========================================================
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Giacdz Hub - Sea 2",
+            Title = "Giacdz Hub",
             Text = text,
             Duration = 3
         })
     end)
 end
 
-Notify("Đã Load Hub Kaitun Sea 2 Thành Công!")
+-- [ MODULE AUTO REDEEM CODES - CHẠY 1 LẦN ]
+local CodeList = {
+    "NOMOREHACK","BANEXPLOIT","WildDares","BossBuild","GetPranked","EARN_FRUITS","FIGHT4FRUIT",
+    "NOEXPLOITER","NOOB2ADMIN","CODESLIDE","ADMINHACKED","ADMINDARES","fruitconcepts","krazydares",
+    "TRIPLEABUSE","SEATROLLING","24NOADMIN","REWARDFUN","Chandler","NEWTROLL","KITT_RESET",
+    "Sub2CaptainMaui","kittgaming","Sub2Fer999","Enyu_is_Pro","Magicbus","JCWK","Starcodeheo",
+    "Bluxxy","fudd10_v2","SUB2GAMERROBOT_EXP1","Sub2NoobMaster123","Sub2UncleKizaru","Sub2Daigrock",
+    "Axiore","TantaiGaming","StrawHatMaine","Sub2OfficialNoobie","Fudd10","Bignews","TheGreatAce",
+    "SECRET_ADMIN","SUB2GAMERROBOT_RESET1","SUB2OFFICIALNOOBIE","AXIORE","BIGNEWS","BLUXXY",
+    "CHANDLER","ENYU_IS_PRO","FUDD10","FUDD10_V2","KITTGAMING","MAGICBUS","STARCODEHEO",
+    "STRAWHATMAINE","SUB2CAPTAINMAUI","SUB2DAIGROCK","SUB2FER999","SUB2NOOBMASTER123",
+    "SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE","1LOSTADMIN","EASTEREXP","LIGHTNINGABUSE"
+}
+
+task.spawn(function()
+    -- Đợi cho đến khi vào được Team
+    while task.wait(1) do
+        if game.Players.LocalPlayer.Team ~= nil then break end
+    end
+    
+    if not _G.CodesRedeemed then
+        _G.CodesRedeemed = true -- Đánh dấu đã nhập để không chạy lại
+        Notify("Đang tự động nhập Code x2 EXP...")
+        local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 5):WaitForChild("Redeem", 5)
+        
+        for _, code in ipairs(CodeList) do
+            pcall(function()
+                remote:InvokeServer(code)
+            end)
+            task.wait(0.2) -- Delay nhẹ để không bị kick vì spam remote
+        end
+        Notify("Đã nhập xong toàn bộ Code!")
+    end
+end)
+
+Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes + Auto Random Fruit!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
@@ -45,9 +79,11 @@ Notify("Đã Load Hub Kaitun Sea 2 Thành Công!")
 getgenv().Team = "Pirates" 
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
+getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
 _G.Grabfruit = true 
 _G.StopFarmForMelee = false 
+_G.RandomAuto = true -- Mặc định bật Auto Random Fruit
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -64,7 +100,23 @@ local function GetCommF()
 end
 
 -- ========================================================
--- [[ 🛡️ MODULE ANTI AFK & AUTO TEAM ]]
+-- [[ 🍓 MODULE AUTO RANDOM FRUIT ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(5) do -- Kiểm tra mỗi 5 giây để tránh lag
+        if _G.RandomAuto and not _G.GoingToSea2 then
+            pcall(function()
+                local remote = GetCommF()
+                if remote then
+                    remote:InvokeServer("Cousin", "Buy")
+                end
+            end)
+        end
+    end
+end)
+
+-- ========================================================
+-- [[ 🛡️ MODULE ANTI AFK ]]
 -- ========================================================
 local VirtualUser = game:GetService("VirtualUser")
 LP.Idled:Connect(function()
@@ -75,9 +127,10 @@ LP.Idled:Connect(function()
     end
 end)
 
+-- [ PHẦN CHỌN TEAM ]
 task.spawn(function()
     while task.wait(0.5) do
-        if _G.GoingToSea3 then continue end
+        if _G.GoingToSea2 then continue end
         if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
         pcall(function()
             local remote = GetCommF()
@@ -88,7 +141,26 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ ⚡ AUTO HAKI & TWEENING ]]
+-- [[ 🚀 AUTO TELEPORT SEA 2 KHI LEVEL >= 700 ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(2) do
+        pcall(function()
+            if LP and LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level") then
+                if LP.Data.Level.Value >= 700 then
+                    local Remote = GetCommF()
+                    if Remote then
+                        pcall(function() Remote:InvokeServer("TravelDressrosa") end)
+                        pcall(function() Remote:InvokeServer("TravelMain") end)
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ ⚡ AUTO HAKI ]]
 -- ========================================================
 task.spawn(function()
     while task.wait(3) do
@@ -101,6 +173,9 @@ task.spawn(function()
     end
 end)
 
+-- ========================================================
+-- [[ 🚁 MODULE TWEEN VÀ CỐ ĐỊNH NHÂN VẬT ]]
+-- ========================================================
 local function TweenTo(targetPos)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -118,6 +193,43 @@ local function TweenTo(targetPos)
         root.CFrame = targetPos
         return true
     end
+end
+
+-- ========================================================
+-- [[ 🌀 CỔNG DỊCH CHUYỂT ĐẢO CÁ (TELEPORT LOGIC) ]]
+-- ========================================================
+local GATE_ENTER_CFRAME = CFrame.new(3864.68, 6.73, -1926.21)
+local GATE_ENTER_POS = Vector3.new(61163, 11, 1819)
+local GATE_EXIT_CFRAME = CFrame.new(61163, 11, 1819)
+local GATE_EXIT_POS = Vector3.new(3864.68, 6.73, -1926.21)
+
+local function CheckTeleport(targetCFrame)
+    local char = LP.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    local myPos = char.HumanoidRootPart.Position
+    local destPos = targetCFrame.Position
+
+    if destPos.X > 50000 and myPos.X < 50000 then
+        if (myPos - GATE_ENTER_CFRAME.Position).Magnitude > 15 then
+            TweenTo(GATE_ENTER_CFRAME)
+        else
+            GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
+            task.wait(1)
+        end
+        return true
+    end
+    
+    if destPos.X < 50000 and myPos.X > 50000 then
+        if (myPos - GATE_EXIT_CFRAME.Position).Magnitude > 15 then
+            TweenTo(GATE_EXIT_CFRAME)
+        else
+            GetCommF():InvokeServer("requestEntrance", GATE_EXIT_POS)
+            task.wait(1)
+        end
+        return true
+    end
+    
+    return false
 end
 
 -- ========================================================
@@ -140,7 +252,7 @@ end)
 
 task.spawn(function()
     while task.wait() do
-        if _G.GoingToSea3 then continue end
+        if _G.GoingToSea2 then continue end
         pcall(function()
             local char = LP.Character
             if char then
@@ -150,6 +262,84 @@ task.spawn(function()
                 hl.FillColor = Color3.fromHSV(hue, 1, 1) 
                 hl.OutlineColor = Color3.fromHSV(hue, 1, 1) 
                 hl.FillTransparency = 0.5
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
+-- ========================================================
+local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
+
+task.spawn(function()
+    while task.wait(5) do
+        if _G.GoingToSea2 then continue end
+        pcall(function()
+            for _, fruitData in ipairs(FruitList) do
+                local fruitTool = LP.Backpack:FindFirstChild(fruitData[1]) or LP.Character:FindFirstChild(fruitData[1])
+                if fruitTool then GetCommF():InvokeServer("StoreFruit", fruitData[2], fruitTool); break end
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 3. MODULE AUTO BUY MELEE (FIXED BY GIACDZ) ]]
+-- ========================================================
+local function GetMeleeData()
+    local name, mas = "None", 0
+    local sources = {LP.Backpack, LP.Character}
+    for _, source in pairs(sources) do
+        if source then
+            for _, v in pairs(source:GetChildren()) do
+                if v:IsA("Tool") and v.ToolTip == "Melee" then
+                    name = v.Name
+                    if v:FindFirstChild("Level") then mas = v.Level.Value end
+                    return name, mas -- Ưu tiên lấy Melee đang có
+                end
+            end
+        end
+    end
+    return name, mas
+end
+
+task.spawn(function()
+    while task.wait(2) do -- Tăng thời gian check lên 2s để game load kịp
+        pcall(function()
+            local myBeli = LP.Data.Beli.Value
+            local curName, curMas = GetMeleeData()
+            local targetPos, buyCmd = nil, ""
+            local needsGate = false
+
+            local COORD_LEG = CFrame.new(-985.49, 14.04, 3991.39)
+            local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
+            local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
+
+            -- FIX: Chỉ mua Black Leg nếu đang dùng Combat thật sự
+            if curName == "Combat" and myBeli >= 150000 then
+                targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
+            -- Chuyển sang Electric nếu đã có Black Leg/Dark Step và đủ Mastery
+            elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
+                targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
+            -- Chuyển sang Karate Cá nếu đã có Electric và đủ Mastery
+            elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
+                targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
+                needsGate = true
+            end
+
+            if targetPos then
+                _G.StopFarmForMelee = true
+                if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
+                    if TweenTo(GATE_ENTER_CFRAME) then
+                        GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
+                        task.wait(1)
+                    end
+                else
+                    if TweenTo(targetPos) then GetCommF():InvokeServer(buyCmd) end
+                end
+            else
+                _G.StopFarmForMelee = false
             end
         end)
     end
@@ -274,13 +464,14 @@ task.spawn(function()
         end)
     end
 end)
+
 -- ========================================================
--- [[ 4. AUTO STATS & MISC ]]
+-- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
-        if _G.GoingToSea3 then continue end 
+        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
         pcall(function()
             local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
             local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
@@ -308,12 +499,12 @@ game:GetService("RunService").Stepped:Connect(function()
 end)
 
 -- ========================================================
--- [[ 5. MODULE SERVER HOP ]]
+-- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
 -- ========================================================
 task.spawn(function()
     local HopTime = 1700 
     while task.wait(1) do
-        if _G.GoingToSea3 then continue end 
+        if _G.GoingToSea2 then continue end -- Dừng server hop khi đang qua sea
         HopTime = HopTime - 1
         if HopTime <= 0 then
             pcall(function()
@@ -339,3 +530,5 @@ task.spawn(function()
         end
     end
 end)
+
+loadstring(game:HttpGet("https://pandadevelopment.net/virtual/file/e9c206fd76482ee2"))()

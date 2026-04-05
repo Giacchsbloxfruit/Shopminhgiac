@@ -1,15 +1,15 @@
 -- ========================================================
 -- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA (FIXED CONFLICT) ]]
 -- ========================================================
-_G.GoingToSea2 = false 
+_G.GoingToSea3 = false 
 
 task.spawn(function()
     while task.wait(3) do
         local lp = game:GetService("Players").LocalPlayer
         if lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("Level") then
             local myLevel = lp.Data.Level.Value
-            if myLevel >= 700 then
-                _G.GoingToSea2 = true      
+            if myLevel >= 1500 then
+                _G.GoingToSea3 = true      
                 _G.StopFarmForMelee = true 
                 _G.Grabfruit = false       
                 getgenv().AntiAFK = false  
@@ -147,7 +147,7 @@ task.spawn(function()
     while task.wait(2) do
         pcall(function()
             if LP and LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level") then
-                if LP.Data.Level.Value >= 700 then
+                if LP.Data.Level.Value >= 1505 then
                     local Remote = GetCommF()
                     if Remote then
                         pcall(function() Remote:InvokeServer("TravelDressrosa") end)
@@ -196,43 +196,6 @@ local function TweenTo(targetPos)
 end
 
 -- ========================================================
--- [[ 🌀 CỔNG DỊCH CHUYỂT ĐẢO CÁ (TELEPORT LOGIC) ]]
--- ========================================================
-local GATE_ENTER_CFRAME = CFrame.new(3864.68, 6.73, -1926.21)
-local GATE_ENTER_POS = Vector3.new(61163, 11, 1819)
-local GATE_EXIT_CFRAME = CFrame.new(61163, 11, 1819)
-local GATE_EXIT_POS = Vector3.new(3864.68, 6.73, -1926.21)
-
-local function CheckTeleport(targetCFrame)
-    local char = LP.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-    local myPos = char.HumanoidRootPart.Position
-    local destPos = targetCFrame.Position
-
-    if destPos.X > 50000 and myPos.X < 50000 then
-        if (myPos - GATE_ENTER_CFRAME.Position).Magnitude > 15 then
-            TweenTo(GATE_ENTER_CFRAME)
-        else
-            GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
-            task.wait(1)
-        end
-        return true
-    end
-    
-    if destPos.X < 50000 and myPos.X > 50000 then
-        if (myPos - GATE_EXIT_CFRAME.Position).Magnitude > 15 then
-            TweenTo(GATE_EXIT_CFRAME)
-        else
-            GetCommF():InvokeServer("requestEntrance", GATE_EXIT_POS)
-            task.wait(1)
-        end
-        return true
-    end
-    
-    return false
-end
-
--- ========================================================
 -- [[ ⚡ MODULE FIX LAG & HIGHLIGHT ]]
 -- ========================================================
 task.spawn(function()
@@ -252,7 +215,7 @@ end)
 
 task.spawn(function()
     while task.wait() do
-        if _G.GoingToSea2 then continue end
+        if _G.GoingToSea3 then continue end
         pcall(function()
             local char = LP.Character
             if char then
@@ -274,7 +237,7 @@ local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"
 
 task.spawn(function()
     while task.wait(5) do
-        if _G.GoingToSea2 then continue end
+        if _G.GoingToSea3 then continue end
         pcall(function()
             for _, fruitData in ipairs(FruitList) do
                 local fruitTool = LP.Backpack:FindFirstChild(fruitData[1]) or LP.Character:FindFirstChild(fruitData[1])
@@ -370,7 +333,7 @@ local QuestList = {
     {Min = 1350, Max = 1374, Name = "FrostQuest", Lv = 1, Mon = "Arctic Warrior", NPC = CFrame.new(5667.6582, 26.7997818, -6486.08984, -0.933587909, -0, -0.358349502, -0, 1, -0, 0.358349502, -0, -0.933587909), MonPos = CFrame.new(5966.24609375, 62.97002029418945, -6179.3828125)},
     {Min = 1375, Max = 1424, Name = "FrostQuest", Lv = 2, Mon = "Snow Lurker", NPC = CFrame.new(5667.6582, 26.7997818, -6486.08984, -0.933587909, -0, -0.358349502, -0, 1, -0, 0.358349502, -0, -0.933587909), MonPos = CFrame.new(5407.07373046875, 69.19437408447266, -6880.88037109375)},
     {Min = 1425, Max = 1449, Name = "ForgottenQuest", Lv = 1, Mon = "Sea Soldier", NPC = CFrame.new(-3054.44458, 235.544281, -10142.8193, 0.990270376, -0, -0.13915664, -0, 1, -0, 0.13915664, -0, 0.990270376), MonPos = CFrame.new(-3028.2236328125, 64.67451477050781, -9775.4267578125)},
-    {Min = 1450, Max = 1499, Name = "ForgottenQuest", Lv = 2, Mon = "Water Fighter", NPC = CFrame.new(-3054.44458, 235.544281, -10142.8193, 0.990270376, -0, -0.13915664, -0, 1, -0, 0.13915664, -0, 0.990270376), MonPos = CFrame.new(-3352.9013671875, 285.01556396484375, -10534.841796875)},
+    {Min = 1450, Max = 1501, Name = "ForgottenQuest", Lv = 2, Mon = "Water Fighter", NPC = CFrame.new(-3054.44458, 235.544281, -10142.8193, 0.990270376, -0, -0.13915664, -0, 1, -0, 0.13915664, -0, 0.990270376), MonPos = CFrame.new(-3352.9013671875, 285.01556396484375, -10534.841796875)},
 }
 local NameQuest, LevelQuest, NameMon, CFrameQuest, CFrameMon = "", 1, "", nil, nil
 
@@ -471,7 +434,7 @@ end)
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
-        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
+        if _G.GoingToSea3 then continue end -- Dừng cộng điểm khi qua sea
         pcall(function()
             local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
             local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))

@@ -1,0 +1,8 @@
+local id = game.PlaceId
+if id == 27539155 then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Omg"))()
+elseif id == 4442272181 then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/kaitun%20sea%202"))()
+elseif id == 7447339503 then
+    loadstring(game:HttpGet("Link_Sea_3"))()
+end

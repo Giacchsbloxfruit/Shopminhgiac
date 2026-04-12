@@ -6,10 +6,10 @@ if PlaceId == 2753915549 or PlaceId == 2753915133 then
     end)
 elseif PlaceId == 4442272183 then
     pcall(function()
-        loadstring(game:HttpGet("LINK_SCRIPT_SEA_2_CUA_BAN_TAI_DAY"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/kaitun%20sea%202"))()
     end)
 elseif PlaceId == 7449423635 then
     pcall(function()
-        loadstring(game:HttpGet("LINK_SCRIPT_SEA_3_CUA_BAN_TAI_DAY"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Kaitun"))()
     end)
 end

@@ -47,7 +47,7 @@ local CodeList = {
     "SECRET_ADMIN","SUB2GAMERROBOT_RESET1","SUB2OFFICIALNOOBIE","AXIORE","BIGNEWS","BLUXXY",
     "CHANDLER","ENYU_IS_PRO","FUDD10","FUDD10_V2","KITTGAMING","MAGICBUS","STARCODEHEO",
     "STRAWHATMAINE","SUB2CAPTAINMAUI","SUB2DAIGROCK","SUB2FER999","SUB2NOOBMASTER123",
-    "SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE","1LOSTADMIN","EASTEREXP","LIGHTNINGABUSE"
+    "SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE"
 }
 
 task.spawn(function()
@@ -71,7 +71,7 @@ task.spawn(function()
     end
 end)
 
-Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes + Auto Random Fruit!")
+Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes!")
 
 -- ========================================================
 -- [[ 1. CONFIGURATION & CORE ]]
@@ -83,7 +83,6 @@ getgenv().ReqMasToBuy = 400
 getgenv().AntiAFK = true
 _G.Grabfruit = true 
 _G.StopFarmForMelee = false 
-_G.RandomAuto = true -- Mặc định bật Auto Random Fruit
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -98,22 +97,6 @@ local function GetCommF()
     end
     return found
 end
-
--- ========================================================
--- [[ 🍓 MODULE AUTO RANDOM FRUIT ]]
--- ========================================================
-task.spawn(function()
-    while task.wait(5) do -- Kiểm tra mỗi 5 giây để tránh lag
-        if _G.RandomAuto and not _G.GoingToSea2 then
-            pcall(function()
-                local remote = GetCommF()
-                if remote then
-                    remote:InvokeServer("Cousin", "Buy")
-                end
-            end)
-        end
-    end
-end)
 
 -- ========================================================
 -- [[ 🛡️ MODULE ANTI AFK ]]
@@ -137,25 +120,6 @@ task.spawn(function()
             if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
             if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
         end)                
-    end
-end)
-
--- ========================================================
--- [[ 🚀 AUTO TELEPORT SEA 2 KHI LEVEL >= 700 ]]
--- ========================================================
-task.spawn(function()
-    while task.wait(2) do
-        pcall(function()
-            if LP and LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Level") then
-                if LP.Data.Level.Value >= 700 then
-                    local Remote = GetCommF()
-                    if Remote then
-                        pcall(function() Remote:InvokeServer("TravelDressrosa") end)
-                        pcall(function() Remote:InvokeServer("TravelMain") end)
-                    end
-                end
-            end
-        end)
     end
 end)
 
@@ -196,43 +160,6 @@ local function TweenTo(targetPos)
 end
 
 -- ========================================================
--- [[ 🌀 CỔNG DỊCH CHUYỂT ĐẢO CÁ (TELEPORT LOGIC) ]]
--- ========================================================
-local GATE_ENTER_CFRAME = CFrame.new(3864.68, 6.73, -1926.21)
-local GATE_ENTER_POS = Vector3.new(61163, 11, 1819)
-local GATE_EXIT_CFRAME = CFrame.new(61163, 11, 1819)
-local GATE_EXIT_POS = Vector3.new(3864.68, 6.73, -1926.21)
-
-local function CheckTeleport(targetCFrame)
-    local char = LP.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-    local myPos = char.HumanoidRootPart.Position
-    local destPos = targetCFrame.Position
-
-    if destPos.X > 50000 and myPos.X < 50000 then
-        if (myPos - GATE_ENTER_CFRAME.Position).Magnitude > 15 then
-            TweenTo(GATE_ENTER_CFRAME)
-        else
-            GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
-            task.wait(1)
-        end
-        return true
-    end
-    
-    if destPos.X < 50000 and myPos.X > 50000 then
-        if (myPos - GATE_EXIT_CFRAME.Position).Magnitude > 15 then
-            TweenTo(GATE_EXIT_CFRAME)
-        else
-            GetCommF():InvokeServer("requestEntrance", GATE_EXIT_POS)
-            task.wait(1)
-        end
-        return true
-    end
-    
-    return false
-end
-
--- ========================================================
 -- [[ ⚡ MODULE FIX LAG & HIGHLIGHT ]]
 -- ========================================================
 task.spawn(function()
@@ -270,6 +197,7 @@ end)
 -- ========================================================
 -- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
 -- ========================================================
+-- (Giữ nguyên bảng FruitList cũ của bạn)
 local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
 
 task.spawn(function()
@@ -284,98 +212,52 @@ task.spawn(function()
     end
 end)
 
--- ========================================================
--- [[ 3. MODULE AUTO BUY MELEE (FIXED BY GIACDZ) ]]
--- ========================================================
-local function GetMeleeData()
-    local name, mas = "None", 0
-    local sources = {LP.Backpack, LP.Character}
-    for _, source in pairs(sources) do
-        if source then
-            for _, v in pairs(source:GetChildren()) do
-                if v:IsA("Tool") and v.ToolTip == "Melee" then
-                    name = v.Name
-                    if v:FindFirstChild("Level") then mas = v.Level.Value end
-                    return name, mas -- Ưu tiên lấy Melee đang có
-                end
-            end
-        end
-    end
-    return name, mas
-end
 
-task.spawn(function()
-    while task.wait(2) do -- Tăng thời gian check lên 2s để game load kịp
-        pcall(function()
-            local myBeli = LP.Data.Beli.Value
-            local curName, curMas = GetMeleeData()
-            local targetPos, buyCmd = nil, ""
-            local needsGate = false
-
-            local COORD_LEG = CFrame.new(-985.49, 14.04, 3991.39)
-            local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
-            local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
-
-            -- FIX: Chỉ mua Black Leg nếu đang dùng Combat thật sự
-            if curName == "Combat" and myBeli >= 150000 then
-                targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
-            -- Chuyển sang Electric nếu đã có Black Leg/Dark Step và đủ Mastery
-            elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
-                targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
-            -- Chuyển sang Karate Cá nếu đã có Electric và đủ Mastery
-            elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
-                targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
-                needsGate = true
-            end
-
-            if targetPos then
-                _G.StopFarmForMelee = true
-                if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
-                    if TweenTo(GATE_ENTER_CFRAME) then
-                        GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
-                        task.wait(1)
-                    end
-                else
-                    if TweenTo(targetPos) then GetCommF():InvokeServer(buyCmd) end
-                end
-            else
-                _G.StopFarmForMelee = false
-            end
-        end)
-    end
-end)
 
 -- ========================================================
 -- [[ 4. BẢNG NHIỆM VỤ & FARM LOGIC ]]
 -- ========================================================
+-- (Giữ nguyên phần QuestList và các hàm hỗ trợ của bạn)
 local QuestList = {
-    {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, Mon = "Bandit", NPC = CFrame.new(1059.37, 15.45, 1550.42), MonPos = CFrame.new(1045.96, 27.00, 1560.82)},
-    {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, Mon = "Monkey", NPC = CFrame.new(-1598.09, 35.55, 153.30), MonPos = CFrame.new(-1623.2, 22, -188)},
-    {Min = 15, Max = 29, Name = "JungleQuest", Lv = 2, Mon = "Gorilla", NPC = CFrame.new(-1598.09, 35.55, 153.30), MonPos = CFrame.new(-1237.6, 6.2, -486.4)},
-    {Min = 30, Max = 39, Name = "BuggyQuest1", Lv = 1, Mon = "Pirate", NPC = CFrame.new(-1141.07, 4.10, 3827.25), MonPos = CFrame.new(-1213.4, 4.7, 3920.2)},
-    {Min = 40, Max = 59, Name = "BuggyQuest1", Lv = 2, Mon = "Brute", NPC = CFrame.new(-1141.07, 4.10, 3827.25), MonPos = CFrame.new(-1146.1, 14.7, 4308.2)},
-    {Min = 60, Max = 74, Name = "DesertQuest", Lv = 1, Mon = "Desert Bandit", NPC = CFrame.new(894.49, 5.57, 4392.11), MonPos = CFrame.new(985.1, 16.2, 4418.4)},
-    {Min = 75, Max = 89, Name = "DesertQuest", Lv = 2, Mon = "Desert Officer", NPC = CFrame.new(894.49, 5.57, 4392.11), MonPos = CFrame.new(1547.1, 14.7, 4382.2)},
-    {Min = 90, Max = 99, Name = "SnowQuest", Lv = 1, Mon = "Snow Bandit", NPC = CFrame.new(1389.74, 87.27, -1298.91), MonPos = CFrame.new(1356.1, 106.2, -1328.4)},
-    {Min = 100, Max = 119, Name = "SnowQuest", Lv = 2, Mon = "Snowman", NPC = CFrame.new(1389.74, 87.27, -1298.91), MonPos = CFrame.new(1308.1, 150.2, -1475.2)},
-    {Min = 120, Max = 149, Name = "MarineQuest2", Lv = 1, Mon = "Chief Petty Officer", NPC = CFrame.new(-5039.58, 27.35, 4324.68), MonPos = CFrame.new(-4881.23, 22.65, 4273.75)},
-    {Min = 150, Max = 174, Name = "SkyQuest", Lv = 1, Mon = "Sky Bandit", NPC = CFrame.new(-4839.53, 716.36, -2619.44), MonPos = CFrame.new(-4953.20, 295.74, -2899.22)},
-    {Min = 175, Max = 189, Name = "SkyQuest", Lv = 2, Mon = "Dark Master", NPC = CFrame.new(-4839.53, 716.36, -2619.44), MonPos = CFrame.new(-5259.84, 391.39, -2229.03)},
-    {Min = 190, Max = 209, Name = "PrisonerQuest", Lv = 1, Mon = "Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5411, 13, 507)},
-    {Min = 210, Max = 249, Name = "PrisonerQuest", Lv = 2, Mon = "Dangerous Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5654, 15, 866)},
-    {Min = 250, Max = 274, Name = "ColosseumQuest", Lv = 1, Mon = "Toga Warrior", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1820, 51, -2741)},
-    {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 2, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1268, 30, -2996)},
-    {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, Mon = "Military Soldier", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5395.2, 27.2, 8510.4)},
-    {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, Mon = "Military Spy", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5816.1, 83.2, 8438.4)},
-    {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, Mon = "Fishman Warrior", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(60938.2, 55.2, 1515.2)},
-    {Min = 400, Max = 449, Name = "FishmanQuest", Lv = 2, Mon = "Fishman Commando", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(61965.2, 30.2, 1475.2)},
-    {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, Mon = "God's Guard", NPC = CFrame.new(-4720, 846, -1951), MonPos = CFrame.new(-4720, 846, -1951)},
-    {Min = 475, Max = 524, Name = "SkyExp1Quest", Lv = 2, Mon = "Shanda", NPC = CFrame.new(-7861, 5545, -381), MonPos = CFrame.new(-7741, 5580, -395)},
-    {Min = 525, Max = 549, Name = "SkyExp2Quest", Lv = 1, Mon = "Royal Squad", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new(-7727, 5650, -1410)},
-    {Min = 550, Max = 624, Name = "SkyExp2Quest", Lv = 2, Mon = "Royal Soldier", NPC = CFrame.new(-7903, 5636, -1412), MonPos = CFrame.new(-7894, 5640, -1629)},
-    {Min = 625, Max = 649, Name = "FountainQuest", Lv = 1, Mon = "Galley Pirate", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5391, 70, 4023)},
-    {Min = 650, Max = 701, Name = "FountainQuest", Lv = 2, Mon = "Galley Captain", NPC = CFrame.new(5258, 39, 4052), MonPos = CFrame.new(5985, 70, 4790)},
+    {Min = 1500, Max = 1524, Mon = "Pirate Millionaire", Qname = "PiratePortQuest", Qdata = 1, PosQ = CFrame.new(-712.8, 98.5, 5711.9), PosM = CFrame.new(-712.8, 98.5, 5711.9)},
+    {Min = 1525, Max = 1574, Mon = "Pistol Billionaire", Qname = "PiratePortQuest", Qdata = 2, PosQ = CFrame.new(-723.4, 147.4, 5931.9), PosM = CFrame.new(-723.4, 147.4, 5931.9)},
+    {Min = 1575, Max = 1599, Mon = "Dragon Crew Warrior", Qname = "AmazonQuest", Qdata = 1, PosQ = CFrame.new(6779.0, 111.1, -801.2), PosM = CFrame.new(6779.0, 111.1, -801.2)},
+    {Min = 1600, Max = 1624, Mon = "Dragon Crew Archer", Qname = "AmazonQuest", Qdata = 2, PosQ = CFrame.new(6955.8, 546.6, 309.0), PosM = CFrame.new(6955.8, 546.6, 309.0)},
+    {Min = 1625, Max = 1649, Mon = "Hydra Enforcer", Qname = "VenomCrewQuest", Qdata = 1, PosQ = CFrame.new(4620.6, 1002.2, 399.0), PosM = CFrame.new(4620.6, 1002.2, 399.0)},
+    {Min = 1650, Max = 1699, Mon = "Venomous Assailant", Qname = "VenomCrewQuest", Qdata = 2, PosQ = CFrame.new(4697.5, 1100.6, 946.4), PosM = CFrame.new(4697.5, 1100.6, 946.4)},
+    {Min = 1700, Max = 1724, Mon = "Marine Commodore", Qname = "MarineTreeIsland", Qdata = 1, PosQ = CFrame.new(2180.5, 27.8, -6741.5), PosM = CFrame.new(2286.0, 73.1, -7159.8)},
+    {Min = 1725, Max = 1774, Mon = "Marine Rear Admiral", Qname = "MarineTreeIsland", Qdata = 2, PosQ = CFrame.new(2179.9, 28.7, -6740.0), PosM = CFrame.new(3656.7, 160.5, -7001.5)},
+    {Min = 1775, Max = 1799, Mon = "Fishman Raider", Qname = "DeepForestIsland3", Qdata = 1, PosQ = CFrame.new(-10581.6, 330.8, -8761.1), PosM = CFrame.new(-10407.5, 331.7, -8368.5)},
+    {Min = 1800, Max = 1824, Mon = "Fishman Captain", Qname = "DeepForestIsland3", Qdata = 2, PosQ = CFrame.new(-10581.6, 330.8, -8761.1), PosM = CFrame.new(-10994.7, 352.3, -9002.1)},
+    {Min = 1825, Max = 1849, Mon = "Forest Pirate", Qname = "DeepForestIsland", Qdata = 1, PosQ = CFrame.new(-13234.0, 331.4, -7625.4), PosM = CFrame.new(-13274.4, 332.3, -7769.5)},
+    {Min = 1850, Max = 1899, Mon = "Mythological Pirate", Qname = "DeepForestIsland", Qdata = 2, PosQ = CFrame.new(-13234.0, 331.4, -7625.4), PosM = CFrame.new(-13680.6, 501.0, -6991.1)},
+    {Min = 1900, Max = 1924, Mon = "Jungle Pirate", Qname = "DeepForestIsland2", Qdata = 1, PosQ = CFrame.new(-12680.3, 389.9, -9902.0), PosM = CFrame.new(-12256.1, 331.7, -10485.8)},
+    {Min = 1925, Max = 1974, Mon = "Musketeer Pirate", Qname = "DeepForestIsland2", Qdata = 2, PosQ = CFrame.new(-12680.3, 389.9, -9902.0), PosM = CFrame.new(-13457.9, 391.5, -9859.1)},
+    {Min = 1975, Max = 1999, Mon = "Reborn Skeleton", Qname = "HauntedQuest1", Qdata = 1, PosQ = CFrame.new(-9479.2, 141.2, 5566.0), PosM = CFrame.new(-8763.7, 165.7, 6159.8)},
+    {Min = 2000, Max = 2024, Mon = "Living Zombie", Qname = "HauntedQuest1", Qdata = 2, PosQ = CFrame.new(-9479.2, 141.2, 5566.0), PosM = CFrame.new(-10144.1, 138.6, 5838.0)},
+    {Min = 2025, Max = 2049, Mon = "Demonic Soul", Qname = "HauntedQuest2", Qdata = 1, PosQ = CFrame.new(-9516.9, 172.0, 6078.4), PosM = CFrame.new(-9505.8, 172.1, 6158.9)},
+    {Min = 2050, Max = 2074, Mon = "Posessed Mummy", Qname = "HauntedQuest2", Qdata = 2, PosQ = CFrame.new(-9516.9, 172.0, 6078.4), PosM = CFrame.new(-9582.0, 6.2, 6205.4)},
+    {Min = 2075, Max = 2099, Mon = "Peanut Scout", Qname = "NutsIslandQuest", Qdata = 1, PosQ = CFrame.new(-2104.3, 38.1, -10194.2), PosM = CFrame.new(-2143.2, 47.7, -10029.9)},
+    {Min = 2100, Max = 2124, Mon = "Peanut President", Qname = "NutsIslandQuest", Qdata = 2, PosQ = CFrame.new(-2104.3, 38.1, -10194.2), PosM = CFrame.new(-1859.3, 38.1, -10422.4)},
+    {Min = 2125, Max = 2149, Mon = "Ice Cream Chef", Qname = "IceCreamIslandQuest", Qdata = 1, PosQ = CFrame.new(-820.6, 65.8, -10965.7), PosM = CFrame.new(-872.2, 65.8, -10919.9)},
+    {Min = 2150, Max = 2199, Mon = "Ice Cream Commander", Qname = "IceCreamIslandQuest", Qdata = 2, PosQ = CFrame.new(-820.6, 65.8, -10965.7), PosM = CFrame.new(-558.0, 112.0, -11290.7)},
+    {Min = 2200, Max = 2224, Mon = "Cookie Crafter", Qname = "CakeQuest1", Qdata = 1, PosQ = CFrame.new(-2021.3, 37.7, -12028.7), PosM = CFrame.new(-2374.1, 37.7, -12125.3)},
+    {Min = 2225, Max = 2249, Mon = "Cake Guard", Qname = "CakeQuest1", Qdata = 2, PosQ = CFrame.new(-2021.3, 37.7, -12028.7), PosM = CFrame.new(-1598.3, 43.7, -12244.5)},
+    {Min = 2250, Max = 2274, Mon = "Baking Staff", Qname = "CakeQuest2", Qdata = 1, PosQ = CFrame.new(-1927.9, 37.7, -12842.5), PosM = CFrame.new(-1887.8, 77.6, -12998.3)},
+    {Min = 2275, Max = 2299, Mon = "Head Baker", Qname = "CakeQuest2", Qdata = 2, PosQ = CFrame.new(-1927.9, 37.7, -12842.5), PosM = CFrame.new(-2216.1, 82.8, -12869.2)},
+    {Min = 2300, Max = 2324, Mon = "Cocoa Warrior", Qname = "ChocQuest1", Qdata = 1, PosQ = CFrame.new(233.2, 29.8, -12201.2), PosM = CFrame.new(-21.5, 80.5, -12352.3)},
+    {Min = 2325, Max = 2349, Mon = "Chocolate Bar Battler", Qname = "ChocQuest1", Qdata = 2, PosQ = CFrame.new(233.2, 29.8, -12201.2), PosM = CFrame.new(582.5, 77.1, -12463.1)},
+    {Min = 2350, Max = 2374, Mon = "Sweet Thief", Qname = "ChocQuest2", Qdata = 1, PosQ = CFrame.new(150.5, 30.6, -12774.5), PosM = CFrame.new(165.1, 76.0, -12600.8)},
+    {Min = 2375, Max = 2399, Mon = "Candy Rebel", Qname = "ChocQuest2", Qdata = 2, PosQ = CFrame.new(150.5, 30.6, -12774.5), PosM = CFrame.new(134.8, 77.2, -12876.5)},
+    {Min = 2400, Max = 2449, Mon = "Candy Pirate", Qname = "CandyQuest1", Qdata = 1, PosQ = CFrame.new(-1150.0, 20.3, -14446.3), PosM = CFrame.new(-1310.5, 26.0, -14562.4)},
+    {Min = 2450, Max = 2474, Mon = "Isle Outlaw", Qname = "TikiQuest1", Qdata = 1, PosQ = CFrame.new(-16548.8, 55.6, -172.8), PosM = CFrame.new(-16479.9, 226.6, -300.3)},
+    {Min = 2475, Max = 2499, Mon = "Island Boy", Qname = "TikiQuest1", Qdata = 2, PosQ = CFrame.new(-16548.8, 55.6, -172.8), PosM = CFrame.new(-16849.3, 192.8, -150.7)},
+    {Min = 2500, Max = 2524, Mon = "Sun-kissed Warrior", Qname = "TikiQuest2", Qdata = 1, PosQ = CFrame.new(-16538.0, 55.0, 1049.0), PosM = CFrame.new(-16347.0, 64.0, 984.0)},
+    {Min = 2525, Max = 2550, Mon = "Isle Champion", Qname = "TikiQuest2", Qdata = 2, PosQ = CFrame.new(-16541.0, 57.3, 1051.4), PosM = CFrame.new(-16602.1, 130.3, 1087.2)},
+    {Min = 2551, Max = 2574, Mon = "Serpent Hunter", Qname = "TikiQuest3", Qdata = 1, PosQ = CFrame.new(-16679.4, 176.7, 1474.3), PosM = CFrame.new(-16679.4, 176.7, 1474.3)},
+    {Min = 2575, Max = 3000, Mon = "Skull Slayer", Qname = "TikiQuest3", Qdata = 2, PosQ = CFrame.new(-16759.5, 71.2, 1595.3), PosM = CFrame.new(-16759.5, 71.2, 1595.3)}
 }
+
 
 function CheckQuest()
     local myLv = LP.Data.Level.Value

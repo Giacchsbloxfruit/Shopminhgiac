@@ -1,0 +1,39 @@
+_G.AutoAttack = true
+_G.Distance = 65 
+
+local Player = game:GetService("Players").LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Sửa lại đường dẫn đúng theo Dex: Net nằm trong Modules
+local NetFolder = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+local RegisterAttack = NetFolder:WaitForChild("RE/RegisterAttack")
+local RegisterHit = NetFolder:WaitForChild("RE/RegisterHit")
+
+task.spawn(function()
+    print("Đã sửa lỗi path! Đang bắt đầu vả quái...")
+    while _G.AutoAttack do
+        task.wait(0.1) 
+        pcall(function()
+            local tool = Player.Character:FindFirstChildOfClass("Tool")
+            if not tool then return end
+
+            for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    local enemyPart = v:FindFirstChild("HumanoidRootPart")
+                    local myPart = Player.Character:FindFirstChild("HumanoidRootPart")
+                    
+                    if enemyPart and myPart then
+                        local dist = (myPart.Position - enemyPart.Position).Magnitude
+                        
+                        if dist <= _G.Distance then
+                            -- Vung tay
+                            RegisterAttack:FireServer()
+                            -- Xác nhận sát thương (để hiện ra mấy cái 'hit' trong Workspace)
+                            RegisterHit:FireServer(enemyPart, {enemyPart})
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)

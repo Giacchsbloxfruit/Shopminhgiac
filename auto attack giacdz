@@ -1,36 +1,28 @@
 _G.AutoAttack = true
-_G.Distance = 65 
 
-local Player = game:GetService("Players").LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- Sửa lại đường dẫn đúng theo Dex: Net nằm trong Modules
-local NetFolder = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-local RegisterAttack = NetFolder:WaitForChild("RE/RegisterAttack")
-local RegisterHit = NetFolder:WaitForChild("RE/RegisterHit")
+local Net = game:GetService("ReplicatedStorage").Modules.Net
+local Player = game.Players.LocalPlayer
 
 task.spawn(function()
-    print("Đã sửa lỗi path! Đang bắt đầu vả quái...")
     while _G.AutoAttack do
-        task.wait(0.1) 
+        -- Thay vì 0.1 cố định, dùng math.random để tạo nhịp đánh tự nhiên hơn
+        task.wait(math.random(8, 12) / 100) 
+        
         pcall(function()
-            local tool = Player.Character:FindFirstChildOfClass("Tool")
-            if not tool then return end
+            local char = Player.Character
+            local root = char:FindFirstChild("HumanoidRootPart")
+            -- Chỉ chạy tiếp nếu đang cầm vũ khí (Tool)
+            if not (char and root and char:FindFirstChildOfClass("Tool")) then return end
 
-            for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    local enemyPart = v:FindFirstChild("HumanoidRootPart")
-                    local myPart = Player.Character:FindFirstChild("HumanoidRootPart")
-                    
-                    if enemyPart and myPart then
-                        local dist = (myPart.Position - enemyPart.Position).Magnitude
-                        
-                        if dist <= _G.Distance then
-                            -- Vung tay
-                            RegisterAttack:FireServer()
-                            -- Xác nhận sát thương (để hiện ra mấy cái 'hit' trong Workspace)
-                            RegisterHit:FireServer(enemyPart, {enemyPart})
-                        end
+            for _, e in pairs(workspace.Enemies:GetChildren()) do
+                local eRoot = e:FindFirstChild("HumanoidRootPart")
+                if eRoot and e.Humanoid.Health > 0 then
+                    -- Kiểm tra khoảng cách (Rút xuống 60 để an toàn hơn)
+                    if (root.Position - eRoot.Position).Magnitude <= 60 then
+                        Net["RE/RegisterAttack"]:FireServer()
+                        Net["RE/RegisterHit"]:FireServer(eRoot, {eRoot})
+                        -- Thêm break nếu bạn chỉ muốn đánh 1 con quái 1 lúc để đỡ lag/giảm spam
+                        -- break 
                     end
                 end
             end

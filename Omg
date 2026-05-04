@@ -8,7 +8,7 @@ task.spawn(function()
         local lp = game:GetService("Players").LocalPlayer
         if lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("Level") then
             local myLevel = lp.Data.Level.Value
-            if myLevel >= 700 then
+            if myLevel >= 1500 then
                 _G.GoingToSea2 = true      
                 _G.StopFarmForMelee = true 
                 _G.Grabfruit = false       

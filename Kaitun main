@@ -2,7 +2,7 @@ local PlaceId = game.PlaceId
 
 if PlaceId == 2753915549 or PlaceId == 2753915133 then
     pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Omg"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Olala"))()
     end)
 elseif PlaceId == 4442272183 then
     pcall(function()
@@ -10,6 +10,6 @@ elseif PlaceId == 4442272183 then
     end)
 elseif PlaceId == 7449423635 then
     pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Kaitun"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Omg"))()
     end)
 end

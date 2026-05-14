@@ -57,7 +57,7 @@ task.spawn(function()
     end
     
     if not _G.CodesRedeemed then
-        _G.CodesRedeemed = true -- Đánh dấu đã nhập để không chạy lại
+        _G.CodesRedeemed = false -- Đánh dấu đã nhập để không chạy lại
         Notify("Đang tự động nhập Code x2 EXP...")
         local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 5):WaitForChild("Redeem", 5)
         
@@ -81,8 +81,10 @@ getgenv().TweenSpeed = 200
 getgenv().MaxStat = 2800        
 getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
-_G.Grabfruit = true 
 _G.StopFarmForMelee = false 
+_G.Grabfruit = true     
+_G.AutoBuyFruit = true 
+local LastBuyTime = 0
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -346,13 +348,35 @@ end
 task.spawn(function()
     while task.wait() do
         if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
+        
         pcall(function()
+            local char = game.Players.LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then
+                pcall(function()
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Cousin", "Buy")
+                    LastBuyTime = tick()
+                end)
+            end
+            -- [[ PHẦN THAY THẾ: INSTANT GRAB FRUIT ]]
             if _G.Grabfruit then
-                local fruit = nil
+                local fruitHandle = nil
                 for _, v in pairs(workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then fruit = v; break end
+                    -- Tìm kiếm chính xác Tool có Handle và tên chứa "Fruit"
+                    if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Fruit")) and v:FindFirstChild("Handle") then 
+                        fruitHandle = v.Handle 
+                        break 
+                    end
                 end
-                if fruit then TweenTo(fruit.Handle.CFrame); return end
+
+                if fruitHandle then
+                    -- Sử dụng Instant TP thay vì Tween để lượm nhanh nhất có thể
+                    root.CFrame = fruitHandle.CFrame
+                    task.wait(0.5) -- Đợi một chút để game nhận item vào túi
+                    return -- Sau khi lượm xong, vòng lặp sẽ chạy lại nhịp mới để check Quest/Farm
+                end
             end
             
             CheckQuest()

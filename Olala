@@ -79,7 +79,6 @@ Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes!")
 getgenv().Team = "Pirates" 
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
-getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
 _G.StopFarmForMelee = false 
 _G.Grabfruit = true     
@@ -254,32 +253,50 @@ end)
 -- ========================================================
 -- [[ 3. AUTO BUY MELEE ]]
 -- ========================================================
+getgenv().ReqMasToBuy = 400 -- Mastery tối thiểu để đổi võ
+
 task.spawn(function()
-    while task.wait(2) do 
+    while task.wait(1) do 
         if _G.GoingToSea2 then continue end
+        
         pcall(function()
             local myBeli = LP.Data.Beli.Value
             local curName, curMas = GetMeleeData()
             local targetPos, buyCmd = nil, ""
             local needsGate = false
 
+            -- Kiểm tra tiến trình Melee
             if curName == "Combat" and myBeli >= 150000 then
-                targetPos = CFrame.new(-985.49, 14.04, 3991.39); buyCmd = "BuyBlackLeg"
-            elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
-                targetPos = CFrame.new(-5384.67, 14.12, -2148.18); buyCmd = "BuyElectro"
-            elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
-                targetPos = CFrame.new(61585.51, 19.15, 985.55); buyCmd = "BuyFishmanKarate"; needsGate = true
+                targetPos = CFrame.new(-985.49, 14.04, 3991.39)
+                buyCmd = "BuyBlackLeg"
+            elseif (curName == "Dark Step" or curName == "Black Leg") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
+                targetPos = CFrame.new(-5384.67, 14.12, -2148.18)
+                buyCmd = "BuyElectro"
+            elseif (curName == "Electric" or curName == "Electro") and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
+                targetPos = CFrame.new(61585.51, 19.15, 985.55)
+                buyCmd = "BuyFishmanKarate"
+                needsGate = true
             end
 
+            -- Logic điều khiển và di chuyển
             if targetPos then
-                _G.StopFarmForMelee = true
+                _G.StopFarmForMelee = true -- Chặn farm để ưu tiên mua võ
+                
                 if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
-                    if TweenTo(GATE_ENTER_CFRAME) then GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS) end
+                    -- Xử lý cổng vào Sea 1 (Fishman Island)
+                    if TweenTo(CFrame.new(61163.85, 11.67, 1819.20)) then 
+                        GetCommF():InvokeServer("requestEntrance", Vector3.new(61163.85, 11.67, 1819.20)) 
+                    end
                 else
-                    if TweenTo(targetPos) then GetCommF():InvokeServer(buyCmd) end
+                    -- Sử dụng hàm TweenTo gốc của bản Kaitun
+                    if TweenTo(targetPos) then 
+                        task.wait(0.3)
+                        GetCommF():InvokeServer(buyCmd)
+                        task.wait(0.5) -- Đợi cập nhật dữ liệu mới
+                    end
                 end
             else
-                _G.StopFarmForMelee = false 
+                _G.StopFarmForMelee = false -- Trở lại farm bình thường
             end
         end)
     end

@@ -7,9 +7,14 @@ local player = Players.LocalPlayer
 -- // Function Define \\ --
 local function GetInvMap()
     local map = {}
-    for _, v in pairs(ReplicatedStorage.Remotes.CommF_:InvokeServer("getInventory")) do
-        if typeof(v) == "table" and v.Name then
-            map[v.Name] = true
+    local success, inventory = pcall(function()
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("getInventory")
+    end)
+    if success and type(inventory) == "table" then
+        for _, v in pairs(inventory) do
+            if typeof(v) == "table" and v.Name then
+                map[v.Name] = true
+            end
         end
     end
     return map
@@ -35,19 +40,19 @@ local TypeAccountScroll_1 = Instance.new("ScrollingFrame")
 local BeliLabel_1 = Instance.new("TextLabel")
 local LevelLabel_1 = Instance.new("TextLabel")
 local RaceLabel_1 = Instance.new("TextLabel")
-local TextLabel_1 = Instance.new("TextLabel")
-local TextLabel_2 = Instance.new("TextLabel")
-local TextLabel_3 = Instance.new("TextLabel")
-local TextLabel_4 = Instance.new("TextLabel")
-local TextLabel_5 = Instance.new("TextLabel")
+local TextLabel_1 = Instance.new("TextLabel") -- Hàng 1 - Cột 1: Buso
+local TextLabel_7 = Instance.new("TextLabel") -- Hàng 1 - Cột 2: Ken
+local TextLabel_3 = Instance.new("TextLabel") -- Hàng 1 - Cột 3: Saber
+local TextLabel_5 = Instance.new("TextLabel") -- Hàng 2 - Cột 1: Black Leg
+local TextLabel_4 = Instance.new("TextLabel") -- Hàng 2 - Cột 2: Electro
+local TextLabel_2 = Instance.new("TextLabel") -- Hàng 2 - Cột 3: Water Kung Fu
 local TextLabel_6 = Instance.new("TextLabel")
-local TextLabel_7 = Instance.new("TextLabel")
 local Top_1 = Instance.new("TextLabel")
-local UIGradient_1 = Instance.new("UIGradient")
+local UIGradGradient_1 = Instance.new("UIGradient")
 local Under_1 = Instance.new("TextLabel")
-local UIGradient_2 = Instance.new("UIGradient")
+local UIGradGradient_2 = Instance.new("UIGradient")
 local Under_2 = Instance.new("TextLabel")
-local UIGradient_3 = Instance.new("UIGradient")
+local UIGradGradient_3 = Instance.new("UIGradient")
 local DropShadow_1 = Instance.new("ImageLabel")
 
 CoinCard_1.Name = "CoinCard"
@@ -68,7 +73,7 @@ DropShadowHolder_1.Selectable = false
 
 Main_1.AnchorPoint = Vector2.new(0.5, 0.5)
 Main_1.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Main_1.BackgroundTransparency = 0.5
+Main_1.BackgroundTransparency = 0.6 -- Màu đen xuyên thấu tốt hơn
 Main_1.Name = "Main"
 Main_1.Parent = DropShadowHolder_1
 Main_1.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -78,7 +83,7 @@ Main_1.Selectable = false
 UICorner_1.CornerRadius = UDim.new(0, 5)
 UICorner_1.Parent = Main_1
 
-UIStroke_1.Color = Color3.fromRGB(255, 80, 80)
+UIStroke_1.Color = Color3.fromRGB(0, 0, 0) -- Đổi viền chính thành màu đen
 UIStroke_1.Thickness = 2.5
 UIStroke_1.Parent = Main_1
 
@@ -151,66 +156,91 @@ RaceLabel_1.TextSize = 16
 RaceLabel_1.TextXAlignment = Enum.TextXAlignment.Left
 RaceLabel_1.TextYAlignment = Enum.TextYAlignment.Bottom
 
+-- HÀNG 1 - VỊ TRÍ Y: 0.80 --
+
+-- 1. Buso Haki (Cột trái)
 TextLabel_1.BackgroundTransparency = 1
 TextLabel_1.Parent = Main_1
-TextLabel_1.Position = UDim2.new(0.07000000029802322, 0, 0.800000011920929, 0)
+TextLabel_1.Position = UDim2.new(0.07, 0, 0.80, 0)
 TextLabel_1.Size = UDim2.new(0, 0, 0, 18)
 TextLabel_1.Selectable = false
 TextLabel_1.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-TextLabel_1.Text = "🔴 GodHuman"
+TextLabel_1.Text = "🔴 Buso Haki"
 TextLabel_1.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextLabel_1.TextSize = 16
 TextLabel_1.TextXAlignment = Enum.TextXAlignment.Left
 TextLabel_1.TextYAlignment = Enum.TextYAlignment.Bottom
 
-TextLabel_2.BackgroundTransparency = 1
-TextLabel_2.Parent = Main_1
-TextLabel_2.Position = UDim2.new(0.75, 0, 0.8999999761581421, 0)
-TextLabel_2.Size = UDim2.new(0, 0, 0, 18)
-TextLabel_2.Selectable = false
-TextLabel_2.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-TextLabel_2.Text = "🔴 Pull Lever"
-TextLabel_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel_2.TextSize = 16
-TextLabel_2.TextXAlignment = Enum.TextXAlignment.Left
-TextLabel_2.TextYAlignment = Enum.TextYAlignment.Bottom
+-- 2. Ken Haki (Cột giữa)
+TextLabel_7.BackgroundTransparency = 1
+TextLabel_7.Parent = Main_1
+TextLabel_7.Position = UDim2.new(0.40, 0, 0.80, 0)
+TextLabel_7.Size = UDim2.new(0, 0, 0, 18)
+TextLabel_7.Selectable = false
+TextLabel_7.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+TextLabel_7.Text = "🔴 Ken Haki"
+TextLabel_7.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel_7.TextSize = 16
+TextLabel_7.TextXAlignment = Enum.TextXAlignment.Left
+TextLabel_7.TextYAlignment = Enum.TextYAlignment.Bottom
 
+-- 3. Saber (Cột phải)
 TextLabel_3.BackgroundTransparency = 1
 TextLabel_3.Parent = Main_1
-TextLabel_3.Position = UDim2.new(0.75, 0, 0.800000011920929, 0)
+TextLabel_3.Position = UDim2.new(0.75, 0, 0.80, 0)
 TextLabel_3.Size = UDim2.new(0, 0, 0, 18)
 TextLabel_3.Selectable = false
 TextLabel_3.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-TextLabel_3.Text = "🔴 Valkyrie Helm"
+TextLabel_3.Text = "🔴 Saber"
 TextLabel_3.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextLabel_3.TextSize = 16
 TextLabel_3.TextXAlignment = Enum.TextXAlignment.Left
 TextLabel_3.TextYAlignment = Enum.TextYAlignment.Bottom
 
-TextLabel_4.BackgroundTransparency = 1
-TextLabel_4.Parent = Main_1
-TextLabel_4.Position = UDim2.new(0.4000000059604645, 0, 0.8999999761581421, 0)
-TextLabel_4.Size = UDim2.new(0, 0, 0, 18)
-TextLabel_4.Selectable = false
-TextLabel_4.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-TextLabel_4.Text = "🔴 Mirror Fractal"
-TextLabel_4.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel_4.TextSize = 16
-TextLabel_4.TextXAlignment = Enum.TextXAlignment.Left
-TextLabel_4.TextYAlignment = Enum.TextYAlignment.Bottom
 
+-- HÀNG 2 - VỊ TRÍ Y: 0.90 --
+
+-- 4. Black Leg (Cột trái)
 TextLabel_5.BackgroundTransparency = 1
 TextLabel_5.Parent = Main_1
-TextLabel_5.Position = UDim2.new(0.07000000029802322, 0, 0.8999999761581421, 0)
+TextLabel_5.Position = UDim2.new(0.07, 0, 0.90, 0)
 TextLabel_5.Size = UDim2.new(0, 0, 0, 18)
 TextLabel_5.Selectable = false
 TextLabel_5.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-TextLabel_5.Text = "🔴 Skull Guitar"
+TextLabel_5.Text = "🔴 Black Leg"
 TextLabel_5.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextLabel_5.TextSize = 16
 TextLabel_5.TextXAlignment = Enum.TextXAlignment.Left
 TextLabel_5.TextYAlignment = Enum.TextYAlignment.Bottom
 
+-- 5. Electro (Cột giữa)
+TextLabel_4.BackgroundTransparency = 1
+TextLabel_4.Parent = Main_1
+TextLabel_4.Position = UDim2.new(0.40, 0, 0.90, 0)
+TextLabel_4.Size = UDim2.new(0, 0, 0, 18)
+TextLabel_4.Selectable = false
+TextLabel_4.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+TextLabel_4.Text = "🔴 Electro"
+TextLabel_4.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel_4.TextSize = 16
+TextLabel_4.TextXAlignment = Enum.TextXAlignment.Left
+TextLabel_4.TextYAlignment = Enum.TextYAlignment.Bottom
+
+-- 6. Water Kung Fu (Cột phải)
+TextLabel_2.BackgroundTransparency = 1
+TextLabel_2.Parent = Main_1
+TextLabel_2.Position = UDim2.new(0.75, 0, 0.90, 0)
+TextLabel_2.Size = UDim2.new(0, 0, 0, 18)
+TextLabel_2.Selectable = false
+TextLabel_2.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+TextLabel_2.Text = "🔴 Water Kung Fu"
+TextLabel_2.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel_2.TextSize = 16
+TextLabel_2.TextXAlignment = Enum.TextXAlignment.Left
+TextLabel_2.TextYAlignment = Enum.TextYAlignment.Bottom
+
+
+-- Label thông số phụ Frag giữ nguyên vị trí cũ
 TextLabel_6.BackgroundTransparency = 1
 TextLabel_6.Parent = Main_1
 TextLabel_6.Position = UDim2.new(0.07000000029802322, 0, 0.6499999761581421, 0)
@@ -222,18 +252,6 @@ TextLabel_6.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextLabel_6.TextSize = 16
 TextLabel_6.TextXAlignment = Enum.TextXAlignment.Left
 TextLabel_6.TextYAlignment = Enum.TextYAlignment.Bottom
-
-TextLabel_7.BackgroundTransparency = 1
-TextLabel_7.Parent = Main_1
-TextLabel_7.Position = UDim2.new(0.4000000059604645, 0, 0.800000011920929, 0)
-TextLabel_7.Size = UDim2.new(0, 0, 0, 18)
-TextLabel_7.Selectable = false
-TextLabel_7.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-TextLabel_7.Text = "🔴 Curse Dual Katana"
-TextLabel_7.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel_7.TextSize = 16
-TextLabel_7.TextXAlignment = Enum.TextXAlignment.Left
-TextLabel_7.TextYAlignment = Enum.TextYAlignment.Bottom
 
 Top_1.BackgroundTransparency = 0.9990000128746033
 Top_1.Name = "Top"
@@ -247,8 +265,8 @@ Top_1.TextColor3 = Color3.fromRGB(255, 255, 255)
 Top_1.TextSize = 16
 Top_1.TextYAlignment = Enum.TextYAlignment.Bottom
 
-UIGradient_1.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)), }
-UIGradient_1.Parent = Top_1
+UIGradGradient_1.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)), }
+UIGradGradient_1.Parent = Top_1
 
 Under_1.BackgroundTransparency = 0.9990000128746033
 Under_1.Name = "Under"
@@ -262,8 +280,8 @@ Under_1.TextColor3 = Color3.fromRGB(255, 255, 255)
 Under_1.TextSize = 16
 Under_1.TextYAlignment = Enum.TextYAlignment.Bottom
 
-UIGradient_2.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)), }
-UIGradient_2.Parent = Under_1
+UIGradGradient_2.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)), }
+UIGradGradient_2.Parent = Under_1
 
 Under_2.BackgroundTransparency = 0.9990000128746033
 Under_2.Name = "Under"
@@ -277,8 +295,8 @@ Under_2.TextColor3 = Color3.fromRGB(255, 255, 255)
 Under_2.TextSize = 16
 Under_2.TextYAlignment = Enum.TextYAlignment.Bottom
 
-UIGradient_3.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)), }
-UIGradient_3.Parent = Under_2
+UIGradGradient_3.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)), }
+UIGradGradient_3.Parent = Under_2
 
 DropShadow_1.AnchorPoint = Vector2.new(0.5, 0.5)
 DropShadow_1.BackgroundColor3 = Color3.fromRGB(163, 162, 165)
@@ -328,50 +346,50 @@ DropShadow2_1.ImageTransparency = 0.5
 DropShadow2_1.ScaleType = Enum.ScaleType.Slice
 DropShadow2_1.SliceCenter = Rect.new(49, 49, 450, 450)
 
-local Main_1 = Instance.new("Frame")
-Main_1.Name = "Main"
-Main_1.Parent = DropShadow2_1
-Main_1.AnchorPoint = Vector2.new(0.5, 0.5)
-Main_1.BackgroundColor3 = Color3.fromRGB(0,0,0)
-Main_1.BackgroundTransparency = 0.5
-Main_1.BorderColor3 = Color3.fromRGB(0,0,0)
-Main_1.BorderSizePixel = 0
-Main_1.Position = UDim2.new(0.5, 0,0.5, 0)
-Main_1.Size = UDim2.new(1, -50,1, -55)
+local Main_2 = Instance.new("Frame")
+Main_2.Name = "Main"
+Main_2.Parent = DropShadow2_1
+Main_2.AnchorPoint = Vector2.new(0.5, 0.5)
+Main_2.BackgroundColor3 = Color3.fromRGB(0,0,0)
+Main_2.BackgroundTransparency = 0.6 -- Màu đen xuyên thấu
+Main_2.BorderColor3 = Color3.fromRGB(0,0,0)
+Main_2.BorderSizePixel = 0
+Main_2.Position = UDim2.new(0.5, 0,0.5, 0)
+Main_2.Size = UDim2.new(1, -50,1, -55)
 
-local UIStroke_1 = Instance.new("UIStroke")
-UIStroke_1.Parent = Main_1
-UIStroke_1.Color = Color3.fromRGB(233,80,80)
-UIStroke_1.Thickness = 2.5
+local UIStroke_2 = Instance.new("UIStroke")
+UIStroke_2.Parent = Main_2
+UIStroke_2.Color = Color3.fromRGB(0, 0, 0) -- Đổi viền top thành màu đen luôn
+UIStroke_2.Thickness = 2.5
 
 local Top2_1 = Instance.new("TextLabel")
 Top2_1.Name = "Top2"
-Top2_1.Parent = Main_1
+Top2_1.Parent = Main_2
 Top2_1.AnchorPoint = Vector2.new(0.5, 0)
 Top2_1.BackgroundColor3 = Color3.fromRGB(163,162,165)
 Top2_1.BackgroundTransparency = 1
 Top2_1.Position = UDim2.new(0.5, 0,0, 10)
 Top2_1.Size = UDim2.new(0, 300,0, 18)
 Top2_1.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-Top2_1.Text = "Status: N/A"
+Top2_1.Text = "Version 0.0.1 [ FREEMIUM ]"
 Top2_1.TextColor3 = Color3.fromRGB(233,80,80)
 Top2_1.TextSize = 16
 Top2_1.TextWrapped = true
 
-local Under_1 = Instance.new("TextLabel")
-Under_1.Name = "Under"
-Under_1.Parent = Main_1
-Under_1.AnchorPoint = Vector2.new(0.5, 0)
-Under_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
-Under_1.BackgroundTransparency = 0.9990000128746033
-Under_1.BorderColor3 = Color3.fromRGB(0,0,0)
-Under_1.BorderSizePixel = 0
-Under_1.Position = UDim2.new(0.5, 0,0, 30)
-Under_1.Size = UDim2.new(0, 450,0, 18)
-Under_1.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-Under_1.Text = "Status Farm: N/A"
-Under_1.TextColor3 = Color3.fromRGB(233,80,80)
-Under_1.TextSize = 16
+local Under_3 = Instance.new("TextLabel")
+Under_3.Name = "Under"
+Under_3.Parent = Main_2
+Under_3.AnchorPoint = Vector2.new(0.5, 0)
+Under_3.BackgroundColor3 = Color3.fromRGB(255,255,255)
+Under_3.BackgroundTransparency = 0.9990000128746033
+Under_3.BorderColor3 = Color3.fromRGB(0,0,0)
+Under_3.BorderSizePixel = 0
+Under_3.Position = UDim2.new(0.5, 0,0, 30)
+Under_3.Size = UDim2.new(0, 450,0, 18)
+Under_3.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+Under_3.Text = "Time: ???"
+Under_3.TextColor3 = Color3.fromRGB(233,80,80)
+Under_3.TextSize = 16
 
 local TextLabel_22 = Instance.new("TextLabel")
 TextLabel_22.Parent = Status
@@ -386,13 +404,14 @@ TextLabel_22.Text = "discord.gg/2anc7nHw6b"
 TextLabel_22.TextColor3 = Color3.fromRGB(233,80,80)
 TextLabel_22.TextSize = 16
 
-local UIStroke_2 = Instance.new("UIStroke")
-UIStroke_2.Parent = TextLabel_22
-UIStroke_2.Thickness = 1
+local UIStroke_3 = Instance.new("UIStroke")
+UIStroke_3.Parent = TextLabel_22
+UIStroke_3.Color = Color3.fromRGB(0, 0, 0) -- Viền chữ Discord màu đen
+UIStroke_3.Thickness = 1
 
-local UIGradient_1 = Instance.new("UIGradient")
-UIGradient_1.Parent = UIStroke_2
-UIGradient_1.Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,0)}
+local UIGradGradient_4 = Instance.new("UIGradient")
+UIGradGradient_4.Parent = UIStroke_3
+UIGradGradient_4.Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,0)}
 
 -- // Toggle UI \\ --
 
@@ -474,25 +493,29 @@ TextButton.MouseButton1Down:Connect(
         end
     end  
 )
+
 local function SyncItems()
     local current = {}
+    local success, inventory = pcall(function()
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("getInventory")
+    end)
 
-    for _, v in pairs(
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("getInventory")
-    ) do
-        if typeof(v) == "table" and v.Name then
-            current[v.Name] = true
-            if not shownItems[v.Name] then
-                local label = Instance.new("TextLabel")
-                label.BackgroundTransparency = 1
-                label.Size = UDim2.new(1, -6, 0, 18)
-                label.TextXAlignment = Enum.TextXAlignment.Left
-                label.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
-                label.TextSize = 16
-                label.TextColor3 = Color3.fromRGB(255,255,255)
-                label.Text = v.Name
-                label.Parent = TypeAccountScroll_1
-                shownItems[v.Name] = label
+    if success and type(inventory) == "table" then
+        for _, v in pairs(inventory) do
+            if typeof(v) == "table" and v.Name then
+                current[v.Name] = true
+                if not shownItems[v.Name] then
+                    local label = Instance.new("TextLabel")
+                    label.BackgroundTransparency = 1
+                    label.Size = UDim2.new(1, -6, 0, 18)
+                    label.TextXAlignment = Enum.TextXAlignment.Left
+                    label.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
+                    label.TextSize = 16
+                    label.TextColor3 = Color3.fromRGB(255,255,255)
+                    label.Text = v.Name
+                    label.Parent = TypeAccountScroll_1
+                    shownItems[v.Name] = label
+                end
             end
         end
     end
@@ -504,8 +527,7 @@ local function SyncItems()
         end
     end
 
-    TypeAccountScroll_1.CanvasSize =
-        UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 6)
+    TypeAccountScroll_1.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 6)
 end
 
 task.spawn(function()
@@ -518,7 +540,6 @@ end)
 
 task.spawn(function()
     local badgeId = 2125253113
-    local prevPull
 
     while task.wait(1) do
         local char = player.Character
@@ -527,71 +548,36 @@ task.spawn(function()
 
         local inv = GetInvMap()
 
-        -- Valkyrie Helm
-        local hasValk = false
-        for _, v in ipairs(char:GetChildren()) do
-            if v:IsA("Accessory") and v.Name:lower():find("valk") then
-                hasValk = true
-                break
-            end
-        end
-        if inv["Valkyrie Helm"] then hasValk = true end
-        TextLabel_3.Text = hasValk and "🟢 Valkyrie Helm" or "🔴 Valkyrie Helm"
+        -- // KIỂM TRA LOGIC CÁC TRANG BỊ // --
 
-        -- Cursed Dual Katana
-        if inv["Cursed Dual Katana"]
-        or backpack:FindFirstChild("Cursed Dual Katana")
-        or char:FindFirstChild("Cursed Dual Katana") then
-            TextLabel_7.Text = "🟢 Cursed Dual Katana"
-        else
-            TextLabel_7.Text = "🔴 Cursed Dual Katana"
-        end
+        -- 1. Buso Haki (TextLabel_1)
+        local hasBuso = char:FindFirstChild("HasBuso") or player:FindFirstChild("HasBuso") or false
+        if char:FindFirstChild("Aura") or inv["Aura"] then hasBuso = true end
+        TextLabel_1.Text = hasBuso and "🟢 Buso Haki" or "🔴 Buso Haki"
 
-        -- GodHuman
-        local ok, response = pcall(function()
-            return ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGodhuman", true)
-        end)
-        
-        if ok and (response == 1 or response == 2) then
-            TextLabel_1.Text = "🟢 GodHuman"
-        else
-            TextLabel_1.Text = "🔴 GodHuman"
-        end
+        -- 2. Ken Haki (TextLabel_7)
+        local hasKen = char:FindFirstChild("HasKen") or player:FindFirstChild("HasKen") or false
+        if inv["Observation"] or inv["Ken Haki"] then hasKen = true end
+        TextLabel_7.Text = hasKen and "🟢 Ken Haki" or "🔴 Ken Haki"
+
+        -- 3. Saber (TextLabel_3)
+        local hasSaber = inv["Saber"] or backpack:FindFirstChild("Saber") or char:FindFirstChild("Saber")
+        TextLabel_3.Text = hasSaber and "🟢 Saber" or "🔴 Saber"
+
+        -- 4. Black Leg (TextLabel_5)
+        local hasBlackLeg = inv["Black Leg"] or backpack:FindFirstChild("Black Leg") or char:FindFirstChild("Black Leg")
+        TextLabel_5.Text = hasBlackLeg and "🟢 Black Leg" or "🔴 Black Leg"
+
+        -- 5. Electro (TextLabel_4)
+        local hasElectro = inv["Electro"] or backpack:FindFirstChild("Electro") or char:FindFirstChild("Electro")
+        TextLabel_4.Text = hasElectro and "🟢 Electro" or "🔴 Electro"
+
+        -- 6. Water Kung Fu (TextLabel_2)
+        local hasWaterKungFu = inv["Water Kung Fu"] or backpack:FindFirstChild("Water Kung Fu") or char:FindFirstChild("Water Kung Fu")
+        TextLabel_2.Text = hasWaterKungFu and "🟢 Water Kung Fu" or "🔴 Water Kung Fu"
 
 
-        -- Skull Guitar
-        if inv["Skull Guitar"]
-        or backpack:FindFirstChild("Skull Guitar")
-        or char:FindFirstChild("Skull Guitar") then
-            TextLabel_5.Text = "🟢 Skull Guitar"
-        else
-            TextLabel_5.Text = "🔴 Skull Guitar"
-        end
-
-        -- Mirror Fractal
-        TextLabel_4.Text = inv["Mirror Fractal"]
-            and "🟢 Mirror Fractal"
-            or "🔴 Mirror Fractal"
-
-        -- Pull Lever
-        local ok, result = pcall(function()
-            return game:GetService("ReplicatedStorage")
-                .Remotes
-                .CommF_
-                :InvokeServer("CheckTempleDoor")
-        end)
-        
-        local isTrue = false
-        
-        if ok then
-            if result == true then
-                isTrue = true
-            elseif type(result) == "string" and result:lower() == "true" then
-                isTrue = true
-            end
-        end
-        
-        TextLabel_2.Text = isTrue and "🟢 Pull Lever" or "🔴 Pull Lever"
+        -- // THÔNG SỐ CHUNG // --
 
         -- Level + Third Sea (badge)
         local level = player.Data.Level.Value

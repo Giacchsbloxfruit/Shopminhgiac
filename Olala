@@ -139,6 +139,46 @@ task.spawn(function()
 end)
 
 -- ========================================================
+-- [[ ⚡ HÀM CHẠY NGẦM AUTO BUY ABILITIES (NEW) ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(10) do -- Kiểm tra mỗi 10 giây để không làm lag game
+        if _G.GoingToSea2 then continue end -- Tạm dừng khi chuẩn bị chuyển Sea
+        
+        pcall(function()
+            local data = LP:FindFirstChild("Data")
+            if data then
+                local beli = data:FindFirstChild("Beli") and data.Beli.Value or 0
+                local level = data:FindFirstChild("Level") and data.Level.Value or 0
+                local remote = GetCommF()
+                
+                if remote then
+                    -- 1. Air Jump (Geppo): Beli >= 10,000
+                    if beli >= 10000 then
+                        remote:InvokeServer("BuyHaki", "Geppo")
+                    end
+                    
+                    -- 2. Buso (Haki): Beli >= 25,000
+                    if beli >= 25000 then
+                        remote:InvokeServer("BuyHaki", "Buso")
+                    end
+                    
+                    -- 3. Flash Step (Soru): Beli >= 100,000
+                    if beli >= 100000 then
+                        remote:InvokeServer("BuyHaki", "Soru")
+                    end
+                    
+                    -- 4. Ken (Observation Haki): Level >= 300 và Beli >= 700,000
+                    if level >= 300 and beli >= 700000 then
+                        remote:InvokeServer("KenTalk", "Buy")
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- ========================================================
 -- [[ 🚁 MODULE TWEEN VÀ CỐ ĐỊNH NHÂN VẬT ]]
 -- ========================================================
 local function TweenTo(targetPos)
@@ -235,7 +275,6 @@ end)
 -- ========================================================
 -- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
 -- ========================================================
--- (Giữ nguyên bảng FruitList cũ của bạn)
 local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
 
 task.spawn(function()
@@ -253,7 +292,7 @@ end)
 -- ========================================================
 -- [[ 3. AUTO BUY MELEE ]]
 -- ========================================================
-getgenv().ReqMasToBuy = 400 -- Mastery tối thiểu để đổi võ
+getgenv().ReqMasToBuy = 400 
 
 task.spawn(function()
     while task.wait(1) do 
@@ -280,23 +319,21 @@ task.spawn(function()
 
             -- Logic điều khiển và di chuyển
             if targetPos then
-                _G.StopFarmForMelee = true -- Chặn farm để ưu tiên mua võ
+                _G.StopFarmForMelee = true 
                 
                 if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
-                    -- Xử lý cổng vào Sea 1 (Fishman Island)
                     if TweenTo(CFrame.new(61163.85, 11.67, 1819.20)) then 
                         GetCommF():InvokeServer("requestEntrance", Vector3.new(61163.85, 11.67, 1819.20)) 
                     end
                 else
-                    -- Sử dụng hàm TweenTo gốc của bản Kaitun
                     if TweenTo(targetPos) then 
                         task.wait(0.3)
                         GetCommF():InvokeServer(buyCmd)
-                        task.wait(0.5) -- Đợi cập nhật dữ liệu mới
+                        task.wait(0.5) 
                     end
                 end
             else
-                _G.StopFarmForMelee = false -- Trở lại farm bình thường
+                _G.StopFarmForMelee = false 
             end
         end)
     end
@@ -305,7 +342,6 @@ end)
 -- ========================================================
 -- [[ 4. BẢNG NHIỆM VỤ & FARM LOGIC ]]
 -- ========================================================
--- (Giữ nguyên phần QuestList và các hàm hỗ trợ của bạn)
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, Mon = "Bandit", NPC = CFrame.new(1059.37, 15.45, 1550.42), MonPos = CFrame.new(1045.96, 27.00, 1560.82)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, Mon = "Monkey", NPC = CFrame.new(-1598.09, 35.55, 153.30), MonPos = CFrame.new(-1623.2, 22, -188)},
@@ -377,11 +413,10 @@ task.spawn(function()
                     LastBuyTime = tick()
                 end)
             end
-            -- [[ PHẦN THAY THẾ: INSTANT GRAB FRUIT ]]
+            
             if _G.Grabfruit then
                 local fruitHandle = nil
                 for _, v in pairs(workspace:GetChildren()) do
-                    -- Tìm kiếm chính xác Tool có Handle và tên chứa "Fruit"
                     if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Fruit")) and v:FindFirstChild("Handle") then 
                         fruitHandle = v.Handle 
                         break 
@@ -389,10 +424,9 @@ task.spawn(function()
                 end
 
                 if fruitHandle then
-                    -- Sử dụng Instant TP thay vì Tween để lượm nhanh nhất có thể
                     root.CFrame = fruitHandle.CFrame
-                    task.wait(0.5) -- Đợi một chút để game nhận item vào túi
-                    return -- Sau khi lượm xong, vòng lặp sẽ chạy lại nhịp mới để check Quest/Farm
+                    task.wait(0.5) 
+                    return 
                 end
             end
             
@@ -424,7 +458,7 @@ end)
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
-        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
+        if _G.GoingToSea2 then continue end 
         pcall(function()
             local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
             local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
@@ -457,7 +491,7 @@ end)
 task.spawn(function()
     local HopTime = 1700 
     while task.wait(1) do
-        if _G.GoingToSea2 then continue end -- Dừng server hop khi đang qua sea
+        if _G.GoingToSea2 then continue end 
         HopTime = HopTime - 1
         if HopTime <= 0 then
             pcall(function()

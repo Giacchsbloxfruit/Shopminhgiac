@@ -248,61 +248,66 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 3. MODULE AUTO BUY MELEE (FIXED BY GIACDZ) ]]
+-- [[ 3. AUTO BUY MELEE (FIXED FOR SEA 2 - NO FISHMAN GATE) ]]
 -- ========================================================
+getgenv().ReqMasToBuy = 400 
+
+-- Hàm quét thông tin võ đang dùng
 local function GetMeleeData()
-    local name, mas = "None", 0
-    local sources = {LP.Backpack, LP.Character}
-    for _, source in pairs(sources) do
-        if source then
-            for _, v in pairs(source:GetChildren()) do
-                if v:IsA("Tool") and v.ToolTip == "Melee" then
-                    name = v.Name
-                    if v:FindFirstChild("Level") then mas = v.Level.Value end
-                    return name, mas -- Ưu tiên lấy Melee đang có
-                end
+    local meleeName = "Combat"
+    local meleeMas = 0
+    pcall(function()
+        local tool = nil
+        for _, v in pairs(LP.Backpack:GetChildren()) do
+            if v:IsA("Tool") and v.ToolTip == "Melee" then tool = v; break end
+        end
+        if not tool and LP.Character then
+            for _, v in pairs(LP.Character:GetChildren()) do
+                if v:IsA("Tool") and v.ToolTip == "Melee" then tool = v; break end
             end
         end
-    end
-    return name, mas
+        if tool then
+            meleeName = tool.Name
+            if tool:FindFirstChild("Level") then
+                meleeMas = tool.Level.Value
+            end
+        end
+    end)
+    return meleeName, meleeMas
 end
 
 task.spawn(function()
-    while task.wait(2) do -- Tăng thời gian check lên 2s để game load kịp
+    while task.wait(1) do 
+        if _G.GoingToSea2 then continue end
+        
         pcall(function()
             local myBeli = LP.Data.Beli.Value
             local curName, curMas = GetMeleeData()
             local targetPos, buyCmd = nil, ""
-            local needsGate = false
 
-            local COORD_LEG = CFrame.new(-985.49, 14.04, 3991.39)
-            local COORD_ELECTRIC = CFrame.new(-5384.67, 14.12, -2148.18)
-            local COORD_FISH = CFrame.new(61585.51, 19.15, 985.55)
-
-            -- FIX: Chỉ mua Black Leg nếu đang dùng Combat thật sự
+            -- Kiểm tra điều kiện đổi võ (Tọa độ bến tàu Green Zone - Sea 2)
             if curName == "Combat" and myBeli >= 150000 then
-                targetPos = COORD_LEG; buyCmd = "BuyBlackLeg"
-            -- Chuyển sang Electric nếu đã có Black Leg/Dark Step và đủ Mastery
-            elseif (curName == "Black Leg" or curName == "Dark Step") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
-                targetPos = COORD_ELECTRIC; buyCmd = "BuyElectro"
-            -- Chuyển sang Karate Cá nếu đã có Electric và đủ Mastery
-            elseif curName == "Electric" and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
-                targetPos = COORD_FISH; buyCmd = "BuyFishmanKarate"
-                needsGate = true
+                targetPos = CFrame.new(-4753, 35, -4847)
+                buyCmd = "BuyBlackLeg"
+            elseif (curName == "Dark Step" or curName == "Black Leg") and curMas >= getgenv().ReqMasToBuy and myBeli >= 500000 then
+                targetPos = CFrame.new(-4864, 35, -4767)
+                buyCmd = "BuyElectro"
+            elseif (curName == "Electric" or curName == "Electro") and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
+                targetPos = CFrame.new(-4957, 35, -4665)
+                buyCmd = "BuyFishmanKarate"
             end
 
+            -- Logic điều khiển di chuyển thẳng tới NPC và mua võ
             if targetPos then
-                _G.StopFarmForMelee = true
-                if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
-                    if TweenTo(GATE_ENTER_CFRAME) then
-                        GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
-                        task.wait(1)
-                    end
-                else
-                    if TweenTo(targetPos) then GetCommF():InvokeServer(buyCmd) end
+                _G.StopFarmForMelee = true -- Chặn farm để đi mua võ
+                
+                if TweenTo(targetPos) then 
+                    task.wait(0.3)
+                    GetCommF():InvokeServer(buyCmd)
+                    task.wait(0.5) 
                 end
             else
-                _G.StopFarmForMelee = false
+                _G.StopFarmForMelee = false -- Mua xong hoặc chưa đủ điều kiện thì tiếp tục farm quái
             end
         end)
     end
@@ -322,8 +327,8 @@ local QuestList = {
     {Min = 975, Max = 999, Name = "ZombieQuest", Lv = 2, Mon = "Vampire", NPC = CFrame.new(-5497.06152, 47.5923004, -795.237061, -0.29242146, -0, -0.95628953, -0, 1, -0, 0.95628953, -0, -0.29242146), MonPos = CFrame.new(-6037.66796875, 32.18463897705078, -1340.6597900390625)},
     {Min = 1000, Max = 1049, Name = "SnowMountainQuest", Lv = 1, Mon = "Snow Trooper", NPC = CFrame.new(609.858826, 400.119904, -5372.25928, -0.374604106, -0, 0.92718488, -0, 1, -0, -0.92718488, -0, -0.374604106), MonPos = CFrame.new(549.1473388671875, 427.3870544433594, -5563.69873046875)},
     {Min = 1050, Max = 1099, Name = "SnowMountainQuest", Lv = 2, Mon = "Winter Warrior", NPC = CFrame.new(609.858826, 400.119904, -5372.25928, -0.374604106, -0, 0.92718488, -0, 1, -0, -0.92718488, -0, -0.374604106), MonPos = CFrame.new(1142.7451171875, 475.6398010253906, -5199.41650390625)},
-    {Min = 1100, Max = 1124, Name = "IceSideQuest", Lv = 1, Mon = "Lab Subordinate", NPC = CFrame.new(-6064.06885, 15.2422857, -4902.97852, 0.453972578, -0, -0.891015649, -0, 1, -0, 0.891015649, -0, 0.453972578), MonPos = CFrame.new(-5707.4716796875, 15.951709747314453, -4513.39208984375)},
-    {Min = 1125, Max = 1174, Name = "IceSideQuest", Lv = 2, Mon = "Horned Warrior", NPC = CFrame.new(-6064.06885, 15.2422857, -4902.97852, 0.453972578, -0, -0.891015649, -0, 1, -0, 0.891015649, -0, 0.453972578), MonPos = CFrame.new(-6341.36669921875, 15.951770782470703, -5723.162109375)},
+    {Min = 1100, Max = 1124, Name = "IceSideQuest", Lv = 1, Mon = "Lab Subordinate", NPC = CFrame.new(-6230, 82, -4852), MonPos = CFrame.new(-5707.4716796875, 15.951709747314453, -4513.39208984375)},
+    {Min = 1125, Max = 1174, Name = "IceSideQuest", Lv = 2, Mon = "Horned Warrior", NPC = CFrame.new(-6230, 82, -4852), MonPos = CFrame.new(-6341, 40, -5723)},
     {Min = 1175, Max = 1199, Name = "FireSideQuest", Lv = 1, Mon = "Magma Ninja", NPC = CFrame.new(-5428.03174, 15.0622921, -5299.43457, -0.882952213, -0, 0.469463557, -0, 1, -0, -0.469463557, -0, -0.882952213), MonPos = CFrame.new(-5449.6728515625, 76.65874481201172, -5808.20068359375)},
     {Min = 1200, Max = 1249, Name = "FireSideQuest", Lv = 2, Mon = "Lava Pirate", NPC = CFrame.new(-5428.03174, 15.0622921, -5299.43457, -0.882952213, -0, 0.469463557, -0, 1, -0, -0.469463557, -0, -0.882952213), MonPos = CFrame.new(-5213.33154296875, 49.73788070678711, -4701.451171875)},
     {Min = 1250, Max = 1274, Name = "ShipQuest1", Lv = 1, Mon = "Ship Deckhand", NPC = CFrame.new(1037.80127, 125.092171, 32911.6016), MonPos = CFrame.new(1212.0111083984375, 150.79205322265625, 33059.24609375)},

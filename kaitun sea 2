@@ -410,30 +410,43 @@ end
 -- ========================================================
 task.spawn(function()
     while task.wait() do
+        -- Kiểm tra nếu đang chuyển Sea hoặc tạm dừng thì bỏ qua
         if _G.GoingToSea3 or _G.StopFarmForMelee then task.wait(1); continue end
         
         pcall(function()
-            -- [[ FIX: Đổi Tween sang Bring (Instant TP) cho Fruit ]]
+            local char = game.Players.LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            -- Xử lý mua trái cây tự động (nếu cần)
+            if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then
+                pcall(function()
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Cousin", "Buy")
+                    LastBuyTime = tick()
+                end)
+            end
+            
+            -- [[ LOGIC NHẶT FRUIT DÙNG TWEEN AN TOÀN ]]
             if _G.Grabfruit then
                 local fruitHandle = nil
                 for _, v in pairs(workspace:GetChildren()) do
-                    if v:IsA("Tool") and (string.find(v.Name, "Fruit") or v:FindFirstChild("Fruit")) and v:FindFirstChild("Handle") then 
-                        fruitHandle = v.Handle; 
+                    if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Fruit")) and v:FindFirstChild("Handle") then 
+                        fruitHandle = v.Handle 
                         break 
                     end
                 end
-                
-                if fruitHandle then 
-                    local char = game.Players.LocalPlayer.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        root.CFrame = fruitHandle.CFrame
-                        task.wait(0.5)
-                        return
+
+                if fruitHandle then
+                    -- Sử dụng hàm TweenTo có sẵn của bạn để di chuyển đến vị trí Fruit
+                    -- Việc dùng TweenTo sẽ giúp nhân vật bay đến thay vì Teleport cứng
+                    if TweenTo(fruitHandle.CFrame) then
+                        task.wait(0.5) -- Đợi một chút để server xác nhận lượm
                     end
+                    return -- Ngắt vòng lặp để ưu tiên nhặt xong mới farm tiếp
                 end
             end
             
+            -- [[ LOGIC FARM QUÁI (GIỮ NGUYÊN) ]]
             CheckQuest()
             if not CFrameQuest then return end
             
@@ -467,20 +480,40 @@ end)
 -- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================
 task.spawn(function()
-    local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
-    while task.wait(0.7) do
+    while task.wait(0.5) do
         if _G.GoingToSea3 then continue end 
         pcall(function()
-            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
-            local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
-            if P and P.Value > 0 then
-                local mVal = 0; for _, n in pairs(S.M) do if Data:FindFirstChild(n) then mVal = Data[n].Value break end end
+            local Data = LP:FindFirstChild("Data")
+            if not Data then return end
+            
+            local Points = Data:FindFirstChild("Points") or Data:FindFirstChild("StatsPoints")
+            
+            if Points and Points.Value > 0 then
                 local remote = GetCommF()
                 if remote then
-                    if mVal < getgenv().MaxStat then
-                        for _, n in pairs(S.M) do remote:InvokeServer("AddPoint", n, 1) end
-                    else
-                        for _, n in pairs(S.D) do remote:InvokeServer("AddPoint", n, 1) end
+                    -- Đọc Level hiện tại của từng chỉ số trực tiếp từ Data
+                    local meleeLvl = Data.Stats.Melee.Level.Value
+                    local defenseLvl = Data.Stats.Defense.Level.Value
+                    local fruitLvl = Data.Stats["Demon Fruit"].Level.Value
+                    
+                    local maxStat = getgenv().MaxStat or 2800
+                    local myPoints = Points.Value
+                    
+                    -- Ưu tiên 1: Cày Max Melee trước
+                    if meleeLvl < maxStat then
+                        -- Tính số điểm cần để max (không cộng lố)
+                        local addAmount = math.clamp(myPoints, 1, maxStat - meleeLvl)
+                        remote:InvokeServer("AddPoint", "Melee", addAmount)
+                        
+                    -- Ưu tiên 2: Max Melee rồi thì tới Defense
+                    elseif defenseLvl < maxStat then
+                        local addAmount = math.clamp(myPoints, 1, maxStat - defenseLvl)
+                        remote:InvokeServer("AddPoint", "Defense", addAmount)
+                        
+                    -- Ưu tiên 3: Max Defense rồi thì dồn hết vào Blox Fruit
+                    elseif fruitLvl < maxStat then
+                        local addAmount = math.clamp(myPoints, 1, maxStat - fruitLvl)
+                        remote:InvokeServer("AddPoint", "Demon Fruit", addAmount)
                     end
                 end
             end
@@ -491,11 +524,12 @@ end)
 game:GetService("RunService").Stepped:Connect(function()
     pcall(function()
         if LP.Character then
-            for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+            for _, v in pairs(LP.Character:GetDescendants()) do 
+                if v:IsA("BasePart") then v.CanCollide = false end 
+            end
         end
     end)
 end)
-
 -- ========================================================
 -- [[ 6. MODULE SERVER HOP ]]
 -- ========================================================

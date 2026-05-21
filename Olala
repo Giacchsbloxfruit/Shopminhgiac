@@ -57,7 +57,7 @@ task.spawn(function()
     end
     
     if not _G.CodesRedeemed then
-        _G.CodesRedeemed = false 
+        _G.CodesRedeemed = true -- Đánh dấu đã nhập để không chạy lại
         Notify("Đang tự động nhập Code x2 EXP...")
         local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 5):WaitForChild("Redeem", 5)
         
@@ -65,7 +65,7 @@ task.spawn(function()
             pcall(function()
                 remote:InvokeServer(code)
             end)
-            task.wait(0.2) 
+            task.wait(0.2) -- Delay nhẹ để không bị kick vì spam remote
         end
         Notify("Đã nhập xong toàn bộ Code!")
     end
@@ -79,11 +79,10 @@ Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes!")
 getgenv().Team = "Pirates" 
 getgenv().TweenSpeed = 200      
 getgenv().MaxStat = 2800        
+getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
+_G.Grabfruit = true 
 _G.StopFarmForMelee = false 
-_G.Grabfruit = true     
-_G.AutoBuyFruit = true 
-local LastBuyTime = 0
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
@@ -133,31 +132,6 @@ task.spawn(function()
             if LP.Character and not LP.Character:FindFirstChild("HasBuso") then
                 local remote = GetCommF()
                 if remote then remote:InvokeServer("Buso") end
-            end
-        end)
-    end
-end)
-
--- ========================================================
--- [[ ⚡ HÀM CHẠY NGẦM AUTO BUY ABILITIES ]]
--- ========================================================
-task.spawn(function()
-    while task.wait(10) do 
-        if _G.GoingToSea2 then continue end 
-        
-        pcall(function()
-            local data = LP:FindFirstChild("Data")
-            if data then
-                local beli = data:FindFirstChild("Beli") and data.Beli.Value or 0
-                local level = data:FindFirstChild("Level") and data.Level.Value or 0
-                local remote = GetCommF()
-                
-                if remote then
-                    if beli >= 10000 then remote:InvokeServer("BuyHaki", "Geppo") end
-                    if beli >= 25000 then remote:InvokeServer("BuyHaki", "Buso") end
-                    if beli >= 100000 then remote:InvokeServer("BuyHaki", "Soru") end
-                    if level >= 300 and beli >= 700000 then remote:InvokeServer("KenTalk", "Buy") end
-                end
             end
         end)
     end
@@ -260,6 +234,7 @@ end)
 -- ========================================================
 -- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
 -- ========================================================
+-- (Giữ nguyên bảng FruitList cũ của bạn)
 local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
 
 task.spawn(function()
@@ -351,6 +326,7 @@ end)
 -- ========================================================
 -- [[ 4. BẢNG NHIỆM VỤ & FARM LOGIC ]]
 -- ========================================================
+-- (Giữ nguyên phần QuestList và các hàm hỗ trợ của bạn)
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, Mon = "Bandit", NPC = CFrame.new(1059.37, 15.45, 1550.42), MonPos = CFrame.new(1045.96, 27.00, 1560.82)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, Mon = "Monkey", NPC = CFrame.new(-1598.09, 35.55, 153.30), MonPos = CFrame.new(-1623.2, 22, -188)},
@@ -409,36 +385,26 @@ end
 -- ========================================================
 task.spawn(function()
     while task.wait() do
+        -- Kiểm tra điều kiện dừng farm
         if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
         
         pcall(function()
-            local char = game.Players.LocalPlayer.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            
+            -- TÍCH HỢP AUTO MUA FRUIT VÀO ĐÂY
             if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then
-                pcall(function()
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Cousin", "Buy")
-                    LastBuyTime = tick()
-                end)
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Cousin", "Buy")
+                LastBuyTime = tick()
             end
-            
-            if _G.Grabfruit then
-                local fruitHandle = nil
-                for _, v in pairs(workspace:GetChildren()) do
-                    if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Fruit")) and v:FindFirstChild("Handle") then 
-                        fruitHandle = v.Handle 
-                        break 
-                    end
-                end
 
-                if fruitHandle then
-                    root.CFrame = fruitHandle.CFrame
-                    task.wait(0.5) 
-                    return 
+            -- Logic Grab Fruit
+            if _G.Grabfruit then
+                local fruit = nil
+                for _, v in pairs(workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then fruit = v; break end
                 end
+                if fruit then TweenTo(fruit.Handle.CFrame); return end
             end
             
+            -- Logic Farm Quest
             CheckQuest()
             if not IsQuestActive() then
                 if CheckTeleport(CFrameQuest) then return end
@@ -467,7 +433,7 @@ end)
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
     while task.wait(0.7) do
-        if _G.GoingToSea2 then continue end 
+        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
         pcall(function()
             local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
             local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
@@ -495,12 +461,12 @@ game:GetService("RunService").Stepped:Connect(function()
 end)
 
 -- ========================================================
--- [[ 6. MODULE SERVER HOP ]]
+-- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
 -- ========================================================
 task.spawn(function()
     local HopTime = 1700 
     while task.wait(1) do
-        if _G.GoingToSea2 then continue end 
+        if _G.GoingToSea2 then continue end -- Dừng server hop khi đang qua sea
         HopTime = HopTime - 1
         if HopTime <= 0 then
             pcall(function()

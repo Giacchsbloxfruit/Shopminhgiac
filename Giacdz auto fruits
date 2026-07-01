@@ -1,23 +1,25 @@
 -- [[ CONFIG ]]
 getgenv().Team = "Pirates"
 getgenv().Webhook = "https://discord.com/api/webhooks/1470636204377505957/PkT726KVdSWYHC6PwUO4lyGzVDeOepkMz8SCwmkqcQ0RdiNlqB9zK_TVcs405grRrOqQ" -- <--- Dán link Discord của bạn vào đây
-_G.Grabfruit = true
+_G.Grabfruit = true -- Dùng biến này để bật/tắt bay nhặt trái
 
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
 local TPS = game:GetService("TeleportService")
 local Http = game:GetService("HttpService")
 local GuiService = game:GetService("GuiService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local function GetCommF()
     return RS:FindFirstChild("CommF_", true)
 end
 
 -- [[ 1. HÀM GỬI THÔNG BÁO DISCORD ]]
-local lastFruitNotify = "" -- Biến chặn spam thông báo cùng 1 loại trái trong 1 server
+local lastFruitNotify = "" 
 local function SendDiscord(fruitName)
     if getgenv().Webhook and getgenv().Webhook ~= "" and getgenv().Webhook ~= "DÁN_LINK_WEBHOOK_VÀO_ĐÂY" then
-        if lastFruitNotify == fruitName then return end -- Nếu đã báo trái này rồi thì thôi
+        if lastFruitNotify == fruitName then return end 
         lastFruitNotify = fruitName
         
         pcall(function()
@@ -50,7 +52,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 3. HÀM ÉP LỆNH CẤT KHO (ĐÃ BỎ THÔNG BÁO ĐỂ TRÁNH SPAM) ]]
+-- [[ 3. HÀM ÉP LỆNH CẤT KHO ]]
 local function StoreAction()
     pcall(function()
         local char = LP.Character
@@ -86,19 +88,87 @@ task.spawn(function()
     end
 end)
 
--- [[ 4. AUTO TELEPORT FRUITS + GỬI THÔNG BÁO KHI NHẶT ]]
+-- [[ HỆ THỐNG TWEEN & TÌM TRÁI (BỔ SUNG) ]]
+local function GetDroppedFruit()
+    for _, v in pairs(game.Workspace:GetChildren()) do
+        if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
+            return v.Handle -- Trả về part Handle để bay tới
+        end
+    end
+    return nil
+end
+
+local function topos(targetCFrame)
+    local char = LP.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local targetPos = targetCFrame.Position
+    local directDist = (targetPos - root.Position).Magnitude
+
+    -- Tránh tạo lại Tween liên tục (Chống giật)
+    if _G.CurrentTween and _G.LastTargetPos and (targetPos - _G.LastTargetPos.Position).Magnitude < 5 then 
+        return 
+    end
+    
+    if _G.CurrentTween then _G.CurrentTween:Cancel() end
+
+    _G.LastTargetPos = targetCFrame
+    local speed = 300 -- Tốc độ bay (bạn có thể tự chỉnh)
+    local info = TweenInfo.new(directDist / speed, Enum.EasingStyle.Linear)
+    
+    _G.CurrentTween = TweenService:Create(root, info, {CFrame = targetCFrame})
+    _G.CurrentTween.Completed:Connect(function() 
+        _G.LastTargetPos = nil
+        _G.CurrentTween = nil 
+    end)
+    _G.CurrentTween:Play()
+end
+
+-- Vòng lặp Noclip để bay xuyên tường mượt mà
+RunService.Stepped:Connect(function()
+    pcall(function()
+        if _G.CurrentTween and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            LP.Character.HumanoidRootPart.Velocity = Vector3.zero
+            for _, v in pairs(LP.Character:GetChildren()) do 
+                if v:IsA("BasePart") then v.CanCollide = false end 
+            end
+        end
+    end)
+end)
+
+-- [[ 4. AUTO TWEEN FRUITS + GỬI THÔNG BÁO KHI NHẶT ]]
 task.spawn(function()
     while task.wait(0.1) do
         if _G.Grabfruit then
             pcall(function()
-                for _, v in pairs(game.Workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then
-                        -- Gửi thông báo ngay khi vừa thấy trái và chuẩn bị Teleport
-                        SendDiscord(v.Name)
-                        
-                        LP.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-                        firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 0)
-                        firetouchinterest(LP.Character.HumanoidRootPart, v.Handle, 1)
+                local target = GetDroppedFruit()
+                if target then
+                    -- Gửi thông báo ngay khi vừa thấy trái
+                    SendDiscord(target.Parent.Name)
+
+                    -- TẮT TẤT CẢ BIẾN FARM KHI PHÁT HIỆN TRÁI (Như bạn yêu cầu)
+                    _G.AutoFarmLevel = false
+                    _G.FarmBone = false
+                    _G.FarmNearest = false
+                    _G.FarmChest = false
+                    _G.Auto_Cake_Prince = false
+                    _G.AutoSoulReaper = false
+                    
+                    -- Bay đến trái ác quỷ
+                    topos(target.CFrame)
+                    
+                    -- Chạm để nhặt khi đã ở gần
+                    if (LP.Character.HumanoidRootPart.Position - target.Position).Magnitude < 10 then
+                        firetouchinterest(LP.Character.HumanoidRootPart, target, 0)
+                        firetouchinterest(LP.Character.HumanoidRootPart, target, 1)
+                    end
+                else
+                    -- Nếu không còn trái nào (đã nhặt xong hoặc mất), dừng Tween
+                    if _G.CurrentTween then 
+                        _G.CurrentTween:Cancel() 
+                        _G.CurrentTween = nil
+                        _G.LastTargetPos = nil
                     end
                 end
             end)

@@ -245,7 +245,6 @@ local AllIDs = {}
 local foundAnything = ""
 local actualHour = os.date("!*t").hour
 
--- Load data từ file JSON
 local File = pcall(function()
     AllIDs = Http:JSONDecode(readfile("server-hop-temp.json"))
 end)
@@ -265,7 +264,6 @@ local function HopServer()
     while task.wait() do
         pcall(function()
             local Site;
-            -- Sử dụng sortOrder=Desc để tìm các server đông người (thường là server cũ, đã hoạt động lâu)
             if foundAnything == "" then
                 Site = Http:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. placeId .. '/servers/Public?sortOrder=Desc&limit=100'))
             else
@@ -314,9 +312,29 @@ local function HopServer()
     end
 end
 
--- [[ 6. ÉP BUỘC HOP SAU ĐÚNG 30S NHẶT TRÁI (HOẶC TÌM KHÔNG THẤY) ]]
-task.delay(30, function()
-    HopServer()
+-- [[ 6. LOGIC CHUYỂN SERVER (CÓ TRÁI THÌ Ở LẠI, KHÔNG TRÁI 5S SAU HOP) ]]
+task.spawn(function()
+    -- Chờ 5s lúc mới vào server để map load hết (tránh hop nhầm lúc trái chưa kịp hiện)
+    task.wait(5) 
+    
+    local noFruitTimer = 0
+    while task.wait(1) do
+        if _G.Grabfruit then
+            if GetDroppedFruit() then
+                -- Nếu thấy trái -> Reset đếm ngược về 0 (Tiếp tục nhặt)
+                noFruitTimer = 0
+            else
+                -- Nếu không thấy trái -> Bắt đầu đếm
+                noFruitTimer = noFruitTimer + 1
+                
+                -- Đủ 5 giây liên tục không tìm thấy trái nào -> Chuyển Server
+                if noFruitTimer >= 5 then
+                    HopServer()
+                    task.wait(9999) -- Dừng luồng đếm lại để chờ game Teleport an toàn
+                end
+            end
+        end
+    end
 end)
 
 -- SPAM NHẢY CHỐNG AFK

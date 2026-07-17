@@ -51,13 +51,12 @@ local CodeList = {
 }
 
 task.spawn(function()
-    -- Đợi cho đến khi vào được Team
     while task.wait(1) do
         if game.Players.LocalPlayer.Team ~= nil then break end
     end
     
     if not _G.CodesRedeemed then
-        _G.CodesRedeemed = true -- Đánh dấu đã nhập để không chạy lại
+        _G.CodesRedeemed = true 
         Notify("Đang tự động nhập Code x2 EXP...")
         local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 5):WaitForChild("Redeem", 5)
         
@@ -65,7 +64,7 @@ task.spawn(function()
             pcall(function()
                 remote:InvokeServer(code)
             end)
-            task.wait(0.2) -- Delay nhẹ để không bị kick vì spam remote
+            task.wait(0.2) 
         end
         Notify("Đã nhập xong toàn bộ Code!")
     end
@@ -97,100 +96,6 @@ local function GetCommF()
     return found
 end
 
--- ========================================================
--- [[ 🛰️ HỆ THỐNG RADAR CHAT LOG - PHÁT HIỆN EVENT BOSS ]]
--- ========================================================
-local TargetBossName = ""
-local TargetBossPos = nil
-local BossActive = false
-
-local function TriggerBoss(name, cframe)
-    if not BossActive then
-        TargetBossName = name
-        TargetBossPos = cframe
-        BossActive = true
-        _G.IsKillingBoss = true
-        Notify("Phát hiện Boss " .. name .. "! Đang đi săn...")
-    end
-end
-
--- Cách 1: Lắng nghe trực tiếp từ kênh Chat Hệ Thống
-task.spawn(function()
-    local ChatEvents = RS:WaitForChild("DefaultChatSystemChatEvents", 5)
-    if ChatEvents then
-        local OnMessage = ChatEvents:WaitForChild("OnMessageDoneFiltering", 5)
-        if OnMessage then
-            OnMessage.OnClientEvent:Connect(function(messageData)
-                if messageData and messageData.Message then
-                    local msg = messageData.Message
-                    if string.find(msg, "Loud tremors are being heard") then
-                        TriggerBoss("Greybeard", CFrame.new(-5081.3452, 85.2216, 4257.3588))
-                    elseif string.find(msg, "The Saw has spawned") then
-                        TriggerBoss("The Saw", CFrame.new(-784.8971, 72.4273, 1603.5822))
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- Cách 2: Dự phòng quét LogService (Nhật ký Console hệ thống) đề phòng ChatEvent lỗi
-pcall(function()
-    game:GetService("LogService").MessageOut:Connect(function(msg, messageType)
-        if string.find(msg, "Loud tremors are being heard") then
-            TriggerBoss("Greybeard", CFrame.new(-5081.3452, 85.2216, 4257.3588))
-        elseif string.find(msg, "The Saw has spawned") then
-            TriggerBoss("The Saw", CFrame.new(-784.8971, 72.4273, 1603.5822))
-        end
-    end)
-end)
-
--- [ TASK CHẠY NGẦM XỬ LÝ SĂN BOSS BIỂN KHƠI ]
-task.spawn(function()
-    while task.wait(0.5) do
-        if BossActive and TargetBossPos then
-            _G.IsKillingBoss = true
-            
-            -- Bước 1: Bay thẳng tới vị trí Spawn của Boss để kích hoạt game load thực thể
-            TweenTo(TargetBossPos)
-            
-            -- Bước 2: Đợi thực thể Boss xuất hiện trong workspace
-            local bossInstance = nil
-            for i = 1, 15 do 
-                for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if e.Name == TargetBossName and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                        bossInstance = e
-                        break
-                    end
-                end
-                if bossInstance then break end
-                task.wait(0.5)
-            end
-            
-            -- Bước 3: Đập Boss dã man nếu tìm thấy
-            if bossInstance and bossInstance:FindFirstChild("HumanoidRootPart") then
-                repeat
-                    task.wait()
-                    if bossInstance and bossInstance.Parent and bossInstance:FindFirstChild("Humanoid") and bossInstance.Humanoid.Health > 0 then
-                        EquipMelee()
-                        TweenTo(bossInstance.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
-                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                        RS.Modules.Net["RE/RegisterHit"]:FireServer(bossInstance.PrimaryPart, {{bossInstance, bossInstance.PrimaryPart}})
-                    else
-                        break
-                    end
-                until not bossInstance.Parent or bossInstance.Humanoid.Health <= 0
-                Notify("Đã tiêu diệt xong Boss " .. TargetBossName .. "!")
-            else
-                Notify("Không tìm thấy thực thể Boss hoặc Boss đã bị người khác clear!")
-            end
-            
-            -- Bước 4: Trả lại trạng thái cũ sau khi hoàn thành nhiệm vụ săn boss
-            BossActive = false
-            _G.IsKillingBoss = false
-        end
-    end
-end)
 -- ========================================================
 -- [[ 🛡️ MODULE ANTI AFK ]]
 -- ========================================================
@@ -252,37 +157,52 @@ local function TweenTo(targetPos)
     end
 end
 
--- ========================================================
--- [[ 🌀 CỔNG DỊCH CHUYỂN ĐẢO CÁ (TELEPORT LOGIC) ]]
--- ========================================================
-local GATE_ENTER_CFRAME = CFrame.new(3864.68, 6.73, -1926.21)
-local GATE_ENTER_POS = Vector3.new(61163, 11, 1819)
-local GATE_EXIT_CFRAME = CFrame.new(61163, 11, 1819)
-local GATE_EXIT_POS = Vector3.new(3864.68, 6.73, -1926.21)
+local function TeleUnderWater()
+    local pos = LP.Character.HumanoidRootPart.Position
+    if pos.X < 50000 then
+        pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(61163, 11, 1819))
+        end)
+        task.wait(1.5)
+    end
+end
 
+local function TeleSky()
+    local pos = LP.Character.HumanoidRootPart.Position
+    if pos.Y < 5000 then
+        pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-7894, 5547, -380))
+        end)
+        task.wait(1.5)
+    end
+end
+
+-- BỔ SUNG HÀM BỊ THIẾU Ở ĐÂY
 local function CheckTeleport(targetCFrame)
-    local char = LP.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-    local myPos = char.HumanoidRootPart.Position
-    local destPos = targetCFrame.Position
-
-    if destPos.X > 50000 and myPos.X < 50000 then
-        if (myPos - GATE_ENTER_CFRAME.Position).Magnitude > 15 then
-            TweenTo(GATE_ENTER_CFRAME)
-        else
-            GetCommF():InvokeServer("requestEntrance", GATE_ENTER_POS)
-            task.wait(1)
-        end
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local myPos = root.Position
+    local targetPos = targetCFrame.Position
+    
+    if targetPos.X > 50000 and myPos.X < 50000 then
+        TeleUnderWater()
+        return true
+    elseif targetPos.X < 50000 and myPos.X > 50000 then
+        pcall(function()
+            GetCommF():InvokeServer("requestEntrance", Vector3.new(-5085, 11, 4286))
+        end)
+        task.wait(1.5)
         return true
     end
     
-    if destPos.X < 50000 and myPos.X > 50000 then
-        if (myPos - GATE_EXIT_CFRAME.Position).Magnitude > 15 then
-            TweenTo(GATE_EXIT_CFRAME)
-        else
-            GetCommF():InvokeServer("requestEntrance", GATE_EXIT_POS)
-            task.wait(1)
-        end
+    if targetPos.Y > 5000 and myPos.Y < 5000 then
+        TeleSky()
+        return true
+    elseif targetPos.Y < 5000 and myPos.Y > 5000 then
+        pcall(function()
+            GetCommF():InvokeServer("requestEntrance", Vector3.new(-1245, 11, -3133))
+        end)
+        task.wait(1.5)
         return true
     end
     
@@ -342,9 +262,9 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 3. AUTO BUY MELEE (FIXED & ADDED GETMELEEDATA) ]]
+-- [[ 3. AUTO BUY MELEE (FIXED & TÍCH HỢP HÀM ENTRANCE) ]]
 -- ========================================================
-getgenv().ReqMasToBuy = 400 
+getgenv().AutoBuyMelee = true 
 
 local function GetMeleeData()
     local meleeName = "Combat"
@@ -361,21 +281,20 @@ local function GetMeleeData()
         end
         if tool then
             meleeName = tool.Name
-            if tool:FindFirstChild("Level") then
-                meleeMas = tool.Level.Value
-            end
+            if tool:FindFirstChild("Level") then meleeMas = tool.Level.Value
+            elseif tool:FindFirstChild("Mastery") then meleeMas = tool.Mastery.Value end
         end
     end)
     return meleeName, meleeMas
 end
 
 task.spawn(function()
-    while task.wait(1) do 
-        if _G.GoingToSea2 then continue end
+    while task.wait(2) do 
+        if _G.GoingToSea2 or not getgenv().AutoBuyMelee then continue end
         
         pcall(function()
             local myBeli = LP.Data.Beli.Value
-            local curName, curMas = GetMeleeData()
+            local curName, curMas = GetMeleeData() 
             local targetPos, buyCmd = nil, ""
             local needsGate = false
 
@@ -388,22 +307,21 @@ task.spawn(function()
             elseif (curName == "Electric" or curName == "Electro") and curMas >= getgenv().ReqMasToBuy and myBeli >= 750000 then
                 targetPos = CFrame.new(61585.51, 19.15, 985.55)
                 buyCmd = "BuyFishmanKarate"
-                needsGate = true
+                needsGate = true 
             end
 
             if targetPos then
                 _G.StopFarmForMelee = true 
                 
-                if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
-                    if TweenTo(CFrame.new(61163.85, 11.67, 1819.20)) then 
-                        GetCommF():InvokeServer("requestEntrance", Vector3.new(61163.85, 11.67, 1819.20)) 
-                    end
-                else
-                    if TweenTo(targetPos) then 
-                        task.wait(0.3)
-                        GetCommF():InvokeServer(buyCmd)
-                        task.wait(0.5) 
-                    end
+                if needsGate then
+                    TeleUnderWater()
+                end
+                
+                if TweenTo(targetPos) then 
+                    task.wait(0.5)
+                    GetCommF():InvokeServer(buyCmd)
+                    task.wait(0.5) 
+                    _G.StopFarmForMelee = false 
                 end
             else
                 _G.StopFarmForMelee = false 
@@ -469,7 +387,7 @@ function IsQuestActive()
 end
 
 -- ========================================================
--- [[ VÒNG LẶP CHÍNH (ĐÃ FIX KẸT DỊCH CHUYỂN ĐẢO CÁ) ]]
+-- [[ VÒNG LẶP CHÍNH (ĐÃ FIX LỖI NHẶT TRÁI ÁC QUỶ XUYÊN TƯỜNG DƯỚI ĐÁY BIỂN) ]]
 -- ========================================================
 local CurrentTarget = nil 
 local PatrolIndex = 1
@@ -477,8 +395,7 @@ local PatrolPoints = { CFrame.new(150, 0, 150), CFrame.new(-150, 0, 150), CFrame
 
 task.spawn(function()
     while task.wait() do
-        -- NẾU CÓ THÔNG BÁO BOSS -> DỪNG NGAY VÒNG LẶP FARM ĐỂ TẬP TRUNG SĂN BOSS
-        if _G.GoingToSea2 or _G.StopFarmForMelee or _G.IsKillingBoss then task.wait(1); continue end
+        if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
         
         pcall(function()
             if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then 
@@ -491,18 +408,19 @@ task.spawn(function()
                 for _, v in pairs(workspace:GetChildren()) do 
                     if v:IsA("Tool") and string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then targetFruit = v; break end 
                 end
-                if targetFruit then TweenTo(targetFruit.Handle.CFrame); return end
+                if targetFruit then 
+                    if CheckTeleport(targetFruit.Handle.CFrame) then return end
+                    TweenTo(targetFruit.Handle.CFrame)
+                    return 
+                end
             end
             
             CheckQuest()
-            if not CFrameQuest then return end 
+            if not CFrameQuest then return end
             
             if not IsQuestActive() then
                 CurrentTarget = nil
-                
-                -- [ FIX Ở ĐÂY 1 ]: Kiểm tra cổng trước khi bay đi nhận Quest
                 if CheckTeleport(CFrameQuest) then return end
-                
                 if TweenTo(CFrameQuest) then GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest) end
             else
                 if CurrentTarget then 
@@ -523,18 +441,13 @@ task.spawn(function()
                 
                 if CurrentTarget then
                     EquipMelee()
-                    
-                    -- [ FIX Ở ĐÂY 2 ]: Kiểm tra cổng trước khi bay tới tẩn quái
                     if CheckTeleport(CurrentTarget.HumanoidRootPart.CFrame) then return end
-                    
                     TweenTo(CurrentTarget.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(CurrentTarget.PrimaryPart, {{CurrentTarget, CurrentTarget.PrimaryPart}})
                 else
                     if CFrameMon then
                         local targetPatrol = CFrameMon * PatrolPoints[PatrolIndex]
-                        
-                        -- [ FIX Ở ĐÂY 3 ]: Kiểm tra cổng trước khi bay đi tuần tra tìm quái
                         if CheckTeleport(targetPatrol) then return end
                         
                         if TweenTo(targetPatrol) then 
@@ -547,6 +460,7 @@ task.spawn(function()
         end)
     end
 end)
+
 -- ========================================================
 -- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================

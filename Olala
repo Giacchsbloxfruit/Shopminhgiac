@@ -77,11 +77,12 @@ Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes!")
 -- [[ 1. CONFIGURATION & CORE ]]
 -- ========================================================
 getgenv().Team = "Pirates" 
-getgenv().TweenSpeed = 200      
+getgenv().TweenSpeed = 180      
 getgenv().MaxStat = 2800        
 getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
 _G.Grabfruit = true 
+_G.AutoBuyFruit = true -- Đã thêm Config Bật Auto Mua Random Fruit
 _G.StopFarmForMelee = false 
 
 local LP = game.Players.LocalPlayer
@@ -234,7 +235,6 @@ end)
 -- ========================================================
 -- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
 -- ========================================================
--- (Giữ nguyên bảng FruitList cũ của bạn)
 local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
 
 task.spawn(function()
@@ -254,7 +254,6 @@ end)
 -- ========================================================
 getgenv().ReqMasToBuy = 400 
 
--- Hàm quét thông tin võ đang dùng (Fix lỗi thiếu hàm)
 local function GetMeleeData()
     local meleeName = "Combat"
     local meleeMas = 0
@@ -288,7 +287,6 @@ task.spawn(function()
             local targetPos, buyCmd = nil, ""
             local needsGate = false
 
-            -- Kiểm tra điều kiện tiến trình đổi võ
             if curName == "Combat" and myBeli >= 150000 then
                 targetPos = CFrame.new(-985.49, 14.04, 3991.39)
                 buyCmd = "BuyBlackLeg"
@@ -301,9 +299,8 @@ task.spawn(function()
                 needsGate = true
             end
 
-            -- Logic điều khiển di chuyển đi mua võ
             if targetPos then
-                _G.StopFarmForMelee = true -- Chặn farm để đi mua võ
+                _G.StopFarmForMelee = true 
                 
                 if needsGate and LP.Character.HumanoidRootPart.Position.X < 50000 then
                     if TweenTo(CFrame.new(61163.85, 11.67, 1819.20)) then 
@@ -317,7 +314,7 @@ task.spawn(function()
                     end
                 end
             else
-                _G.StopFarmForMelee = false -- Mua xong hoặc chưa đủ điều kiện thì tiếp tục farm quái
+                _G.StopFarmForMelee = false 
             end
         end)
     end
@@ -326,7 +323,6 @@ end)
 -- ========================================================
 -- [[ 4. BẢNG NHIỆM VỤ & FARM LOGIC ]]
 -- ========================================================
--- (Giữ nguyên phần QuestList và các hàm hỗ trợ của bạn)
 local QuestList = {
     {Min = 1, Max = 9, Name = "BanditQuest1", Lv = 1, Mon = "Bandit", NPC = CFrame.new(1059.37, 15.45, 1550.42), MonPos = CFrame.new(1045.96, 27.00, 1560.82)},
     {Min = 10, Max = 14, Name = "JungleQuest", Lv = 1, Mon = "Monkey", NPC = CFrame.new(-1598.09, 35.55, 153.30), MonPos = CFrame.new(-1623.2, 22, -188)},
@@ -343,7 +339,7 @@ local QuestList = {
     {Min = 190, Max = 209, Name = "PrisonerQuest", Lv = 1, Mon = "Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5411, 13, 507)},
     {Min = 210, Max = 249, Name = "PrisonerQuest", Lv = 2, Mon = "Dangerous Prisoner", NPC = CFrame.new(5308.93, 1.65, 475.12), MonPos = CFrame.new(5654, 15, 866)},
     {Min = 250, Max = 274, Name = "ColosseumQuest", Lv = 1, Mon = "Toga Warrior", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1820, 51, -2741)},
-    {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 2, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1268, 30, -2996)},
+    {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 2, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1362, 7, -3234)},
     {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, Mon = "Military Soldier", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5395.2, 27.2, 8510.4)},
     {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, Mon = "Military Spy", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5816.1, 83.2, 8438.4)},
     {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, Mon = "Fishman Warrior", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(60938.2, 55.2, 1515.2)},
@@ -381,46 +377,85 @@ function IsQuestActive()
 end
 
 -- ========================================================
--- [[ VÒNG LẶP CHÍNH ]]
+-- [[ VÒNG LẶP CHÍNH (ĐÃ NÂNG CẤP CHECK QUÁI CHUẨN - KHÔNG BRING) ]]
 -- ========================================================
+local CurrentTarget = nil 
+local PatrolIndex = 1
+-- Bán kính tuần tra 150 studs quanh bãi quái
+local PatrolPoints = {
+    CFrame.new(150, 0, 150),
+    CFrame.new(-150, 0, 150),
+    CFrame.new(-150, 0, -150),
+    CFrame.new(150, 0, -150)
+}
+
 task.spawn(function()
     while task.wait() do
-        -- Kiểm tra điều kiện dừng farm
         if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
-        
         pcall(function()
-            -- TÍCH HỢP AUTO MUA FRUIT VÀO ĐÂY
-            if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Cousin", "Buy")
-                LastBuyTime = tick()
+            -- 1. Auto Buy Fruit (30 giây/lần)
+            if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then 
+                pcall(function() GetCommF():InvokeServer("Cousin", "Buy") end)
+                LastBuyTime = tick() 
             end
 
-            -- Logic Grab Fruit
+            -- 2. Grab Fruit
             if _G.Grabfruit then
-                local fruit = nil
-                for _, v in pairs(workspace:GetChildren()) do
-                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then fruit = v; break end
+                local targetFruit = nil
+                for _, v in pairs(workspace:GetChildren()) do 
+                    if v:IsA("Tool") and string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then targetFruit = v; break end 
                 end
-                if fruit then TweenTo(fruit.Handle.CFrame); return end
+                if targetFruit then 
+                    TweenTo(targetFruit.Handle.CFrame)
+                    return 
+                end
             end
             
-            -- Logic Farm Quest
+            -- 3. Farm Level
             CheckQuest()
+            if not CFrameQuest then return end -- Đợi load quest
+            
             if not IsQuestActive() then
-                if CheckTeleport(CFrameQuest) then return end
+                CurrentTarget = nil
                 if TweenTo(CFrameQuest) then GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest) end
             else
-                local Enemy = nil
-                for _, e in pairs(workspace.Enemies:GetChildren()) do
-                    if e.Name == NameMon and e.Humanoid.Health > 0 then Enemy = e; break end
+                -- Kiểm tra mục tiêu cũ còn sống không
+                if CurrentTarget then 
+                    local hum = CurrentTarget:FindFirstChild("Humanoid")
+                    if not CurrentTarget.Parent or not hum or hum.Health <= 0 then CurrentTarget = nil end 
                 end
-                if Enemy then
+
+                -- Tìm mục tiêu mới (quét quái đúng tên gần nhất)
+                if not CurrentTarget then
+                    local myPos = LP.Character.HumanoidRootPart.Position
+                    local shortestDist = 500 -- Quét trong bán kính 500 stud
+                    for _, e in pairs(workspace.Enemies:GetChildren()) do
+                        if e.Name == NameMon and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                            local dist = (e.HumanoidRootPart.Position - myPos).Magnitude
+                            if dist < shortestDist then
+                                shortestDist = dist
+                                CurrentTarget = e
+                            end
+                        end
+                    end
+                end
+                
+                -- Tấn công hoặc Tuần tra
+                if CurrentTarget then
                     EquipMelee()
-                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    TweenTo(CurrentTarget.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(CurrentTarget.PrimaryPart, {{CurrentTarget, CurrentTarget.PrimaryPart}})
                 else
-                    TweenTo(CFrameMon)
+                    -- TUẦN TRA QUANH BÃI (CFrameMon)
+                    -- Đảm bảo CFrameMon không nil
+                    if CFrameMon then
+                        local targetPatrol = CFrameMon * PatrolPoints[PatrolIndex]
+                        if TweenTo(targetPatrol) then 
+                            PatrolIndex = PatrolIndex + 1
+                            if PatrolIndex > #PatrolPoints then PatrolIndex = 1 end
+                        end
+                    end
                 end
             end
         end)
@@ -432,8 +467,8 @@ end)
 -- ========================================================
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
-    while task.wait(0.7) do
-        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
+    while task.wait(1.5) do
+        if _G.GoingToSea2 then continue end 
         pcall(function()
             local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
             local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
@@ -461,12 +496,12 @@ game:GetService("RunService").Stepped:Connect(function()
 end)
 
 -- ========================================================
--- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
+-- [[ 6. MODULE SERVER HOP ]]
 -- ========================================================
 task.spawn(function()
     local HopTime = 1700 
     while task.wait(1) do
-        if _G.GoingToSea2 then continue end -- Dừng server hop khi đang qua sea
+        if _G.GoingToSea2 then continue end 
         HopTime = HopTime - 1
         if HopTime <= 0 then
             pcall(function()

@@ -184,7 +184,9 @@ local function topos(targetCFrame)
     if _G.CurrentTween then _G.CurrentTween:Cancel() end
 
     _G.LastTargetPos = targetCFrame
-    local speed = 300 
+    
+    -- TỐC ĐỘ ĐÃ CHỈNH LÀ 200
+    local speed = 200 
     local info = TweenInfo.new(directDist / speed, Enum.EasingStyle.Linear)
     
     _G.CurrentTween = TweenService:Create(root, info, {CFrame = targetCFrame})
@@ -240,7 +242,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 5. HỆ THỐNG SERVER HOP (TÌM SERVER CŨ & KHÔNG TRÙNG LẶP) ]]
+-- [[ 5. HỆ THỐNG SERVER HOP ]]
 local AllIDs = {}
 local foundAnything = ""
 local actualHour = os.date("!*t").hour
@@ -312,25 +314,20 @@ local function HopServer()
     end
 end
 
--- [[ 6. LOGIC CHUYỂN SERVER (CÓ TRÁI THÌ Ở LẠI, KHÔNG TRÁI 5S SAU HOP) ]]
+-- [[ 6. LOGIC CHUYỂN SERVER ]]
 task.spawn(function()
-    -- Chờ 5s lúc mới vào server để map load hết (tránh hop nhầm lúc trái chưa kịp hiện)
     task.wait(5) 
     
     local noFruitTimer = 0
     while task.wait(1) do
         if _G.Grabfruit then
             if GetDroppedFruit() then
-                -- Nếu thấy trái -> Reset đếm ngược về 0 (Tiếp tục nhặt)
                 noFruitTimer = 0
             else
-                -- Nếu không thấy trái -> Bắt đầu đếm
                 noFruitTimer = noFruitTimer + 1
-                
-                -- Đủ 5 giây liên tục không tìm thấy trái nào -> Chuyển Server
                 if noFruitTimer >= 5 then
                     HopServer()
-                    task.wait(9999) -- Dừng luồng đếm lại để chờ game Teleport an toàn
+                    task.wait(9999) 
                 end
             end
         end

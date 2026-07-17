@@ -82,7 +82,7 @@ getgenv().MaxStat = 2800
 getgenv().ReqMasToBuy = 400 
 getgenv().AntiAFK = true
 _G.Grabfruit = true 
-_G.AutoBuyFruit = true -- Đã thêm Config Bật Auto Mua Random Fruit
+_G.AutoBuyFruit = true 
 _G.StopFarmForMelee = false 
 
 local LP = game.Players.LocalPlayer
@@ -92,13 +92,105 @@ local TS = game:GetService("TweenService")
 local function GetCommF()
     local found = RS:FindFirstChild("CommF_", true)
     if not found then
-        for _, v in pairs(RS:GetDescendants()) do
-            if v.Name == "CommF_" then return v end
-        end
+        for _, v in pairs(RS:GetDescendants()) do if v.Name == "CommF_" then return v end end
     end
     return found
 end
 
+-- ========================================================
+-- [[ 🛰️ HỆ THỐNG RADAR CHAT LOG - PHÁT HIỆN EVENT BOSS ]]
+-- ========================================================
+local TargetBossName = ""
+local TargetBossPos = nil
+local BossActive = false
+
+local function TriggerBoss(name, cframe)
+    if not BossActive then
+        TargetBossName = name
+        TargetBossPos = cframe
+        BossActive = true
+        _G.IsKillingBoss = true
+        Notify("Phát hiện Boss " .. name .. "! Đang đi săn...")
+    end
+end
+
+-- Cách 1: Lắng nghe trực tiếp từ kênh Chat Hệ Thống
+task.spawn(function()
+    local ChatEvents = RS:WaitForChild("DefaultChatSystemChatEvents", 5)
+    if ChatEvents then
+        local OnMessage = ChatEvents:WaitForChild("OnMessageDoneFiltering", 5)
+        if OnMessage then
+            OnMessage.OnClientEvent:Connect(function(messageData)
+                if messageData and messageData.Message then
+                    local msg = messageData.Message
+                    if string.find(msg, "Loud tremors are being heard") then
+                        TriggerBoss("Greybeard", CFrame.new(-5081.3452, 85.2216, 4257.3588))
+                    elseif string.find(msg, "The Saw has spawned") then
+                        TriggerBoss("The Saw", CFrame.new(-784.8971, 72.4273, 1603.5822))
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Cách 2: Dự phòng quét LogService (Nhật ký Console hệ thống) đề phòng ChatEvent lỗi
+pcall(function()
+    game:GetService("LogService").MessageOut:Connect(function(msg, messageType)
+        if string.find(msg, "Loud tremors are being heard") then
+            TriggerBoss("Greybeard", CFrame.new(-5081.3452, 85.2216, 4257.3588))
+        elseif string.find(msg, "The Saw has spawned") then
+            TriggerBoss("The Saw", CFrame.new(-784.8971, 72.4273, 1603.5822))
+        end
+    end)
+end)
+
+-- [ TASK CHẠY NGẦM XỬ LÝ SĂN BOSS BIỂN KHƠI ]
+task.spawn(function()
+    while task.wait(0.5) do
+        if BossActive and TargetBossPos then
+            _G.IsKillingBoss = true
+            
+            -- Bước 1: Bay thẳng tới vị trí Spawn của Boss để kích hoạt game load thực thể
+            TweenTo(TargetBossPos)
+            
+            -- Bước 2: Đợi thực thể Boss xuất hiện trong workspace
+            local bossInstance = nil
+            for i = 1, 15 do 
+                for _, e in pairs(workspace.Enemies:GetChildren()) do
+                    if e.Name == TargetBossName and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                        bossInstance = e
+                        break
+                    end
+                end
+                if bossInstance then break end
+                task.wait(0.5)
+            end
+            
+            -- Bước 3: Đập Boss dã man nếu tìm thấy
+            if bossInstance and bossInstance:FindFirstChild("HumanoidRootPart") then
+                repeat
+                    task.wait()
+                    if bossInstance and bossInstance.Parent and bossInstance:FindFirstChild("Humanoid") and bossInstance.Humanoid.Health > 0 then
+                        EquipMelee()
+                        TweenTo(bossInstance.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                        RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                        RS.Modules.Net["RE/RegisterHit"]:FireServer(bossInstance.PrimaryPart, {{bossInstance, bossInstance.PrimaryPart}})
+                    else
+                        break
+                    end
+                until not bossInstance.Parent or bossInstance.Humanoid.Health <= 0
+                Notify("Đã tiêu diệt xong Boss " .. TargetBossName .. "!")
+            else
+                Notify("Không tìm thấy thực thể Boss hoặc Boss đã bị người khác clear!")
+            end
+            
+            -- Bước 4: Trả lại trạng thái cũ sau khi hoàn thành nhiệm vụ săn boss
+            BossActive = false
+            _G.IsKillingBoss = false
+        end
+    end
+end)
 -- ========================================================
 -- [[ 🛡️ MODULE ANTI AFK ]]
 -- ========================================================
@@ -341,7 +433,7 @@ local QuestList = {
     {Min = 250, Max = 274, Name = "ColosseumQuest", Lv = 1, Mon = "Toga Warrior", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1820, 51, -2741)},
     {Min = 275, Max = 299, Name = "ColosseumQuest", Lv = 2, Mon = "Gladiator", NPC = CFrame.new(-1581, 7, -2982), MonPos = CFrame.new(-1362, 7, -3234)},
     {Min = 300, Max = 324, Name = "MagmaQuest", Lv = 1, Mon = "Military Soldier", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5395.2, 27.2, 8510.4)},
-    {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, Mon = "Military Spy", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5816.1, 83.2, 8438.4)},
+    {Min = 325, Max = 374, Name = "MagmaQuest", Lv = 2, Mon = "Military Spy", NPC = CFrame.new(-5314.1, 12.2, 8516.4), MonPos = CFrame.new(-5865, 77, 8862)},
     {Min = 375, Max = 399, Name = "FishmanQuest", Lv = 1, Mon = "Fishman Warrior", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(60938.2, 55.2, 1515.2)},
     {Min = 400, Max = 449, Name = "FishmanQuest", Lv = 2, Mon = "Fishman Commando", NPC = CFrame.new(61122.1, 18.2, 1565.4), MonPos = CFrame.new(61965.2, 30.2, 1475.2)},
     {Min = 450, Max = 474, Name = "SkyExp1Quest", Lv = 1, Mon = "God's Guard", NPC = CFrame.new(-4720, 846, -1951), MonPos = CFrame.new(-4720, 846, -1951)},
@@ -377,80 +469,74 @@ function IsQuestActive()
 end
 
 -- ========================================================
--- [[ VÒNG LẶP CHÍNH (ĐÃ NÂNG CẤP CHECK QUÁI CHUẨN - KHÔNG BRING) ]]
+-- [[ VÒNG LẶP CHÍNH (ĐÃ FIX KẸT DỊCH CHUYỂN ĐẢO CÁ) ]]
 -- ========================================================
 local CurrentTarget = nil 
 local PatrolIndex = 1
--- Bán kính tuần tra 150 studs quanh bãi quái
-local PatrolPoints = {
-    CFrame.new(150, 0, 150),
-    CFrame.new(-150, 0, 150),
-    CFrame.new(-150, 0, -150),
-    CFrame.new(150, 0, -150)
-}
+local PatrolPoints = { CFrame.new(150, 0, 150), CFrame.new(-150, 0, 150), CFrame.new(-150, 0, -150), CFrame.new(150, 0, -150) }
 
 task.spawn(function()
     while task.wait() do
-        if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
+        -- NẾU CÓ THÔNG BÁO BOSS -> DỪNG NGAY VÒNG LẶP FARM ĐỂ TẬP TRUNG SĂN BOSS
+        if _G.GoingToSea2 or _G.StopFarmForMelee or _G.IsKillingBoss then task.wait(1); continue end
+        
         pcall(function()
-            -- 1. Auto Buy Fruit (30 giây/lần)
             if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then 
                 pcall(function() GetCommF():InvokeServer("Cousin", "Buy") end)
                 LastBuyTime = tick() 
             end
 
-            -- 2. Grab Fruit
             if _G.Grabfruit then
                 local targetFruit = nil
                 for _, v in pairs(workspace:GetChildren()) do 
                     if v:IsA("Tool") and string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then targetFruit = v; break end 
                 end
-                if targetFruit then 
-                    TweenTo(targetFruit.Handle.CFrame)
-                    return 
-                end
+                if targetFruit then TweenTo(targetFruit.Handle.CFrame); return end
             end
             
-            -- 3. Farm Level
             CheckQuest()
-            if not CFrameQuest then return end -- Đợi load quest
+            if not CFrameQuest then return end 
             
             if not IsQuestActive() then
                 CurrentTarget = nil
+                
+                -- [ FIX Ở ĐÂY 1 ]: Kiểm tra cổng trước khi bay đi nhận Quest
+                if CheckTeleport(CFrameQuest) then return end
+                
                 if TweenTo(CFrameQuest) then GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest) end
             else
-                -- Kiểm tra mục tiêu cũ còn sống không
                 if CurrentTarget then 
                     local hum = CurrentTarget:FindFirstChild("Humanoid")
                     if not CurrentTarget.Parent or not hum or hum.Health <= 0 then CurrentTarget = nil end 
                 end
 
-                -- Tìm mục tiêu mới (quét quái đúng tên gần nhất)
                 if not CurrentTarget then
                     local myPos = LP.Character.HumanoidRootPart.Position
-                    local shortestDist = 500 -- Quét trong bán kính 500 stud
+                    local shortestDist = 500 
                     for _, e in pairs(workspace.Enemies:GetChildren()) do
                         if e.Name == NameMon and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
                             local dist = (e.HumanoidRootPart.Position - myPos).Magnitude
-                            if dist < shortestDist then
-                                shortestDist = dist
-                                CurrentTarget = e
-                            end
+                            if dist < shortestDist then shortestDist = dist; CurrentTarget = e end
                         end
                     end
                 end
                 
-                -- Tấn công hoặc Tuần tra
                 if CurrentTarget then
                     EquipMelee()
+                    
+                    -- [ FIX Ở ĐÂY 2 ]: Kiểm tra cổng trước khi bay tới tẩn quái
+                    if CheckTeleport(CurrentTarget.HumanoidRootPart.CFrame) then return end
+                    
                     TweenTo(CurrentTarget.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
                     RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
                     RS.Modules.Net["RE/RegisterHit"]:FireServer(CurrentTarget.PrimaryPart, {{CurrentTarget, CurrentTarget.PrimaryPart}})
                 else
-                    -- TUẦN TRA QUANH BÃI (CFrameMon)
-                    -- Đảm bảo CFrameMon không nil
                     if CFrameMon then
                         local targetPatrol = CFrameMon * PatrolPoints[PatrolIndex]
+                        
+                        -- [ FIX Ở ĐÂY 3 ]: Kiểm tra cổng trước khi bay đi tuần tra tìm quái
+                        if CheckTeleport(targetPatrol) then return end
+                        
                         if TweenTo(targetPatrol) then 
                             PatrolIndex = PatrolIndex + 1
                             if PatrolIndex > #PatrolPoints then PatrolIndex = 1 end
@@ -461,13 +547,12 @@ task.spawn(function()
         end)
     end
 end)
-
 -- ========================================================
 -- [[ 5. AUTO STATS & MISC ]]
 -- ========================================================
 task.spawn(function()
     local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
-    while task.wait(1.5) do
+    while task.wait(0.8) do
         if _G.GoingToSea2 then continue end 
         pcall(function()
             local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")

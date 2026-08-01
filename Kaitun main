@@ -1,5 +1,5 @@
 local PlaceId = game.PlaceId
-if PlaceId == 2753915549 or PlaceId == 2753915133 then
+if PlaceId == 85211729168715 or PlaceId == 2753915133 then
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Olala"))()
     end)

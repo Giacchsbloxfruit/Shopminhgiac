@@ -1,0 +1,389 @@
+-- ========================================================
+-- [[ 🛡️ HÀM ĐIỀU KIỆN CHUYỂN SEA (FIXED CONFLICT) ]]
+-- ========================================================
+_G.GoingToSea2 = false 
+
+task.spawn(function()
+    while task.wait(3) do
+        local lp = game:GetService("Players").LocalPlayer
+        if lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("Level") then
+            local myLevel = lp.Data.Level.Value
+            if myLevel >= 1500 then
+                _G.GoingToSea2 = true      
+                _G.StopFarmForMelee = true 
+                _G.Grabfruit = false       
+                getgenv().AntiAFK = false  
+                print("--- Đã đạt Level 700! Đang khởi động Auto Sea 2 ---")
+                pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/Sea%202"))()
+                end)
+                break 
+            end
+        end
+    end
+end)
+
+-- ========================================================
+-- [[ 0. HÀM THÔNG BÁO & AUTO REDEEM CODES ]]
+-- ========================================================
+local function Notify(text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Giacdz Hub",
+            Text = text,
+            Duration = 3
+        })
+    end)
+end
+
+-- [ MODULE AUTO REDEEM CODES - CHẠY 1 LẦN ]
+local CodeList = {
+    "NOMOREHACK","BANEXPLOIT","WildDares","BossBuild","GetPranked","EARN_FRUITS","FIGHT4FRUIT",
+    "NOEXPLOITER","NOOB2ADMIN","CODESLIDE","ADMINHACKED","ADMINDARES","fruitconcepts","krazydares",
+    "TRIPLEABUSE","SEATROLLING","24NOADMIN","REWARDFUN","Chandler","NEWTROLL","KITT_RESET",
+    "Sub2CaptainMaui","kittgaming","Sub2Fer999","Enyu_is_Pro","Magicbus","JCWK","Starcodeheo",
+    "Bluxxy","fudd10_v2","SUB2GAMERROBOT_EXP1","Sub2NoobMaster123","Sub2UncleKizaru","Sub2Daigrock",
+    "Axiore","TantaiGaming","StrawHatMaine","Sub2OfficialNoobie","Fudd10","Bignews","TheGreatAce",
+    "SECRET_ADMIN","SUB2GAMERROBOT_RESET1","SUB2OFFICIALNOOBIE","AXIORE","BIGNEWS","BLUXXY",
+    "CHANDLER","ENYU_IS_PRO","FUDD10","FUDD10_V2","KITTGAMING","MAGICBUS","STARCODEHEO",
+    "STRAWHATMAINE","SUB2CAPTAINMAUI","SUB2DAIGROCK","SUB2FER999","SUB2NOOBMASTER123",
+    "SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE"
+}
+
+task.spawn(function()
+    -- Đợi cho đến khi vào được Team
+    while task.wait(1) do
+        if game.Players.LocalPlayer.Team ~= nil then break end
+    end
+    
+    if not _G.CodesRedeemed then
+        _G.CodesRedeemed = true -- Đánh dấu đã nhập để không chạy lại
+        Notify("Đang tự động nhập Code x2 EXP...")
+        local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 5):WaitForChild("Redeem", 5)
+        
+        for _, code in ipairs(CodeList) do
+            pcall(function()
+                remote:InvokeServer(code)
+            end)
+            task.wait(0.2) -- Delay nhẹ để không bị kick vì spam remote
+        end
+        Notify("Đã nhập xong toàn bộ Code!")
+    end
+end)
+
+Notify("Fix Lỗi Kẹt Chuyển Sea 2 + Auto Codes!")
+
+-- ========================================================
+-- [[ 1. CONFIGURATION & CORE ]]
+-- ========================================================
+getgenv().Team = "Pirates" 
+getgenv().TweenSpeed = 200      
+getgenv().MaxStat = 2800        
+getgenv().ReqMasToBuy = 400 
+getgenv().AntiAFK = true
+_G.Grabfruit = true 
+_G.StopFarmForMelee = false 
+
+local LP = game.Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local TS = game:GetService("TweenService")
+
+local function GetCommF()
+    local found = RS:FindFirstChild("CommF_", true)
+    if not found then
+        for _, v in pairs(RS:GetDescendants()) do
+            if v.Name == "CommF_" then return v end
+        end
+    end
+    return found
+end
+
+-- ========================================================
+-- [[ 🛡️ MODULE ANTI AFK ]]
+-- ========================================================
+local VirtualUser = game:GetService("VirtualUser")
+LP.Idled:Connect(function()
+    if getgenv().AntiAFK then
+        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    end
+end)
+
+-- [ PHẦN CHỌN TEAM ]
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.GoingToSea2 then continue end
+        if LP.Team ~= nil and LP.Team.Name == getgenv().Team then break end
+        pcall(function()
+            local remote = GetCommF()
+            if remote then remote:InvokeServer("SetTeam", getgenv().Team) end
+            if RS:FindFirstChild("SetTeam") then RS.SetTeam:FireServer(getgenv().Team) end
+        end)                
+    end
+end)
+
+-- ========================================================
+-- [[ ⚡ AUTO HAKI ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait(3) do
+        pcall(function()
+            if LP.Character and not LP.Character:FindFirstChild("HasBuso") then
+                local remote = GetCommF()
+                if remote then remote:InvokeServer("Buso") end
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 🚁 MODULE TWEEN VÀ CỐ ĐỊNH NHÂN VẬT ]]
+-- ========================================================
+local function TweenTo(targetPos)
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local dist = (root.Position - targetPos.Position).Magnitude
+    
+    local bv = root:FindFirstChild("AntiFall") or Instance.new("BodyVelocity", root)
+    bv.Name = "AntiFall"
+    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bv.Velocity = Vector3.zero
+
+    if dist > 15 then 
+        TS:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos}):Play()
+        return false
+    else
+        root.CFrame = targetPos
+        return true
+    end
+end
+
+-- ========================================================
+-- [[ ⚡ MODULE FIX LAG & HIGHLIGHT ]]
+-- ========================================================
+task.spawn(function()
+    settings().Rendering.QualityLevel = "Level01"
+    for _, v in pairs(game:GetDescendants()) do
+        pcall(function()
+            if v:IsA("Part") or v:IsA("Union") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
+                v.Material = "Plastic"; v.Reflectance = 0
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v.Transparency = 1
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                v.Lifetime = NumberRange.new(0)
+            end
+        end)
+    end
+end)
+
+task.spawn(function()
+    while task.wait() do
+        if _G.GoingToSea2 then continue end
+        pcall(function()
+            local char = LP.Character
+            if char then
+                local hl = char:FindFirstChild("GiacdzHighlight") or Instance.new("Highlight", char)
+                hl.Name = "GiacdzHighlight"
+                local hue = tick() % 3 / 3 
+                hl.FillColor = Color3.fromHSV(hue, 1, 1) 
+                hl.OutlineColor = Color3.fromHSV(hue, 1, 1) 
+                hl.FillTransparency = 0.5
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 2. HỆ THỐNG CẤT KHO TRÁI CÂY ]]
+-- ========================================================
+-- (Giữ nguyên bảng FruitList cũ của bạn)
+local FruitList = {{"Rocket Fruit", "Rocket-Rocket"}, {"Spin Fruit", "Spin-Spin"}, {"Blade Fruit", "Blade-Blade"}, {"Spring Fruit", "Spring-Spring"}, {"Bomb Fruit", "Bomb-Bomb"}, {"Smoke Fruit", "Smoke-Smoke"}, {"Spike Fruit", "Spike-Spike"}, {"Flame Fruit", "Flame-Flame"}, {"Eagle Fruit", "Eagle-Eagle"}, {"Ice Fruit", "Ice-Ice"}, {"Sand Fruit", "Sand-Sand"}, {"Dark Fruit", "Dark-Dark"}, {"Diamond Fruit", "Diamond-Diamond"}, {"Light Fruit", "Light-Light"}, {"Rubber Fruit", "Rubber-Rubber"}, {"Creation Fruit", "Creation-Creation"}, {"Ghost Fruit", "Ghost-Ghost"}, {"Magma Fruit", "Magma-Magma"}, {"Quake Fruit", "Quake-Quake"}, {"Buddha Fruit", "Buddha-Buddha"}, {"Love Fruit", "Love-Love"}, {"Spider Fruit", "Spider-Spider"}, {"Sound Fruit", "Sound-Sound"}, {"Phoenix Fruit", "Phoenix-Phoenix"}, {"Portal Fruit", "Portal-Portal"}, {"Lightning Fruit", "Lightning-Lightning"}, {"Pain Fruit", "Pain-Pain"}, {"Blizzard Fruit", "Blizzard-Blizzard"}, {"Gravity Fruit", "Gravity-Gravity"}, {"Mammoth Fruit", "Mammoth-Mammoth"}, {"T-Rex Fruit", "T-Rex-T-Rex"}, {"Dough Fruit", "Dough-Dough"}, {"Shadow Fruit", "Shadow-Shadow"}, {"Venom Fruit", "Venom-Venom"}, {"Gas Fruit", "Gas-Gas"}, {"Control Fruit", "Control-Control"}, {"Spirit Fruit", "Spirit-Spirit"}, {"Leopard Fruit", "Leopard-Leopard"}, {"Yeti Fruit", "Yeti-Yeti"}, {"Kitsune Fruit", "Kitsune-Kitsune"}, {"Dragon Fruit", "Dragon-Dragon"}}
+
+task.spawn(function()
+    while task.wait(5) do
+        if _G.GoingToSea2 then continue end
+        pcall(function()
+            for _, fruitData in ipairs(FruitList) do
+                local fruitTool = LP.Backpack:FindFirstChild(fruitData[1]) or LP.Character:FindFirstChild(fruitData[1])
+                if fruitTool then GetCommF():InvokeServer("StoreFruit", fruitData[2], fruitTool); break end
+            end
+        end)
+    end
+end)
+
+
+
+-- ========================================================
+-- [[ 4. BẢNG NHIỆM VỤ & FARM LOGIC ]]
+-- ========================================================
+-- (Giữ nguyên phần QuestList và các hàm hỗ trợ của bạn)
+local QuestList = {
+    {Min = 1500, Max = 1524, Mon = "Pirate Millionaire", Qname = "PiratePortQuest", Qdata = 1, PosQ = CFrame.new(-712.8, 98.5, 5711.9), PosM = CFrame.new(-712.8, 98.5, 5711.9)},
+    {Min = 1525, Max = 1574, Mon = "Pistol Billionaire", Qname = "PiratePortQuest", Qdata = 2, PosQ = CFrame.new(-723.4, 147.4, 5931.9), PosM = CFrame.new(-723.4, 147.4, 5931.9)},
+    {Min = 1575, Max = 1599, Mon = "Dragon Crew Warrior", Qname = "AmazonQuest", Qdata = 1, PosQ = CFrame.new(6779.0, 111.1, -801.2), PosM = CFrame.new(6779.0, 111.1, -801.2)},
+    {Min = 1600, Max = 1624, Mon = "Dragon Crew Archer", Qname = "AmazonQuest", Qdata = 2, PosQ = CFrame.new(6955.8, 546.6, 309.0), PosM = CFrame.new(6955.8, 546.6, 309.0)},
+    {Min = 1625, Max = 1649, Mon = "Hydra Enforcer", Qname = "VenomCrewQuest", Qdata = 1, PosQ = CFrame.new(4620.6, 1002.2, 399.0), PosM = CFrame.new(4620.6, 1002.2, 399.0)},
+    {Min = 1650, Max = 1699, Mon = "Venomous Assailant", Qname = "VenomCrewQuest", Qdata = 2, PosQ = CFrame.new(4697.5, 1100.6, 946.4), PosM = CFrame.new(4697.5, 1100.6, 946.4)},
+    {Min = 1700, Max = 1724, Mon = "Marine Commodore", Qname = "MarineTreeIsland", Qdata = 1, PosQ = CFrame.new(2180.5, 27.8, -6741.5), PosM = CFrame.new(2286.0, 73.1, -7159.8)},
+    {Min = 1725, Max = 1774, Mon = "Marine Rear Admiral", Qname = "MarineTreeIsland", Qdata = 2, PosQ = CFrame.new(2179.9, 28.7, -6740.0), PosM = CFrame.new(3656.7, 160.5, -7001.5)},
+    {Min = 1775, Max = 1799, Mon = "Fishman Raider", Qname = "DeepForestIsland3", Qdata = 1, PosQ = CFrame.new(-10581.6, 330.8, -8761.1), PosM = CFrame.new(-10407.5, 331.7, -8368.5)},
+    {Min = 1800, Max = 1824, Mon = "Fishman Captain", Qname = "DeepForestIsland3", Qdata = 2, PosQ = CFrame.new(-10581.6, 330.8, -8761.1), PosM = CFrame.new(-10994.7, 352.3, -9002.1)},
+    {Min = 1825, Max = 1849, Mon = "Forest Pirate", Qname = "DeepForestIsland", Qdata = 1, PosQ = CFrame.new(-13234.0, 331.4, -7625.4), PosM = CFrame.new(-13274.4, 332.3, -7769.5)},
+    {Min = 1850, Max = 1899, Mon = "Mythological Pirate", Qname = "DeepForestIsland", Qdata = 2, PosQ = CFrame.new(-13234.0, 331.4, -7625.4), PosM = CFrame.new(-13680.6, 501.0, -6991.1)},
+    {Min = 1900, Max = 1924, Mon = "Jungle Pirate", Qname = "DeepForestIsland2", Qdata = 1, PosQ = CFrame.new(-12680.3, 389.9, -9902.0), PosM = CFrame.new(-12256.1, 331.7, -10485.8)},
+    {Min = 1925, Max = 1974, Mon = "Musketeer Pirate", Qname = "DeepForestIsland2", Qdata = 2, PosQ = CFrame.new(-12680.3, 389.9, -9902.0), PosM = CFrame.new(-13457.9, 391.5, -9859.1)},
+    {Min = 1975, Max = 1999, Mon = "Reborn Skeleton", Qname = "HauntedQuest1", Qdata = 1, PosQ = CFrame.new(-9479.2, 141.2, 5566.0), PosM = CFrame.new(-8763.7, 165.7, 6159.8)},
+    {Min = 2000, Max = 2024, Mon = "Living Zombie", Qname = "HauntedQuest1", Qdata = 2, PosQ = CFrame.new(-9479.2, 141.2, 5566.0), PosM = CFrame.new(-10144.1, 138.6, 5838.0)},
+    {Min = 2025, Max = 2049, Mon = "Demonic Soul", Qname = "HauntedQuest2", Qdata = 1, PosQ = CFrame.new(-9516.9, 172.0, 6078.4), PosM = CFrame.new(-9505.8, 172.1, 6158.9)},
+    {Min = 2050, Max = 2074, Mon = "Posessed Mummy", Qname = "HauntedQuest2", Qdata = 2, PosQ = CFrame.new(-9516.9, 172.0, 6078.4), PosM = CFrame.new(-9582.0, 6.2, 6205.4)},
+    {Min = 2075, Max = 2099, Mon = "Peanut Scout", Qname = "NutsIslandQuest", Qdata = 1, PosQ = CFrame.new(-2104.3, 38.1, -10194.2), PosM = CFrame.new(-2143.2, 47.7, -10029.9)},
+    {Min = 2100, Max = 2124, Mon = "Peanut President", Qname = "NutsIslandQuest", Qdata = 2, PosQ = CFrame.new(-2104.3, 38.1, -10194.2), PosM = CFrame.new(-1859.3, 38.1, -10422.4)},
+    {Min = 2125, Max = 2149, Mon = "Ice Cream Chef", Qname = "IceCreamIslandQuest", Qdata = 1, PosQ = CFrame.new(-820.6, 65.8, -10965.7), PosM = CFrame.new(-872.2, 65.8, -10919.9)},
+    {Min = 2150, Max = 2199, Mon = "Ice Cream Commander", Qname = "IceCreamIslandQuest", Qdata = 2, PosQ = CFrame.new(-820.6, 65.8, -10965.7), PosM = CFrame.new(-558.0, 112.0, -11290.7)},
+    {Min = 2200, Max = 2224, Mon = "Cookie Crafter", Qname = "CakeQuest1", Qdata = 1, PosQ = CFrame.new(-2021.3, 37.7, -12028.7), PosM = CFrame.new(-2374.1, 37.7, -12125.3)},
+    {Min = 2225, Max = 2249, Mon = "Cake Guard", Qname = "CakeQuest1", Qdata = 2, PosQ = CFrame.new(-2021.3, 37.7, -12028.7), PosM = CFrame.new(-1598.3, 43.7, -12244.5)},
+    {Min = 2250, Max = 2274, Mon = "Baking Staff", Qname = "CakeQuest2", Qdata = 1, PosQ = CFrame.new(-1927.9, 37.7, -12842.5), PosM = CFrame.new(-1887.8, 77.6, -12998.3)},
+    {Min = 2275, Max = 2299, Mon = "Head Baker", Qname = "CakeQuest2", Qdata = 2, PosQ = CFrame.new(-1927.9, 37.7, -12842.5), PosM = CFrame.new(-2216.1, 82.8, -12869.2)},
+    {Min = 2300, Max = 2324, Mon = "Cocoa Warrior", Qname = "ChocQuest1", Qdata = 1, PosQ = CFrame.new(233.2, 29.8, -12201.2), PosM = CFrame.new(-21.5, 80.5, -12352.3)},
+    {Min = 2325, Max = 2349, Mon = "Chocolate Bar Battler", Qname = "ChocQuest1", Qdata = 2, PosQ = CFrame.new(233.2, 29.8, -12201.2), PosM = CFrame.new(582.5, 77.1, -12463.1)},
+    {Min = 2350, Max = 2374, Mon = "Sweet Thief", Qname = "ChocQuest2", Qdata = 1, PosQ = CFrame.new(150.5, 30.6, -12774.5), PosM = CFrame.new(165.1, 76.0, -12600.8)},
+    {Min = 2375, Max = 2399, Mon = "Candy Rebel", Qname = "ChocQuest2", Qdata = 2, PosQ = CFrame.new(150.5, 30.6, -12774.5), PosM = CFrame.new(134.8, 77.2, -12876.5)},
+    {Min = 2400, Max = 2449, Mon = "Candy Pirate", Qname = "CandyQuest1", Qdata = 1, PosQ = CFrame.new(-1150.0, 20.3, -14446.3), PosM = CFrame.new(-1310.5, 26.0, -14562.4)},
+    {Min = 2450, Max = 2474, Mon = "Isle Outlaw", Qname = "TikiQuest1", Qdata = 1, PosQ = CFrame.new(-16548.8, 55.6, -172.8), PosM = CFrame.new(-16479.9, 226.6, -300.3)},
+    {Min = 2475, Max = 2499, Mon = "Island Boy", Qname = "TikiQuest1", Qdata = 2, PosQ = CFrame.new(-16548.8, 55.6, -172.8), PosM = CFrame.new(-16849.3, 192.8, -150.7)},
+    {Min = 2500, Max = 2524, Mon = "Sun-kissed Warrior", Qname = "TikiQuest2", Qdata = 1, PosQ = CFrame.new(-16538.0, 55.0, 1049.0), PosM = CFrame.new(-16347.0, 64.0, 984.0)},
+    {Min = 2525, Max = 2550, Mon = "Isle Champion", Qname = "TikiQuest2", Qdata = 2, PosQ = CFrame.new(-16541.0, 57.3, 1051.4), PosM = CFrame.new(-16602.1, 130.3, 1087.2)},
+    {Min = 2551, Max = 2574, Mon = "Serpent Hunter", Qname = "TikiQuest3", Qdata = 1, PosQ = CFrame.new(-16679.4, 176.7, 1474.3), PosM = CFrame.new(-16679.4, 176.7, 1474.3)},
+    {Min = 2575, Max = 3000, Mon = "Skull Slayer", Qname = "TikiQuest3", Qdata = 2, PosQ = CFrame.new(-16759.5, 71.2, 1595.3), PosM = CFrame.new(-16759.5, 71.2, 1595.3)}
+}
+
+
+function CheckQuest()
+    local myLv = LP.Data.Level.Value
+    for _, v in pairs(QuestList) do
+        if myLv >= v.Min and myLv <= v.Max then
+            NameQuest, LevelQuest, NameMon, CFrameQuest, CFrameMon = v.Name, v.Lv, v.Mon, v.NPC, v.MonPos
+            return
+        end
+    end
+end
+
+function EquipMelee()
+    pcall(function()
+        local tool = LP.Backpack:FindFirstChild("Combat") or LP.Backpack:FindFirstChildOfClass("Tool")
+        for _, v in pairs(LP.Backpack:GetChildren()) do
+            if v.ToolTip == "Melee" then LP.Character.Humanoid:EquipTool(v); break end
+        end
+    end)
+end
+
+function IsQuestActive()
+    local qGui = LP.PlayerGui.Main:FindFirstChild("Quest")
+    return qGui and qGui.Visible and string.find(qGui.Container.QuestTitle.Title.Text, NameMon)
+end
+
+-- ========================================================
+-- [[ VÒNG LẶP CHÍNH ]]
+-- ========================================================
+task.spawn(function()
+    while task.wait() do
+        if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
+        pcall(function()
+            if _G.Grabfruit then
+                local fruit = nil
+                for _, v in pairs(workspace:GetChildren()) do
+                    if string.find(v.Name, "Fruit") and v:FindFirstChild("Handle") then fruit = v; break end
+                end
+                if fruit then TweenTo(fruit.Handle.CFrame); return end
+            end
+            
+            CheckQuest()
+            if not IsQuestActive() then
+                if CheckTeleport(CFrameQuest) then return end
+                if TweenTo(CFrameQuest) then GetCommF():InvokeServer("StartQuest", NameQuest, LevelQuest) end
+            else
+                local Enemy = nil
+                for _, e in pairs(workspace.Enemies:GetChildren()) do
+                    if e.Name == NameMon and e.Humanoid.Health > 0 then Enemy = e; break end
+                end
+                if Enemy then
+                    EquipMelee()
+                    TweenTo(Enemy.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0))
+                    RS.Modules.Net["RE/RegisterAttack"]:FireServer(0)
+                    RS.Modules.Net["RE/RegisterHit"]:FireServer(Enemy.PrimaryPart, {{Enemy, Enemy.PrimaryPart}})
+                else
+                    TweenTo(CFrameMon)
+                end
+            end
+        end)
+    end
+end)
+
+-- ========================================================
+-- [[ 5. AUTO STATS & MISC ]]
+-- ========================================================
+task.spawn(function()
+    local S = {M = {"Melee", "Strength", "Combat"}, D = {"Defense", "Health"}}
+    while task.wait(0.7) do
+        if _G.GoingToSea2 then continue end -- Dừng cộng điểm khi qua sea
+        pcall(function()
+            local Data = LP:FindFirstChild("Data") or LP:FindFirstChild("Stats")
+            local P = Data and (Data:FindFirstChild("StatsPoints") or Data:FindFirstChild("Points"))
+            if P and P.Value > 0 then
+                local mVal = 0; for _, n in pairs(S.M) do if Data:FindFirstChild(n) then mVal = Data[n].Value break end end
+                local remote = GetCommF()
+                if remote then
+                    if mVal < getgenv().MaxStat then
+                        for _, n in pairs(S.M) do remote:InvokeServer("AddPoint", n, 1) end
+                    else
+                        for _, n in pairs(S.D) do remote:InvokeServer("AddPoint", n, 1) end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+    pcall(function()
+        if LP.Character then
+            for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+        end
+    end)
+end)
+
+-- ========================================================
+-- [[ 6. MODULE SERVER HOP (ĐÃ ĐƯỢC FIX LỖI) ]]
+-- ========================================================
+task.spawn(function()
+    local HopTime = 1700 
+    while task.wait(1) do
+        if _G.GoingToSea2 then continue end -- Dừng server hop khi đang qua sea
+        HopTime = HopTime - 1
+        if HopTime <= 0 then
+            pcall(function()
+                local Http = game:GetService("HttpService")
+                local TPS = game:GetService("TeleportService")
+                local Api = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+                local Raw = game:HttpGet(Api)
+                local Decode = Http:JSONDecode(Raw)
+
+                if Decode and Decode.data then
+                    for _, s in pairs(Decode.data) do
+                        if type(s) == "table" and s.id ~= game.JobId and s.playing ~= nil and s.maxPlayers ~= nil then
+                            if s.playing < s.maxPlayers - 1 then
+                                TPS:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                task.wait(5) 
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+            HopTime = 30
+        end
+    end
+end)
+
+loadstring(game:HttpGet("https://github.com/TlDinhKhoi/Util/raw/refs/heads/main/ThongBao/AttackFix"))()

@@ -177,7 +177,6 @@ local function TeleSky()
     end
 end
 
--- BỔ SUNG HÀM BỊ THIẾU Ở ĐÂY
 local function CheckTeleport(targetCFrame)
     local char = LP.Character or LP.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -262,7 +261,7 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- [[ 3. AUTO BUY MELEE (FIXED & TÍCH HỢP HÀM ENTRANCE) ]]
+-- [[ 3. AUTO BUY MELEE ]]
 -- ========================================================
 getgenv().AutoBuyMelee = true 
 
@@ -387,7 +386,7 @@ function IsQuestActive()
 end
 
 -- ========================================================
--- [[ VÒNG LẶP CHÍNH (ĐÃ FIX LỖI NHẶT TRÁI ÁC QUỶ XUYÊN TƯỜNG DƯỚI ĐÁY BIỂN) ]]
+-- [[ VÒNG LẶP CHÍNH ]]
 -- ========================================================
 local CurrentTarget = nil 
 local PatrolIndex = 1
@@ -398,8 +397,15 @@ task.spawn(function()
         if _G.GoingToSea2 or _G.StopFarmForMelee then task.wait(1); continue end
         
         pcall(function()
-            if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 30) then 
-                pcall(function() GetCommF():InvokeServer("Cousin", "Buy") end)
+            -- [AUTO RANDOM FRUIT - DLCBOXDATA (MỖI 5 PHÚT = 300 GIÂY)]
+            if _G.AutoBuyFruit and (tick() - (LastBuyTime or 0) >= 300) then 
+                pcall(function()
+                    local args = { 
+                        "Cousin",
+                        "DLCBoxData"
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
+                end)
                 LastBuyTime = tick() 
             end
 
@@ -492,6 +498,23 @@ game:GetService("RunService").Stepped:Connect(function()
             for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
         end
     end)
+end)
+
+-- ========================================================
+-- [[ 6. MODULE SERVER HOP (ĐẾM NGƯỢC 30 PHÚT LẦN HOP SV) ]]
+-- ========================================================
+task.spawn(function()
+    local HopTime = 1800 -- 30 phút = 1800 giây
+    while task.wait(1) do
+        if _G.GoingToSea2 then continue end 
+        HopTime = HopTime - 1
+        if HopTime <= 0 then
+            pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/hop-server"))()
+            end)
+            HopTime = 1800
+        end
+    end
 end)
 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/attack"))()

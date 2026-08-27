@@ -1,0 +1,40 @@
+_G.AutoBuyPriority = true
+local PriorityList = {"Dragon", "Kitsune", "Yeti", "Tiger", "Gas", "Dough", "Control"}
+
+task.spawn(function()
+    local LP = game:GetService("Players").LocalPlayer
+    local CommF = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
+
+    while task.wait(5) do
+        if not _G.AutoBuyPriority then break end
+        
+        pcall(function()
+            local currentFruit = ""
+            if LP:FindFirstChild("Data") and LP.Data:FindFirstChild("DevilFruit") then
+                currentFruit = LP.Data.DevilFruit.Value
+            end
+            
+            for _, pFruit in ipairs(PriorityList) do
+                if string.find(currentFruit, pFruit) then
+                    _G.AutoBuyPriority = false
+                    return
+                end
+            end
+
+            local myBeli = LP.Data.Beli.Value
+            local stockFruits = CommF:InvokeServer("GetFruits", false)
+
+            for _, targetFruit in ipairs(PriorityList) do
+                for _, fruitData in pairs(stockFruits) do
+                    if fruitData["OnSale"] and string.find(fruitData["Name"], targetFruit) then
+                        if myBeli >= fruitData["Price"] then
+                            CommF:InvokeServer("PurchaseRawFruit", fruitData["Name"])
+                            _G.AutoBuyPriority = false
+                            return
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)

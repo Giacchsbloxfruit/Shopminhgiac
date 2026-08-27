@@ -1,5 +1,7 @@
+task.wait(5) -- Đợi 5 giây trước khi chạy script
+
 local PlaceId = game.PlaceId
-if PlaceId == 85211729168715 or PlaceId == 2753915133 then
+if PlaceId == 85211729168715 or PlaceId == 2753915549 then
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Olala"))()
     end)
@@ -7,7 +9,7 @@ elseif PlaceId == 4442272183 or PlaceId == 79091703265657 then
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/kaitun%20sea%202"))()
     end)
-elseif PlaceId == 7449423635 then
+elseif PlaceId == 7449423635 or PlaceId == 100117331123089 then
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Shopminhgiac/refs/heads/main/Omg"))()
     end)

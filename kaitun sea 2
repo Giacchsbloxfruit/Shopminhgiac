@@ -497,6 +497,15 @@ task.spawn(function()
     end
 end)
 
-loadstring(game:HttpGet("https://github.com/TlDinhKhoi/Util/raw/refs/heads/main/ThongBao/AttackFix"))()
+-- ========================================================
+-- [[ 13. AUTO LOAD TRACKER (SAU KHI CHỌN TEAM) ]]
+-- ========================================================
+task.spawn(function()
+    repeat task.wait(1) until game:GetService("Players").LocalPlayer.Team
+    task.wait(5) -- Đợi 3 giây để đồng bộ Data (Level, Beli...)
+    pcall(function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/tracker-giacdz"))() 
+    end)
+end)
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Giacchsbloxfruit/Giacyeuem/refs/heads/main/tracker-giacdz"))()
+loadstring(game:HttpGet("https://github.com/TlDinhKhoi/Util/raw/refs/heads/main/ThongBao/AttackFix"))()
